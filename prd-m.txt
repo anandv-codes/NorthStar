@@ -1,0 +1,436 @@
+# Scribble → Overnight Digest
+### Architecture, Roadmap & Engineering Intuition Document
+**Started:** June 2026 | **Target:** Production-ready in 6 weeks | **Owner:** Anand
+
+---
+
+## What This Builds (North Star)
+
+A system where you dump raw notes throughout the day — typed or photographed — and wake up to a structured email digest that has:
+- Cleaned, organized summaries of everything you wrote
+- Researched answers to any questions you asked
+- Cross-referenced context from your past notes (RAG)
+- Action items extracted and highlighted
+- Extendable via a browser extension that lets you clip notes from any webpage
+
+---
+
+## Crucial Architectural Decisions (Locked In)
+
+| Decision | Choice | Why |
+|---|---|---|
+| Note input | Text + Image (OCR) | AWS Textract or Bedrock multimodal for images |
+| Scale target | Single-user now, multi-user later | Design interfaces to be user-scoped from day 1 |
+| Question enrichment | Web search + RAG + LLM reasoning | Full agent chain |
+| Queue | **AWS SQS** (not Kafka/RabbitMQ) | See rationale below |
+| Storage | DynamoDB + S3 + ChromaDB | DynamoDB scales to multi-user cheaply; S3 for images |
+| Email | AWS SES + EventBridge | Serverless-native overnight scheduling |
+| Agent framework | LangChain on Bedrock (Nova Pro) | Aligns with existing RAG project |
+| Auth | JWT (FastAPI) → Cognito later | Clean migration path to multi-user |
+
+### Why SQS over Kafka/RabbitMQ
+
+**Kafka** is designed for high-throughput event streaming (think millions of events/sec, Swiggy tracking every GPS ping). For a personal tool processing maybe 20 note submissions/day, Kafka is infra you'd spend more time maintaining than building features. The concept to internalize: **Kafka is a distributed log, not a job queue.**
+
+**RabbitMQ** is excellent for complex message routing with exchanges and binding keys. Worth learning, but adds operational overhead (you'd need to run it yourself or pay for CloudAMQP).
+
+**SQS** is the right tool here:
+- Fully managed, zero ops
+- Lambda triggers natively — a message arrives, Lambda fires
+- Dead Letter Queues (DLQ) built in for failed processing
+- Scales transparently to multi-user later
+- You will be asked about SQS vs Kafka in every AWS systems design interview
+
+**Interview answer you'll be able to give:** *"We chose SQS because our throughput requirements don't justify Kafka's operational complexity. Kafka's strength is as a durable, replayable log for high-fan-out streaming scenarios. SQS with Lambda gives us decoupled async processing, retry semantics via DLQ, and zero infrastructure management — the right tradeoff for this workload."*
+
+---
+
+## System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    FRONTEND (React)                      │
+│  Note Editor | Image Upload | Dashboard | Settings       │
+└──────────────────────┬──────────────────────────────────┘
+                       │ HTTPS
+┌──────────────────────▼──────────────────────────────────┐
+│                  FastAPI Backend                         │
+│  /notes  /auth  /history  /settings                     │
+│  JWT Auth | Input validation | Presigned S3 URLs         │
+└──────┬─────────────────────────────┬────────────────────┘
+       │                             │
+       │ Push Job                    │ Sync reads
+       ▼                             ▼
+┌─────────────┐              ┌──────────────────┐
+│   AWS SQS   │              │   DynamoDB       │
+│  note-jobs  │              │  notes, users,   │
+│  (queue)    │              │  digests table   │
+└──────┬──────┘              └──────────────────┘
+       │ Triggers
+       ▼
+┌─────────────────────────────────────────────────────────┐
+│              Lambda: Note Processor                      │
+│                                                         │
+│  1. If image → AWS Textract (OCR)                       │
+│  2. Call Orchestrator Agent (Bedrock / LangChain)        │
+│     ├── Parser Agent: extract questions, todos, topics   │
+│     ├── Research Agent: web search per question          │
+│     ├── RAG Agent: query ChromaDB (past notes)           │
+│     └── Synthesis Agent: structured enriched note        │
+│  3. Save enriched note to DynamoDB                      │
+│  4. Upsert note embedding → ChromaDB                    │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│         AWS EventBridge (Cron: 11 PM daily)             │
+│                     ↓ triggers                          │
+│         Lambda: Digest Compiler                         │
+│  - Fetch all notes since last digest (DynamoDB)         │
+│  - Call Synthesis Agent → final email HTML              │
+│  - Send via AWS SES                                     │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│         Browser Extension (Phase 5)                     │
+│  Content script → clip text → POST to same FastAPI      │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Component Deep Dives
+
+### Component 1: FastAPI Backend
+
+**What it does:** Receives notes (text/image), validates them, writes to DynamoDB, pushes a job to SQS, returns 202 Accepted immediately. Also serves history endpoints for the dashboard.
+
+**Key architectural pattern — async acknowledgment:**
+The API does NOT process the note inline. It queues the job and returns immediately. This is the backbone of any scalable backend. The frontend polls or uses websockets/SSE to check when processing is done.
+
+**Design decisions to make here:**
+- Use `user_id` as the DynamoDB partition key from day 1, even for a single user. This is the multi-user extension point — nothing else needs to change structurally.
+- Presigned S3 URLs: for image uploads, the client uploads directly to S3 (not via your server). FastAPI just issues the presigned URL. This is the production pattern — your server never handles large binary data.
+- 202 vs 200: Return 202 Accepted (not 200 OK) for async operations. This is a semantic distinction that interviewers notice.
+
+**Engineering intuition built:**
+- REST semantics (202 vs 200 vs 201)
+- Separation of ingestion and processing
+- Why you never upload files to your application server
+
+**Interview prep angle:**
+*"Design a file upload system that handles 10,000 concurrent uploads."* → You'll be able to describe the presigned URL pattern, why it offloads bandwidth from your servers, and how SQS decouples ingestion from processing.
+
+---
+
+### Component 2: AWS SQS + Lambda Trigger
+
+**What it does:** SQS holds note-processing jobs. Lambda polls SQS (actually, SQS triggers Lambda via event source mapping) and invokes the Note Processor for each message.
+
+**Key concepts to understand deeply:**
+- **Visibility timeout:** When Lambda picks up a message, SQS hides it from other consumers for N seconds. If Lambda crashes mid-processing, the message reappears after the timeout. Set this to slightly longer than your Lambda max execution time.
+- **Dead Letter Queue (DLQ):** After N failed attempts, messages go to a DLQ. You get an SNS alert, inspect what broke, fix it, replay. This is how you build resilient async systems.
+- **Batch size:** Lambda can process up to 10 SQS messages at once. For now, batch size = 1 (one note per invocation). Later, batch for efficiency.
+
+**Design decision: Lambda vs ECS for the worker**
+Lambda wins here for now:
+- Zero idle cost (you're not paying for a server waiting for notes at 3 AM)
+- Scales to multi-user automatically
+- Cold starts are acceptable (note processing is not latency-sensitive)
+
+The tradeoff to know: Lambda has a 15-minute max execution time. If your agent chain takes longer (unlikely, but possible with complex RAG + web search), you'd move to ECS Fargate tasks.
+
+**Engineering intuition built:**
+- Event-driven architecture fundamentals
+- Retry semantics and fault tolerance design
+- Cost-optimized compute (pay per invocation, not per hour)
+
+**Interview prep angle:**
+Questions like *"How do you ensure exactly-once processing?"* or *"What happens if your consumer crashes mid-job?"* — You'll have real answers from building this.
+
+---
+
+### Component 3: OCR Pipeline (AWS Textract)
+
+**What it does:** Receives an S3 image path, sends it to AWS Textract, gets back structured text blocks.
+
+**Key architectural insight — two Textract modes:**
+- **Synchronous (DetectDocumentText):** Returns immediately. Use for small, clear images (phone photos of typed notes).
+- **Asynchronous (StartDocumentTextDetection):** Textract processes in background, calls an SNS topic when done. Use for multi-page PDFs or complex documents.
+
+For scribbled notes photos, synchronous is fine. But implement the async path mentally — it's a nested event-driven pattern: Lambda → Textract → SNS → Lambda. This is a beautiful systems design pattern to articulate in interviews.
+
+**Post-OCR cleaning:** Raw Textract output is noisy (line breaks mid-sentence, random punctuation). Pass it through a "cleaning" prompt to Bedrock before the main agent chain: *"Here is raw OCR text from a handwritten note. Clean it into readable sentences, preserving all content."*
+
+**Engineering intuition built:**
+- Sync vs async API patterns
+- Pre-processing pipelines before ML tasks
+- Why you clean/normalize data before passing to LLMs (garbage in, garbage out)
+
+**Interview prep angle:**
+Any ML/AI system design question will require you to articulate data preprocessing. Textract → cleaning → structured LLM input is a real, defensible pipeline.
+
+---
+
+### Component 4: Multi-Agent Orchestration (LangChain + Bedrock)
+
+**What it does:** The core intelligence layer. One Orchestrator Agent receives the cleaned note text and delegates to specialist agents.
+
+**The 4-agent chain:**
+
+```
+Orchestrator Agent
+│
+├──► Parser Agent
+│    Input: raw note text
+│    Output: { questions: [...], todos: [...], concepts: [...], learnings: [...] }
+│    How: structured output via JSON mode prompt
+│
+├──► Research Agent (runs per question found)
+│    Input: one question string
+│    Tool: Tavily / SerpAPI web search
+│    Output: { question, answer, sources: [...] }
+│
+├──► RAG Agent
+│    Input: full note + extracted concepts
+│    Tool: ChromaDB similarity search
+│    Output: { related_past_notes: [...], cross_references: [...] }
+│
+└──► Synthesis Agent
+     Input: all outputs above
+     Output: { enriched_note_markdown, key_insights, action_items }
+```
+
+**Key architectural decision — sequential vs parallel:**
+Research Agent queries can run in parallel (one web search per question, simultaneously). LangChain supports this via `asyncio.gather`. This is an important optimization: 3 questions = 3 web searches running concurrently instead of sequentially. Cuts processing time by ~60%.
+
+**Why structured outputs matter:**
+Parser Agent must return JSON, not prose. Use Bedrock's response_format enforcement or a Pydantic model in LangChain. If agents return unstructured text, downstream agents can't reliably parse it — this is how agent chains silently fail in production.
+
+**The RAG agent here uses ChromaDB** — directly aligned with your existing RAG project. Every note processed gets embedded and stored, so the knowledge base grows over time. The longer you use this tool, the smarter it gets.
+
+**Engineering intuition built:**
+- Agent orchestration patterns (single-agent vs multi-agent)
+- Parallel async execution in Python
+- Structured outputs as contracts between agents
+- How RAG knowledge bases compound over time
+
+**Interview prep angle:**
+*"Design an AI system that answers questions from documents."* — You'll know the full stack: embedding → vector store → similarity search → prompt assembly → LLM → structured output. You'll also be able to speak to failure modes: hallucination, retrieval misses, context window limits.
+
+---
+
+### Component 5: DynamoDB Data Model
+
+**Why DynamoDB over RDS here:**
+- No joins needed (notes are self-contained documents)
+- Scales from 1 user to 100,000 users without schema migration
+- Pay-per-request pricing is nearly free at low volume
+- Single-table design is a strong interview talking point
+
+**Single-table design (important pattern to learn):**
+
+```
+PK (partition key)     | SK (sort key)           | Data
+-----------------------|-------------------------|------------------
+USER#anand             | PROFILE                 | email, settings
+USER#anand             | NOTE#2026-05-24T14:30   | raw_text, status
+USER#anand             | ENRICHED#2026-05-24T14:30 | questions, answers, todos
+USER#anand             | DIGEST#2026-05-24        | email_html, sent_at
+```
+
+All queries are: *"Give me all notes for USER#anand after this timestamp."* — single partition scan, O(1) lookup.
+
+**Engineering intuition built:**
+- NoSQL data modeling (access-pattern-first design)
+- Why single-table DynamoDB is a senior engineering pattern
+- Partition key design and hot partition avoidance
+
+**Interview prep angle:**
+Every system design interview at product companies asks about your DB choice. Being able to articulate *"I chose DynamoDB because my access patterns are known, I don't need joins, and it scales horizontally without ops overhead — I modeled it as a single-table design with composite keys"* is a strong, senior answer.
+
+---
+
+### Component 6: EventBridge + SES (Overnight Digest)
+
+**What it does:** EventBridge fires a cron rule at 11 PM IST daily → triggers Digest Compiler Lambda → queries all enriched notes from today → calls Synthesis Agent for final email HTML → SES delivers it.
+
+**EventBridge cron syntax:** `cron(30 17 * * ? *)` = 11 PM IST (UTC+5:30 = 17:30 UTC).
+
+**SES email design:** The digest email is HTML-formatted. Think of it as a mini newsletter — one section per note, question-answer blocks, action items highlighted, cross-references linked. Build a Jinja2/Mako HTML template. This is your "artifact" as a user — the better this looks, the more valuable the tool feels.
+
+**Engineering intuition built:**
+- Scheduled serverless execution (vs cron jobs on a server)
+- Email deliverability basics (SES domain verification, DKIM)
+- Infrastructure as event-driven reactions, not polling loops
+
+**Interview prep angle:**
+*"How would you implement a notification system that sends daily digests to 1M users?"* — Fan-out via SQS, batched SES sends, rate limiting. You'll understand the primitives.
+
+---
+
+### Component 7: React Frontend
+
+**Pages to build:**
+
+1. **Note Capture page** — Primary view. Text editor + image drop zone. Submit button. Shows a "processing..." state after submit (polls /notes/{id}/status).
+2. **Dashboard** — Timeline of past notes with enrichment status, searchable.
+3. **Digest Preview** — See what tonight's email will look like before it sends.
+4. **Settings** — Email address, digest time, RAG toggle.
+
+**Key frontend architectural pattern — optimistic UI:**
+When a note is submitted, immediately show it in the dashboard as "Processing" without waiting for the API response. If the API fails, roll back. This pattern makes apps feel instant.
+
+**State management:** Don't use Redux for this. Zustand or React Context + useReducer is sufficient. Keeping state management simple is a sign of good engineering judgment — choosing the right tool, not the most complex one.
+
+**Engineering intuition built:**
+- Async UI state (loading/success/error/processing states)
+- Optimistic updates and rollback
+- File upload UX patterns (drag-and-drop, preview, progress)
+
+---
+
+### Component 8: Browser Extension (Phase 5)
+
+**Architecture:** A Chrome extension (Manifest V3) with two parts:
+- **Content Script:** Injects into every page, listens for text selection. Shows a floating "Add to Notes" button when text is selected.
+- **Popup:** A mini note editor. Submit calls your existing FastAPI /notes endpoint with the page URL as metadata.
+
+**Why this is architecturally important:** The extension is just another client of your FastAPI backend. Zero backend changes needed — only a new frontend (the extension popup). This is proof that you designed the backend with clean separation of concerns.
+
+**Engineering intuition built:**
+- Browser extension architecture (background service worker, content scripts, popup)
+- API-first design (same backend serves web app + extension + future mobile)
+- Chrome Manifest V3 (CSP restrictions, service workers replacing background pages)
+
+---
+
+## Phased Roadmap with Daily Targets
+
+### Phase 1 — Core Pipeline (Days 1–7)
+*Goal: Text note in → enriched note stored → basic email out*
+
+| Day | Task | Engineering Concept Practiced |
+|-----|------|-------------------------------|
+| 1 | FastAPI project setup. /notes POST endpoint. DynamoDB table created. Returns 202. | REST semantics, DynamoDB single-table design |
+| 2 | SQS queue created. FastAPI pushes job to SQS on note submit. | Producer-consumer decoupling |
+| 3 | Lambda Note Processor scaffolded. Reads from SQS. Calls Bedrock (Nova Pro) with note text. | Lambda event source mapping, Bedrock invocation |
+| 4 | Parser Agent: structured JSON output (questions, todos, concepts). | Prompt engineering for structured outputs, Pydantic validation |
+| 5 | Save enriched note back to DynamoDB. Status update flow. | Async job lifecycle state machine |
+| 6 | EventBridge cron → Digest Compiler Lambda → SES email with today's notes. | Scheduled serverless execution, SES setup |
+| 7 | React frontend: note editor + submit + processing state. End-to-end test. | Async UI states, API integration |
+
+**Phase 1 Exit Criteria:** Type a note → see it in dashboard → receive email at 11 PM.
+
+---
+
+### Phase 2 — OCR Pipeline (Days 8–12)
+
+| Day | Task | Engineering Concept |
+|-----|------|---------------------|
+| 8 | S3 bucket setup. FastAPI issues presigned upload URLs. React uploads image directly to S3. | Presigned URLs, client-side S3 upload |
+| 9 | Lambda detects if job is image type → calls Textract synchronously. | Conditional processing pipeline branches |
+| 10 | Textract output cleaning via Bedrock prompt. | Data normalization before ML processing |
+| 11 | Full OCR → Parser Agent → DynamoDB flow working. | End-to-end multimodal pipeline |
+| 12 | React: image drag-drop zone, preview, OCR status indicator. | File upload UX |
+
+---
+
+### Phase 3 — Research Agent + RAG (Days 13–20)
+
+| Day | Task | Engineering Concept |
+|-----|------|---------------------|
+| 13 | Web search tool integration (Tavily API). Research Agent takes one question, returns answer + sources. | LangChain tool use, API integration |
+| 14 | Parallel async execution of Research Agent across multiple questions. | asyncio.gather, concurrent agent execution |
+| 15 | ChromaDB setup. Post-enrichment: embed note and upsert to ChromaDB. | Vector store lifecycle management |
+| 16 | RAG Agent: embed note concepts, query ChromaDB, retrieve top-k related past notes. | Similarity search, embedding queries |
+| 17 | Synthesis Agent: merge Parser + Research + RAG outputs into structured digest entry. | Multi-source synthesis prompting |
+| 18 | Update email template: question-answer blocks, related notes section, action items. | Output formatting, Jinja2 templates |
+| 19 | Test full pipeline end-to-end with 10 varied notes. Debug agent failures. | Integration testing, failure mode identification |
+| 20 | Add DLQ monitoring. Log enrichment success/failure per note. | Observability, DLQ alerting |
+
+---
+
+### Phase 4 — Hardening + Auth (Days 21–26)
+
+| Day | Task | Engineering Concept |
+|-----|------|---------------------|
+| 21 | JWT auth in FastAPI. Protect all endpoints. | Stateless auth, token validation middleware |
+| 22 | user_id scoped queries in DynamoDB. Verify data isolation. | Multi-tenancy at the data layer |
+| 23 | Rate limiting on FastAPI (slowapi). | Abuse prevention, token bucket pattern |
+| 24 | Error handling audit: what if Textract fails? What if Bedrock times out? | Resilience patterns, graceful degradation |
+| 25 | Local dev with Docker Compose (FastAPI + LocalStack for SQS/DynamoDB). | Containerization, local AWS emulation |
+| 26 | Deploy to AWS: ECR + Lambda (FastAPI via Mangum adapter) or App Runner. | Production deployment patterns |
+
+---
+
+### Phase 5 — Browser Extension (Days 27–32)
+
+| Day | Task | Engineering Concept |
+|-----|------|---------------------|
+| 27 | Chrome extension scaffold (Manifest V3). Popup with note input. | Extension architecture, service workers |
+| 28 | Content script: detects text selection, shows floating button. | DOM events, content script injection |
+| 29 | Popup calls FastAPI /notes endpoint with auth token + page URL metadata. | API-first design payoff |
+| 30 | Test: select text on any webpage → appears in dashboard → included in tonight's email. | End-to-end cross-client flow |
+
+---
+
+## Multi-User Extension Plan (When You're Ready)
+
+When the time comes to open this to other users, the following changes are required — and **only** these, because you designed it right from day 1:
+
+| What changes | What stays the same |
+|---|---|
+| Add Cognito (or Auth0) replacing JWT | All DynamoDB queries (already user_id scoped) |
+| Add user registration flow in React | All Lambda/SQS/Bedrock logic |
+| Per-user ChromaDB namespace (or Pinecone with metadata filtering) | FastAPI route structure |
+| SES per-user from-address verification | Email template |
+| Add billing/tier limits | EventBridge cron (add per-user scheduling) |
+
+The clean separation you built in Phase 1 pays off entirely here.
+
+---
+
+## How This Maps to Your Target Roles
+
+### For Databricks / PhonePe / Razorpay interviews:
+
+| Component Built | Interview Topic Covered |
+|---|---|
+| SQS + Lambda pipeline | Async systems design, event-driven architecture |
+| DynamoDB single-table design | NoSQL data modeling, access pattern design |
+| Multi-agent LangChain orchestration | LLM system design, agent patterns |
+| Presigned S3 upload | Distributed file handling, cloud storage patterns |
+| FastAPI with async endpoints | Python async, REST API design |
+| EventBridge cron | Scheduled jobs at scale |
+| JWT + Cognito path | Auth patterns, stateless vs stateful sessions |
+| ChromaDB RAG | Vector search, embedding pipelines |
+| OCR → clean → LLM pipeline | ML preprocessing, multimodal pipelines |
+
+### The portfolio story:
+*"I built a personal productivity tool using an event-driven architecture on AWS — FastAPI ingestion layer, SQS-triggered Lambda workers, a multi-agent pipeline on Bedrock handling OCR, web research, and RAG retrieval from a ChromaDB knowledge base, with EventBridge scheduling overnight digest delivery via SES. I designed the data model for single-user with a clear migration path to multi-tenant, using DynamoDB single-table design with user-scoped partition keys."*
+
+That's a senior engineer's answer at any Tier 1 Indian product company.
+
+---
+
+## Progress Log
+
+*(Update this section daily)*
+
+| Date | Phase | Completed | Blockers | Notes |
+|------|-------|-----------|----------|-------|
+| — | — | — | — | — |
+
+---
+
+## Open Questions / Decisions Pending
+
+- [ ] Web search provider: Tavily (LangChain native) vs SerpAPI vs Brave Search API — evaluate cost per query
+- [ ] ChromaDB hosting: local Docker vs managed (Chroma Cloud) vs swap to Pinecone for multi-user
+- [ ] Email digest time: 11 PM IST fixed vs user-configurable (Phase 4)
+- [ ] Note search in dashboard: DynamoDB full-text is weak — consider OpenSearch or just embed-and-query ChromaDB for dashboard search too
+- [ ] Browser extension: Chrome only first, then Firefox (Manifest V3 has Firefox support now)
+
+---
+
+*Last updated: May 2026*

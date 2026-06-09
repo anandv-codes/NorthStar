@@ -1,0 +1,47 @@
+# Node
+node_modules/
+/packages/
+/frontend/node_modules/
+/frontend/dist/
+
+# Python
+/backend/.venv/
+/backend/venv/
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/pip-wheel-metadata/
+**/*.egg-info/
+/backend/app/lambdas/
+# Environment files
+.env
+.env.*
+backend/.env
+frontend/.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Build outputs
+/dist
+/build
+/.cache
+/out
+
+# Misc
+coverage/
+coverage.*
+pytest_cache/
