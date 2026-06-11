@@ -23,7 +23,7 @@ A system where you dump raw notes throughout the day — typed or photographed �
 | Scale target | Single-user now, multi-user later | Design interfaces to be user-scoped from day 1 |
 | Question enrichment | Web search + RAG + LLM reasoning | Full agent chain |
 | Queue | **AWS SQS** (not Kafka/RabbitMQ) | See rationale below |
-| Storage | DynamoDB + S3 + ChromaDB | DynamoDB scales to multi-user cheaply; S3 for images |
+| Storage | Supavbase + S3 + ChromaDB | Supavbase scales to multi-user cheaply; S3 for images |
 | Email | AWS SES + EventBridge | Serverless-native overnight scheduling |
 | Agent framework | LangChain on Bedrock (Nova Pro) | Aligns with existing RAG project |
 | Auth | JWT (FastAPI) → Cognito later | Clean migration path to multi-user |
@@ -62,7 +62,7 @@ A system where you dump raw notes throughout the day — typed or photographed �
        │ Push Job                    │ Sync reads
        ▼                             ▼
 ┌─────────────┐              ┌──────────────────┐
-│   AWS SQS   │              │   DynamoDB       │
+│   AWS SQS   │              │   Supavbase       │
 │  note-jobs  │              │  notes, users,   │
 │  (queue)    │              │  digests table   │
 └──────┬──────┘              └──────────────────┘
@@ -77,7 +77,7 @@ A system where you dump raw notes throughout the day — typed or photographed �
 │     ├── Research Agent: web search per question          │
 │     ├── RAG Agent: query ChromaDB (past notes)           │
 │     └── Synthesis Agent: structured enriched note        │
-│  3. Save enriched note to DynamoDB                      │
+│  3. Save enriched note to Supavbase                      │
 │  4. Upsert note embedding → ChromaDB                    │
 └─────────────────────────────────────────────────────────┘
 
@@ -85,7 +85,7 @@ A system where you dump raw notes throughout the day — typed or photographed �
 │         AWS EventBridge (Cron: 11 PM daily)             │
 │                     ↓ triggers                          │
 │         Lambda: Digest Compiler                         │
-│  - Fetch all notes since last digest (DynamoDB)         │
+│  - Fetch all notes since last digest (Supavbase)         │
 │  - Call Synthesis Agent → final email HTML              │
 │  - Send via AWS SES                                     │
 └─────────────────────────────────────────────────────────┘
@@ -102,13 +102,13 @@ A system where you dump raw notes throughout the day — typed or photographed �
 
 ### Component 1: FastAPI Backend
 
-**What it does:** Receives notes (text/image), validates them, writes to DynamoDB, pushes a job to SQS, returns 202 Accepted immediately. Also serves history endpoints for the dashboard.
+**What it does:** Receives notes (text/image), validates them, writes to Supavbase, pushes a job to SQS, returns 202 Accepted immediately. Also serves history endpoints for the dashboard.
 
 **Key architectural pattern — async acknowledgment:**
 The API does NOT process the note inline. It queues the job and returns immediately. This is the backbone of any scalable backend. The frontend polls or uses websockets/SSE to check when processing is done.
 
 **Design decisions to make here:**
-- Use `user_id` as the DynamoDB partition key from day 1, even for a single user. This is the multi-user extension point — nothing else needs to change structurally.
+- Use `user_id` as the Supavbase partition key from day 1, even for a single user. This is the multi-user extension point — nothing else needs to change structurally.
 - Presigned S3 URLs: for image uploads, the client uploads directly to S3 (not via your server). FastAPI just issues the presigned URL. This is the production pattern — your server never handles large binary data.
 - 202 vs 200: Return 202 Accepted (not 200 OK) for async operations. This is a semantic distinction that interviewers notice.
 
@@ -219,9 +219,9 @@ Parser Agent must return JSON, not prose. Use Bedrock's response_format enforcem
 
 ---
 
-### Component 5: DynamoDB Data Model
+### Component 5: Supavbase Data Model
 
-**Why DynamoDB over RDS here:**
+**Why Supavbase over RDS here:**
 - No joins needed (notes are self-contained documents)
 - Scales from 1 user to 100,000 users without schema migration
 - Pay-per-request pricing is nearly free at low volume
@@ -242,11 +242,11 @@ All queries are: *"Give me all notes for USER#anand after this timestamp."* — 
 
 **Engineering intuition built:**
 - NoSQL data modeling (access-pattern-first design)
-- Why single-table DynamoDB is a senior engineering pattern
+- Why single-table Supavbase is a senior engineering pattern
 - Partition key design and hot partition avoidance
 
 **Interview prep angle:**
-Every system design interview at product companies asks about your DB choice. Being able to articulate *"I chose DynamoDB because my access patterns are known, I don't need joins, and it scales horizontally without ops overhead — I modeled it as a single-table design with composite keys"* is a strong, senior answer.
+Every system design interview at product companies asks about your DB choice. Being able to articulate *"I chose Supavbase because my access patterns are known, I don't need joins, and it scales horizontally without ops overhead — I modeled it as a single-table design with composite keys"* is a strong, senior answer.
 
 ---
 
@@ -311,11 +311,11 @@ When a note is submitted, immediately show it in the dashboard as "Processing" w
 
 | Day | Task | Engineering Concept Practiced |
 |-----|------|-------------------------------|
-| 1 | FastAPI project setup. /notes POST endpoint. DynamoDB table created. Returns 202. | REST semantics, DynamoDB single-table design |
+| 1 | FastAPI project setup. /notes POST endpoint. Supavbase table created. Returns 202. | REST semantics, Supavbase single-table design |
 | 2 | SQS queue created. FastAPI pushes job to SQS on note submit. | Producer-consumer decoupling |
 | 3 | Lambda Note Processor scaffolded. Reads from SQS. Calls Bedrock (Nova Pro) with note text. | Lambda event source mapping, Bedrock invocation |
 | 4 | Parser Agent: structured JSON output (questions, todos, concepts). | Prompt engineering for structured outputs, Pydantic validation |
-| 5 | Save enriched note back to DynamoDB. Status update flow. | Async job lifecycle state machine |
+| 5 | Save enriched note back to Supavbase. Status update flow. | Async job lifecycle state machine |
 | 6 | EventBridge cron → Digest Compiler Lambda → SES email with today's notes. | Scheduled serverless execution, SES setup |
 | 7 | React frontend: note editor + submit + processing state. End-to-end test. | Async UI states, API integration |
 
@@ -330,7 +330,7 @@ When a note is submitted, immediately show it in the dashboard as "Processing" w
 | 8 | S3 bucket setup. FastAPI issues presigned upload URLs. React uploads image directly to S3. | Presigned URLs, client-side S3 upload |
 | 9 | Lambda detects if job is image type → calls Textract synchronously. | Conditional processing pipeline branches |
 | 10 | Textract output cleaning via Bedrock prompt. | Data normalization before ML processing |
-| 11 | Full OCR → Parser Agent → DynamoDB flow working. | End-to-end multimodal pipeline |
+| 11 | Full OCR → Parser Agent → Supavbase flow working. | End-to-end multimodal pipeline |
 | 12 | React: image drag-drop zone, preview, OCR status indicator. | File upload UX |
 
 ---
@@ -355,10 +355,10 @@ When a note is submitted, immediately show it in the dashboard as "Processing" w
 | Day | Task | Engineering Concept |
 |-----|------|---------------------|
 | 21 | JWT auth in FastAPI. Protect all endpoints. | Stateless auth, token validation middleware |
-| 22 | user_id scoped queries in DynamoDB. Verify data isolation. | Multi-tenancy at the data layer |
+| 22 | user_id scoped queries in Supavbase. Verify data isolation. | Multi-tenancy at the data layer |
 | 23 | Rate limiting on FastAPI (slowapi). | Abuse prevention, token bucket pattern |
 | 24 | Error handling audit: what if Textract fails? What if Bedrock times out? | Resilience patterns, graceful degradation |
-| 25 | Local dev with Docker Compose (FastAPI + LocalStack for SQS/DynamoDB). | Containerization, local AWS emulation |
+| 25 | Local dev with Docker Compose (FastAPI + LocalStack for SQS/Supavbase). | Containerization, local AWS emulation |
 | 26 | Deploy to AWS: ECR + Lambda (FastAPI via Mangum adapter) or App Runner. | Production deployment patterns |
 
 ---
@@ -380,7 +380,7 @@ When the time comes to open this to other users, the following changes are requi
 
 | What changes | What stays the same |
 |---|---|
-| Add Cognito (or Auth0) replacing JWT | All DynamoDB queries (already user_id scoped) |
+| Add Cognito (or Auth0) replacing JWT | All Supavbase queries (already user_id scoped) |
 | Add user registration flow in React | All Lambda/SQS/Bedrock logic |
 | Per-user ChromaDB namespace (or Pinecone with metadata filtering) | FastAPI route structure |
 | SES per-user from-address verification | Email template |
@@ -397,7 +397,7 @@ The clean separation you built in Phase 1 pays off entirely here.
 | Component Built | Interview Topic Covered |
 |---|---|
 | SQS + Lambda pipeline | Async systems design, event-driven architecture |
-| DynamoDB single-table design | NoSQL data modeling, access pattern design |
+| Supavbase single-table design | NoSQL data modeling, access pattern design |
 | Multi-agent LangChain orchestration | LLM system design, agent patterns |
 | Presigned S3 upload | Distributed file handling, cloud storage patterns |
 | FastAPI with async endpoints | Python async, REST API design |
@@ -407,7 +407,7 @@ The clean separation you built in Phase 1 pays off entirely here.
 | OCR → clean → LLM pipeline | ML preprocessing, multimodal pipelines |
 
 ### The portfolio story:
-*"I built a personal productivity tool using an event-driven architecture on AWS — FastAPI ingestion layer, SQS-triggered Lambda workers, a multi-agent pipeline on Bedrock handling OCR, web research, and RAG retrieval from a ChromaDB knowledge base, with EventBridge scheduling overnight digest delivery via SES. I designed the data model for single-user with a clear migration path to multi-tenant, using DynamoDB single-table design with user-scoped partition keys."*
+*"I built a personal productivity tool using an event-driven architecture on AWS — FastAPI ingestion layer, SQS-triggered Lambda workers, a multi-agent pipeline on Bedrock handling OCR, web research, and RAG retrieval from a ChromaDB knowledge base, with EventBridge scheduling overnight digest delivery via SES. I designed the data model for single-user with a clear migration path to multi-tenant, using Supavbase single-table design with user-scoped partition keys."*
 
 That's a senior engineer's answer at any Tier 1 Indian product company.
 
@@ -419,7 +419,8 @@ That's a senior engineer's answer at any Tier 1 Indian product company.
 
 | Date | Phase | Completed | Blockers | Notes |
 |------|-------|-----------|----------|-------|
-| — | — | — | — | — |
+|12/6  |Phase 1|SQS set up|Lambda pipeline| event source mapping from SQS->Lambda
+| | — | — | — | — |
 
 ---
 
@@ -428,9 +429,9 @@ That's a senior engineer's answer at any Tier 1 Indian product company.
 - [ ] Web search provider: Tavily (LangChain native) vs SerpAPI vs Brave Search API — evaluate cost per query
 - [ ] ChromaDB hosting: local Docker vs managed (Chroma Cloud) vs swap to Pinecone for multi-user
 - [ ] Email digest time: 11 PM IST fixed vs user-configurable (Phase 4)
-- [ ] Note search in dashboard: DynamoDB full-text is weak — consider OpenSearch or just embed-and-query ChromaDB for dashboard search too
+- [ ] Note search in dashboard: Supavbase full-text is weak — consider OpenSearch or just embed-and-query ChromaDB for dashboard search too
 - [ ] Browser extension: Chrome only first, then Firefox (Manifest V3 has Firefox support now)
 
 ---
 
-*Last updated: May 2026*
+*Last updated: June 12 2026*

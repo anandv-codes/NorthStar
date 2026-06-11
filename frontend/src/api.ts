@@ -17,6 +17,7 @@ export interface NoteStatus {
 }
 
 export async function createNote(payload: CreateNotePayload) {
+  console.debug("[API] Submitting note for user:", payload.user_id);
   const response = await fetch(`${BASE_URL}/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -27,10 +28,13 @@ export async function createNote(payload: CreateNotePayload) {
     throw new Error("Failed to create note");
   }
 
-  return response.json();
+  const result = response.json();
+  console.debug("[API] Note created:", result);
+  return result;
 }
 
 export async function getNoteStatus(user_id: string, note_id: string) {
+  console.debug("[API] Polling note status:", note_id);
   const response = await fetch(
     `${BASE_URL}/notes/${note_id}?user_id=${encodeURIComponent(user_id)}`,
   );
