@@ -13,7 +13,7 @@ node_modules/
 **/*.pyd
 **/pip-wheel-metadata/
 **/*.egg-info/
-/backend/app/lambdas/
+
 # Environment files
 .env
 .env.*
@@ -45,3 +45,10 @@ Thumbs.db
 coverage/
 coverage.*
 pytest_cache/
+backend/lambda_deployment/
+backend/lambda_deployment_*/
+backend/*note-processor*.zip
+backend/*.zip
+chroma_data/
+backend/chroma_data/
+.claude/

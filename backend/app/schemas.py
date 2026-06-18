@@ -16,3 +16,4 @@ class NoteStatusResponse(BaseModel):
     enriched_summary: Optional[str] = None
     action_items: Optional[List[str]] = None
     questions: Optional[List[str]] = None
+    insights: Optional[List[str]] = None

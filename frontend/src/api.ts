@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BASE_URL = "http://localhost:8000";
 
 export interface CreateNotePayload {
   user_id: string;
@@ -14,6 +14,7 @@ export interface NoteStatus {
   enriched_summary?: string;
   action_items?: string[];
   questions?: string[];
+  insights?: string[];
 }
 
 export async function createNote(payload: CreateNotePayload) {

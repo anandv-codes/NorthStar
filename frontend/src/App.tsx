@@ -118,6 +118,14 @@ function App() {
               <li key={q}>{q}</li>
             ))}
           </ul>
+          <p>
+            <strong>Insights:</strong>
+          </p>
+          <ul>
+            {note.insights?.map((insight) => (
+              <li key={insight}>{insight}</li>
+            ))}
+          </ul>
         </section>
       )}
     </div>

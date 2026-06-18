@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Any, Dict, List, Optional
 from postgrest import APIError
 from supabase import create_client, Client
@@ -24,7 +25,7 @@ def put_note_item(item: Dict[str, Any]) -> Any:
 
 #Update existing note 
 def update_note_item(user_id: str, note_id: str, updates: Dict[str, Any]) -> Any:
-    print(f"[SUPABASE] Updating note: {note_id} with status={updates.get('status')}")
+    print(f"[SUPABASE] Updating note: {note_id} user:{user_id} with status={updates.get('status')}")
     try:
         response = (
             supabase.table(SUPABASE_NOTES_TABLE)

@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from ..schemas import NoteCreateRequest, NoteStatusResponse
 from ..services.supabase import put_note_item, get_note_item
 from ..services.sqs import send_note_job
-from ..services.note_processor import process_note_job
 
 router = APIRouter()
 

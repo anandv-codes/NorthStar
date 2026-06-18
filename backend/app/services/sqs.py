@@ -14,7 +14,6 @@ def send_note_job(payload: dict) -> dict:
         "QueueUrl": SQS_QUEUE_URL,
         "MessageBody": json.dumps(payload),
         "MessageGroupId": note_id,
-        "ModelId": os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-2"),
     }
     if SQS_QUEUE_URL.endswith(".fifo"):
         message_args["MessageDeduplicationId"] = note_id
