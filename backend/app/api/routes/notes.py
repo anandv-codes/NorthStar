@@ -3,25 +3,27 @@ import logging
 import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status
-from ..schemas.models import NoteCreateRequest, NoteStatusResponse, NoteMemoryResponse
-from ..infrastructure.db.supabase_client import put_note_item, get_note_item
-from ..domain.memory.services import (
+from ...schemas.models import NoteCreateRequest, NoteStatusResponse, NoteMemoryResponse
+from ...infrastructure.db.supabase_client import put_note_item, get_note_item
+from ...domain.memory.services import (
     query_latest_extraction_run_for_note,
     query_tasks_by_source_note,
     query_facts_by_source_note,
     query_questions_by_source_note,
     query_decisions_by_source_note,
     query_risks_by_source_note,
+    query_concepts_by_source_note,
     query_entities_by_source_note,
 )
-from ..infrastructure.queue.sqs_client import send_note_job
-from ..infrastructure.queue.sqs_poller import poll_sqs_messages, delete_sqs_message
-from ..workers.note_processor import process_sqs_message
+from ...infrastructure.queue.sqs_client import send_note_job
+from ...infrastructure.queue.sqs_poller import poll_sqs_messages, delete_sqs_message
+from ...workers.note_processor import process_sqs_message
 
 logger = logging.getLogger(__name__)
 PROCESS_NOTES_INLINE = os.getenv("PROCESS_NOTES_INLINE", "false").lower() == "true"
 
 router = APIRouter()
+
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
 def create_note(payload: NoteCreateRequest):
@@ -65,6 +67,7 @@ def create_note(payload: NoteCreateRequest):
 
     return {"note_id": note_id, "status": "processing"}
 
+
 @router.get("/{note_id}", response_model=NoteStatusResponse)
 def get_note_status(note_id: str, user_id: str):
     print(f"[HANDLER] get_note_status: note_id={note_id}, user_id={user_id}")
@@ -88,6 +91,7 @@ def get_note_memory(note_id: str, user_id: str):
     questions = query_questions_by_source_note(user_id=user_id, note_id=note_id)
     decisions = query_decisions_by_source_note(user_id=user_id, note_id=note_id)
     risks = query_risks_by_source_note(user_id=user_id, note_id=note_id)
+    concepts = query_concepts_by_source_note(user_id=user_id, note_id=note_id)
     entities = query_entities_by_source_note(user_id=user_id, note_id=note_id)
 
     payload = {
@@ -98,9 +102,10 @@ def get_note_memory(note_id: str, user_id: str):
         "questions": questions,
         "decisions": decisions,
         "risks": risks,
+        "concepts": concepts,
         "entities": entities,
     }
-    print(f"[HANDLER] memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, risks={len(risks)}, entities={len(entities)}")
+    print(f"[HANDLER] memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, risks={len(risks)}, concepts={len(concepts)}, entities={len(entities)}")
     return payload
 
 

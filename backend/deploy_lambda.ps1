@@ -36,11 +36,20 @@ else {
 
 # Copy app code
 Write-Host "Copying app code..."
-Copy-Item .\app $LambdaDeployDir\app -Recurse -Force
-Write-Host "[OK] App code copied"
+$AppSource = Join-Path (Get-Location) "app"
+$AppDest = Join-Path $LambdaDeployDir "app"
+if (Test-Path $AppSource) {
+    Copy-Item $AppSource $AppDest -Recurse -Force
+    Write-Host "[OK] App code copied from $AppSource"
+}
+else {
+    Write-Host "[ERROR] App folder not found at $AppSource" -ForegroundColor Red
+    exit 1
+}
 
 # Create Lambda handler wrapper
 Write-Host "Creating Lambda handler..."
+$LambdaFunctionPath = Join-Path $LambdaDeployDir "lambda_function.py"
 $HandlerContent = @'
 import sys
 sys.path.insert(0, '/var/task')
@@ -51,8 +60,10 @@ from app.lambdas.note_processor import lambda_handler
 __all__ = ['lambda_handler']
 '@
 
-Add-Content -Path (Join-Path $LambdaDeployDir "lambda_function.py") -Value $HandlerContent
-Write-Host "[OK] Handler created"
+# Create file and add content
+New-Item -Path $LambdaFunctionPath -ItemType File -Force | Out-Null
+Set-Content -Path $LambdaFunctionPath -Value $HandlerContent
+Write-Host "[OK] Handler created at $LambdaFunctionPath"
 
 # Remove old zip if it exists
 if (Test-Path $ZipFile) {

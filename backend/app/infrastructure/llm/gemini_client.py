@@ -1,24 +1,46 @@
 import os
 import json
 import re
-from langchain_google_genai import ChatGoogleGenerativeAI
 from typing import Any
 from langchain_core.messages import HumanMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+from ...schemas.models import WorkMemoryExtraction
+from .prompt_logger import log_gemini_interaction
 
 def call_gemini_api(note_text: str, related_notes: list[dict[str, Any]] | None = None) -> dict:
+
+
     parse_result = parse_note_text(note_text)
     prompt = generate_gemini_prompt(parse_result, related_notes=related_notes or [])
     output_text = invoke_gemini(prompt)
     print(f"Gemini raw output: {output_text[:500]}")
-    return parse_gemini_response(output_text)
+    parsed_response = None
+    parse_error = None
+    try:
+        parsed_response = parse_gemini_response(output_text)
+        return parsed_response
+    except Exception as exc:
+        parse_error = str(exc)
+        raise
+    finally:
+        # Persist the interaction even if parsing fails so debugging always has artifacts.
+        log_gemini_interaction(
+            note_text=note_text,
+            related_notes=related_notes,
+            prompt=prompt,
+            response=output_text,
+            parsed_result=parsed_response,
+            parse_error=parse_error,
+        )
 
 def invoke_gemini(prompt_text: str) -> str:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-3.5-flash")
-
+    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
+    print(f"prompt_text={prompt_text}")
     model = ChatGoogleGenerativeAI(
         google_api_key=api_key,
         model=model_id,
@@ -69,12 +91,46 @@ def parse_gemini_response(output_text: str) -> dict:
 
     cleaned = clean_markdown_json(output_text)
     try:
-        return json.loads(cleaned)
+        raw = json.loads(cleaned)
+        return normalize_work_memory_output(raw)
     except json.JSONDecodeError as exc:
         raise RuntimeError(
             "Gemini output was not valid JSON. Response:\n"
             + cleaned[:1024]
         ) from exc
+
+
+def normalize_work_memory_output(raw: dict) -> dict:
+    if not isinstance(raw, dict):
+        raise RuntimeError(f"Gemini output must be a JSON object, got {type(raw)}")
+
+    normalized = {
+        "summary": raw.get("summary", "") or "",
+        "tasks": raw.get("tasks") or [],
+        "facts": raw.get("facts") or [],
+        "questions": raw.get("questions") or [],
+        "decisions": raw.get("decisions") or [],
+        "risks": raw.get("risks") or [],
+        "entities": raw.get("entities") or [],
+        "concepts": raw.get("concepts") or [],
+    }
+
+    # Backward compatibility with the older note-digest contract.
+    if not normalized["tasks"] and raw.get("action_items"):
+        normalized["tasks"] = [
+            {"description": item, "confidence": None, "entities": []}
+            for item in raw.get("action_items", [])
+            if str(item).strip()
+        ]
+    if not normalized["questions"] and raw.get("questions"):
+        normalized["questions"] = [
+            {"question": item, "confidence": None, "entities": []}
+            for item in raw.get("questions", [])
+            if str(item).strip()
+        ]
+
+    extraction = WorkMemoryExtraction.model_validate(normalized)
+    return extraction.model_dump(mode="json")
 
 
 def clean_markdown_json(text: str) -> str:
@@ -131,7 +187,7 @@ def generate_gemini_prompt(
 ) -> str:
     related_context = generate_related_notes_context(related_notes or [])
     return f"""
-You are an assistant that processes daily journal notes and extracts key information.
+You are an assistant that processes work notes and extracts structured memory.
 
 Raw notes:
 {parsed_text['normalized_text']}
@@ -146,17 +202,65 @@ Questions identified:
 {json.dumps(parsed_text['questions'], indent=2)}
 
 Please provide the following:
-1. A concise summary of the notes (max 250 characters).
-2. Expand on the list of action items mentioned in the notes (the provided action items are not foolproof).
-3. Answer the questions that arise from the notes.
-4. Any insights or observations (max 2) that can be drawn from the notes.
-5. If related past notes are relevant, mention the connection briefly in the insights.
+1. A concise summary of the notes.
+2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.
+3. For each extracted item, include confidence when possible.
+4. Include only items grounded in the note or clearly supported by related notes.
+5. If related past notes are relevant, use them only as context and do not invent unsupported facts.
 
 Format your response as JSON with the following structure:
 {{
     "summary": "Concise summary here",
-    "action_items": ["Action item 1", "Action item 2"],
-    "questions": ["Question 1?", "Question 2?"],
-    "insights": ["Insight 1", "Insight 2"]
+    "tasks": [
+        {{
+            "description": "Action item 1",
+            "confidence": 0.9,
+            "entities": ["Supabase"]
+        }}
+    ],
+    "facts": [
+        {{
+            "content": "A key fact extracted from the notes",
+            "confidence": 0.85,
+            "entities": ["EntityName"]
+        }}
+    ],
+    "questions": [
+        {{
+            "question": "Question 1?",
+            "confidence": 0.8,
+            "entities": []
+        }}
+    ],
+    "decisions": [
+        {{
+            "decision": "A decision that was made",
+            "rationale": "Why this decision was made",
+            "confidence": 0.8,
+            "entities": []
+        }}
+    ],
+    "risks": [
+        {{
+            "risk": "A potential risk identified",
+            "severity": "high",
+            "confidence": 0.75,
+            "entities": []
+        }}
+    ],
+    "entities": [
+        {{
+            "name": "Supabase",
+            "entity_type": "technology"
+        }}
+    ],
+    "concepts": [
+    
+        {
+            "concept": "A learned concept or insight",
+            "confidence": 0.7,
+            "entities": ["EntityName"]
+        }
+    ]
 }}
 """
