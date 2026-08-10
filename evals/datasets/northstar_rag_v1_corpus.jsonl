@@ -1,0 +1,52 @@
+{"note_id":"d-project-owner","user_id":"eval-user-primary","created_at":"2026-01-05T09:00:00Z","raw_text":"Decision: Priya owns the Northstar onboarding redesign and its weekly delivery update."}
+{"note_id":"d-storage-decision","user_id":"eval-user-primary","created_at":"2026-01-07T10:00:00Z","raw_text":"Architecture decision: store durable work memory in Supabase and use Chroma only as a derived retrieval index."}
+{"note_id":"d-milestone","user_id":"eval-user-primary","created_at":"2026-01-10T11:00:00Z","raw_text":"The retrieval evaluation milestone is due on February 14."}
+{"note_id":"d-risk","user_id":"eval-user-primary","created_at":"2026-01-12T13:00:00Z","raw_text":"Risk: Gemini rate limits could delay large batch note processing."}
+{"note_id":"d-backend-owner","user_id":"eval-user-primary","created_at":"2026-01-15T09:30:00Z","raw_text":"Marco is responsible for the FastAPI authentication middleware migration."}
+{"note_id":"d-cadence","user_id":"eval-user-primary","created_at":"2026-01-16T15:00:00Z","raw_text":"Decision: hold the Northstar planning review every Monday at 10 AM."}
+{"note_id":"d-release-target","user_id":"eval-user-primary","created_at":"2026-01-18T14:00:00Z","raw_text":"The first personal work-memory beta targets the internal cohort only."}
+{"note_id":"d-auth-decision","user_id":"eval-user-primary","created_at":"2026-01-20T08:00:00Z","raw_text":"Authentication decision: rotate refresh tokens after every successful refresh request."}
+{"note_id":"e-incident-482","user_id":"eval-user-primary","created_at":"2026-02-01T09:00:00Z","raw_text":"Incident INC-482 was caused by a missing Chroma collection path in the worker environment."}
+{"note_id":"e-budget","user_id":"eval-user-primary","created_at":"2026-02-02T09:00:00Z","raw_text":"The evaluation tooling budget is capped at $2,400 for the quarter."}
+{"note_id":"e-build","user_id":"eval-user-primary","created_at":"2026-02-03T09:00:00Z","raw_text":"Build 2026.02.03.7 introduced the deterministic BM25 smoke runner."}
+{"note_id":"e-contract-v2","user_id":"eval-user-primary","created_at":"2026-02-04T09:00:00Z","raw_text":"The notes API contract is version v2 and requires a non-empty text field."}
+{"note_id":"e-date","user_id":"eval-user-primary","created_at":"2026-02-05T09:00:00Z","raw_text":"The architecture review is scheduled for March 3, 2026."}
+{"note_id":"e-flag","user_id":"eval-user-primary","created_at":"2026-02-06T09:00:00Z","raw_text":"Feature flag RAG_GUARDRAIL_V2 controls the revised grounding policy."}
+{"note_id":"s-sync","user_id":"eval-user-primary","created_at":"2026-02-07T09:00:00Z","raw_text":"The team will meet briefly each morning to remove delivery blockers."}
+{"note_id":"s-cleanup","user_id":"eval-user-primary","created_at":"2026-02-08T09:00:00Z","raw_text":"Remove obsolete prompt logs after the retention window expires."}
+{"note_id":"s-design","user_id":"eval-user-primary","created_at":"2026-02-09T09:00:00Z","raw_text":"Use a compact, high-contrast dashboard layout optimized for scanning active work."}
+{"note_id":"s-support","user_id":"eval-user-primary","created_at":"2026-02-10T09:00:00Z","raw_text":"Create a troubleshooting guide for users who cannot complete note processing."}
+{"note_id":"s-migration","user_id":"eval-user-primary","created_at":"2026-02-11T09:00:00Z","raw_text":"Move historical notes into the new typed memory schema before enabling retrieval evaluation."}
+{"note_id":"s-knowledge","user_id":"eval-user-primary","created_at":"2026-02-12T09:00:00Z","raw_text":"Document the retrieval design so future changes preserve the source-of-truth boundary."}
+{"note_id":"m-retro-context","user_id":"eval-user-primary","created_at":"2026-02-13T09:00:00Z","raw_text":"The sprint retrospective found that unclear ownership delayed the notification feature."}
+{"note_id":"m-retro-action","user_id":"eval-user-primary","created_at":"2026-02-13T10:00:00Z","raw_text":"Action: assign one directly responsible owner before work enters the sprint."}
+{"note_id":"m-hiring-timeline","user_id":"eval-user-primary","created_at":"2026-02-14T09:00:00Z","raw_text":"The backend engineer interview loop begins after the March architecture review."}
+{"note_id":"m-hiring-dependency","user_id":"eval-user-primary","created_at":"2026-02-14T10:00:00Z","raw_text":"The hiring manager must approve the backend engineer role before interviews can begin."}
+{"note_id":"m-demo-scope","user_id":"eval-user-primary","created_at":"2026-02-15T09:00:00Z","raw_text":"The stakeholder demo includes note capture, extracted tasks, and grounded retrieval."}
+{"note_id":"m-demo-risk","user_id":"eval-user-primary","created_at":"2026-02-15T10:00:00Z","raw_text":"The stakeholder demo excludes live Gemini calls because an API outage would derail the presentation."}
+{"note_id":"m-proposal-requirement","user_id":"eval-user-primary","created_at":"2026-02-16T09:00:00Z","raw_text":"The observability proposal needs estimated trace volume and monthly storage cost."}
+{"note_id":"m-proposal-owner","user_id":"eval-user-primary","created_at":"2026-02-16T10:00:00Z","raw_text":"Jordan will draft the observability proposal by Friday."}
+{"note_id":"m-audit-finding","user_id":"eval-user-primary","created_at":"2026-02-17T09:00:00Z","raw_text":"Security audit finding: business routes accept client-provided user_id values without deriving identity from JWT."}
+{"note_id":"m-audit-fix","user_id":"eval-user-primary","created_at":"2026-02-17T10:00:00Z","raw_text":"Fix plan: add a current-user FastAPI dependency and remove user_id from protected request payloads."}
+{"note_id":"c-launch-old","user_id":"eval-user-primary","created_at":"2026-03-01T09:00:00Z","raw_text":"Planning note: the mobile launch target is August 15."}
+{"note_id":"c-launch-new","user_id":"eval-user-primary","created_at":"2026-03-08T09:00:00Z","raw_text":"Decision: postpone the mobile launch to September 1 because checkout QA defects remain open."}
+{"note_id":"c-vendor-complete","user_id":"eval-user-primary","created_at":"2026-03-02T09:00:00Z","raw_text":"Completed: vendor API contract follow-up is finished."}
+{"note_id":"c-vendor-reopened","user_id":"eval-user-primary","created_at":"2026-03-09T09:00:00Z","raw_text":"The vendor API contract follow-up is reopened because the contract changed."}
+{"note_id":"c-proposal","user_id":"eval-user-primary","created_at":"2026-03-03T09:00:00Z","raw_text":"Proposal: use a managed vector database after the personal beta."}
+{"note_id":"c-proposal-approved","user_id":"eval-user-primary","created_at":"2026-03-10T09:00:00Z","raw_text":"Decision: keep Chroma for the personal beta; do not adopt a managed vector database yet."}
+{"note_id":"c-priority-a","user_id":"eval-user-primary","created_at":"2026-03-04T09:00:00Z","raw_text":"Priority note: focus the next sprint on retrieval relevance before dashboard polish."}
+{"note_id":"c-priority-b","user_id":"eval-user-primary","created_at":"2026-03-04T16:00:00Z","raw_text":"Priority note: focus the next sprint on dashboard polish before retrieval relevance."}
+{"note_id":"c-date-a","user_id":"eval-user-primary","created_at":"2026-03-05T09:00:00Z","raw_text":"The compliance review for the API service is scheduled for April 12."}
+{"note_id":"c-date-b","user_id":"eval-user-primary","created_at":"2026-03-06T09:00:00Z","raw_text":"The compliance review for the mobile client is scheduled for April 12."}
+{"note_id":"c-risk-low","user_id":"eval-user-primary","created_at":"2026-03-05T13:00:00Z","raw_text":"Risk assessment: the prompt logging issue is low severity because logs remain internal."}
+{"note_id":"c-risk-high","user_id":"eval-user-primary","created_at":"2026-03-11T13:00:00Z","raw_text":"Updated risk assessment: prompt logging is high severity until notes are redacted before export."}
+{"note_id":"c-retrieval-partial-old","user_id":"eval-user-primary","created_at":"2026-03-06T14:00:00Z","raw_text":"The retrieval rewrite experiment is ready for review."}
+{"note_id":"c-retrieval-partial-new","user_id":"eval-user-primary","created_at":"2026-03-12T14:00:00Z","raw_text":"The retrieval rewrite experiment is paused pending a numerical regression test."}
+{"note_id":"n-not-approved","user_id":"eval-user-primary","created_at":"2026-03-13T09:00:00Z","raw_text":"The production deployment is not approved until the authentication authorization fix is merged."}
+{"note_id":"n-no-deploy","user_id":"eval-user-primary","created_at":"2026-03-13T10:00:00Z","raw_text":"Do not deploy the Lambda worker on Friday because the support team is unavailable."}
+{"note_id":"n-vendor-incomplete","user_id":"eval-user-primary","created_at":"2026-03-13T11:00:00Z","raw_text":"The data-retention vendor review is not complete; legal has not approved the terms."}
+{"note_id":"n-excluded","user_id":"eval-user-primary","created_at":"2026-03-13T12:00:00Z","raw_text":"The beta cohort does not include external contractors."}
+{"note_id":"i-travel-primary","user_id":"eval-user-primary","created_at":"2026-03-14T09:00:00Z","raw_text":"Personal planning: my Seattle work trip starts on May 6."}
+{"note_id":"i-health-primary","user_id":"eval-user-primary","created_at":"2026-03-14T10:00:00Z","raw_text":"Personal reminder: schedule the annual eye exam in June."}
+{"note_id":"i-travel-foreign","user_id":"eval-user-secondary","created_at":"2026-03-14T09:00:00Z","raw_text":"Personal planning: another user's Seattle work trip starts on May 20."}
+{"note_id":"i-health-foreign","user_id":"eval-user-secondary","created_at":"2026-03-14T10:00:00Z","raw_text":"Personal reminder: another user scheduled an annual eye exam in July."}

@@ -1,0 +1,160 @@
+{
+  "runner": "bm25_smoke",
+  "code_revision": "3740f0a",
+  "configuration": {
+    "k": 5,
+    "k1": 1.5,
+    "b": 0.75
+  },
+  "case_count": 8,
+  "summary": {
+    "precision_at_k": 0.7857142857142857,
+    "recall_at_k": 1.0,
+    "isolation_failure_count": 0,
+    "no_context_pass_count": 1,
+    "no_context_case_count": 1,
+    "conflict_retrieval_pass_count": 2,
+    "conflict_case_count": 2
+  },
+  "cases": [
+    {
+      "id": "launch-conflict",
+      "query": "When is the mobile launch planned?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "launch-august",
+        "launch-september"
+      ],
+      "relevant_note_ids": [
+        "launch-august",
+        "launch-september"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "atlas-owner",
+      "query": "Who owns the Project Atlas data migration?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "atlas-owner",
+        "atlas-budget"
+      ],
+      "relevant_note_ids": [
+        "atlas-owner"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "atlas-budget",
+      "query": "What is the Project Atlas budget cap?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "atlas-budget",
+        "atlas-owner"
+      ],
+      "relevant_note_ids": [
+        "atlas-budget"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "release-status",
+      "query": "What is blocking the release?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "release-blocked"
+      ],
+      "relevant_note_ids": [
+        "release-blocked"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "vendor-status",
+      "query": "Did I finish the vendor API contract follow-up?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "vendor-open",
+        "vendor-complete"
+      ],
+      "relevant_note_ids": [
+        "vendor-open",
+        "vendor-complete"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "auth-decision",
+      "query": "What happens after a successful refresh token request?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "auth-refresh"
+      ],
+      "relevant_note_ids": [
+        "auth-refresh"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context",
+      "query": "What is the office parking policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": true,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-launch",
+      "query": "What mobile launch date did I decide?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "launch-august",
+        "launch-september"
+      ],
+      "relevant_note_ids": [
+        "launch-september"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    }
+  ]
+}

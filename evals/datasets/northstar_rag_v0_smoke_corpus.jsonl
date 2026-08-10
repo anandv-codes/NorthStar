@@ -1,0 +1,10 @@
+{"note_id":"launch-august","user_id":"eval-user-primary","created_at":"2026-07-05T09:00:00Z","raw_text":"Planning note: the initial mobile launch target is August 15."}
+{"note_id":"launch-september","user_id":"eval-user-primary","created_at":"2026-07-20T15:00:00Z","raw_text":"Decision: postpone the mobile launch to September 1 because QA found checkout defects."}
+{"note_id":"atlas-owner","user_id":"eval-user-primary","created_at":"2026-07-08T10:30:00Z","raw_text":"Priya owns the Project Atlas data migration and will share the weekly status update."}
+{"note_id":"atlas-budget","user_id":"eval-user-primary","created_at":"2026-07-09T13:00:00Z","raw_text":"Project Atlas has a budget cap of $40,000 for the migration work."}
+{"note_id":"release-blocked","user_id":"eval-user-primary","created_at":"2026-07-18T14:00:00Z","raw_text":"The release is blocked by a checkout payment regression found during QA."}
+{"note_id":"vendor-open","user_id":"eval-user-primary","created_at":"2026-07-10T11:00:00Z","raw_text":"Action item: follow up with the integration vendor about the API contract."}
+{"note_id":"vendor-complete","user_id":"eval-user-primary","created_at":"2026-07-12T16:00:00Z","raw_text":"Completed: I followed up with the integration vendor about the API contract."}
+{"note_id":"auth-refresh","user_id":"eval-user-primary","created_at":"2026-07-14T09:30:00Z","raw_text":"Authentication decision: rotate refresh tokens after each successful refresh request."}
+{"note_id":"foreign-launch","user_id":"eval-user-secondary","created_at":"2026-07-25T09:00:00Z","raw_text":"Decision: another user's mobile launch is scheduled for September 9."}
+{"note_id":"foreign-atlas","user_id":"eval-user-secondary","created_at":"2026-07-16T12:00:00Z","raw_text":"Another user's Project Atlas budget cap is $90,000."}

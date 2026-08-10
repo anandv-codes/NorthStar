@@ -1,0 +1,821 @@
+{
+  "runner": "bm25_smoke",
+  "code_revision": "3740f0a",
+  "configuration": {
+    "k": 5,
+    "k1": 1.5,
+    "b": 0.75
+  },
+  "case_count": 40,
+  "summary": {
+    "precision_at_k": 0.3785087719298246,
+    "recall_at_k": 0.9736842105263158,
+    "isolation_failure_count": 0,
+    "no_context_pass_count": 1,
+    "no_context_case_count": 2,
+    "conflict_retrieval_pass_count": 7,
+    "conflict_case_count": 7
+  },
+  "cases": [
+    {
+      "id": "direct-owner",
+      "query": "Who owns the Northstar onboarding redesign?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-project-owner",
+        "d-cadence"
+      ],
+      "relevant_note_ids": [
+        "d-project-owner"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "direct-storage",
+      "query": "Where is durable work memory stored?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-storage-decision",
+        "d-release-target",
+        "s-migration",
+        "i-travel-primary",
+        "m-retro-action"
+      ],
+      "relevant_note_ids": [
+        "d-storage-decision"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "direct-milestone",
+      "query": "When is the retrieval evaluation milestone due?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-milestone",
+        "s-migration",
+        "e-budget",
+        "c-retrieval-partial-old",
+        "c-retrieval-partial-new"
+      ],
+      "relevant_note_ids": [
+        "d-milestone"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "direct-risk",
+      "query": "What could delay batch note processing?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-risk",
+        "s-support",
+        "c-launch-old",
+        "m-demo-scope",
+        "c-priority-a"
+      ],
+      "relevant_note_ids": [
+        "d-risk"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "direct-backend-owner",
+      "query": "Who handles the FastAPI authentication migration?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-backend-owner",
+        "n-not-approved",
+        "d-auth-decision",
+        "m-audit-fix"
+      ],
+      "relevant_note_ids": [
+        "d-backend-owner"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "direct-cadence",
+      "query": "When is the planning review held?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-cadence",
+        "c-launch-old",
+        "i-travel-primary",
+        "c-retrieval-partial-old",
+        "e-date"
+      ],
+      "relevant_note_ids": [
+        "d-cadence"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "direct-release-target",
+      "query": "Who is the first work-memory beta for?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-release-target",
+        "d-storage-decision",
+        "n-excluded",
+        "c-proposal",
+        "s-migration"
+      ],
+      "relevant_note_ids": [
+        "d-release-target"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "direct-auth",
+      "query": "What happens after a successful refresh request?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-auth-decision",
+        "c-proposal",
+        "s-cleanup",
+        "m-audit-fix",
+        "m-hiring-timeline"
+      ],
+      "relevant_note_ids": [
+        "d-auth-decision"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "exact-incident",
+      "query": "What caused INC-482?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "e-incident-482"
+      ],
+      "relevant_note_ids": [
+        "e-incident-482"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "exact-budget",
+      "query": "What is the evaluation tooling budget cap?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "e-budget",
+        "d-milestone",
+        "s-migration"
+      ],
+      "relevant_note_ids": [
+        "e-budget"
+      ],
+      "precision_at_k": 0.3333333333333333,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "exact-build",
+      "query": "What changed in build 2026.02.03.7?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "e-build",
+        "e-date",
+        "c-vendor-reopened"
+      ],
+      "relevant_note_ids": [
+        "e-build"
+      ],
+      "precision_at_k": 0.3333333333333333,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "exact-contract",
+      "query": "What notes API contract version requires text?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "e-contract-v2",
+        "c-vendor-reopened",
+        "c-vendor-complete",
+        "c-date-a",
+        "c-risk-high"
+      ],
+      "relevant_note_ids": [
+        "e-contract-v2"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "exact-date",
+      "query": "When is the architecture review in 2026?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "e-date",
+        "m-hiring-timeline",
+        "e-build",
+        "c-retrieval-partial-old",
+        "d-storage-decision"
+      ],
+      "relevant_note_ids": [
+        "e-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "exact-flag",
+      "query": "What does RAG_GUARDRAIL_V2 control?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "e-flag",
+        "n-excluded",
+        "e-contract-v2"
+      ],
+      "relevant_note_ids": [
+        "e-flag"
+      ],
+      "precision_at_k": 0.3333333333333333,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "semantic-sync",
+      "query": "How will the team clear blockers every day?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "s-sync",
+        "m-proposal-owner",
+        "d-cadence",
+        "d-auth-decision",
+        "n-no-deploy"
+      ],
+      "relevant_note_ids": [
+        "s-sync"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "semantic-cleanup",
+      "query": "What should happen to old prompt logs?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "s-cleanup",
+        "c-risk-low",
+        "c-risk-high"
+      ],
+      "relevant_note_ids": [
+        "s-cleanup"
+      ],
+      "precision_at_k": 0.3333333333333333,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "semantic-design",
+      "query": "What dashboard style supports quick work review?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "s-design",
+        "c-priority-a",
+        "c-priority-b",
+        "c-retrieval-partial-old",
+        "e-date"
+      ],
+      "relevant_note_ids": [
+        "s-design"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "semantic-support",
+      "query": "How should failed note processing be documented for users?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "s-support",
+        "d-risk",
+        "c-launch-old",
+        "m-demo-scope",
+        "c-priority-a"
+      ],
+      "relevant_note_ids": [
+        "s-support"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "semantic-migration",
+      "query": "What must happen to older notes before retrieval testing?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "s-migration",
+        "m-hiring-dependency",
+        "c-risk-high",
+        "c-priority-a",
+        "c-priority-b"
+      ],
+      "relevant_note_ids": [
+        "s-migration"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "semantic-knowledge",
+      "query": "Why write down the retrieval architecture?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "d-storage-decision",
+        "e-date",
+        "m-hiring-timeline",
+        "c-retrieval-partial-old",
+        "d-milestone"
+      ],
+      "relevant_note_ids": [
+        "s-knowledge"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "multi-retro",
+      "query": "What did the retrospective find and what action follows?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "m-retro-context",
+        "m-retro-action"
+      ],
+      "relevant_note_ids": [
+        "m-retro-context",
+        "m-retro-action"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "multi-hiring",
+      "query": "When can backend engineer interviews begin and what must happen first?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "m-hiring-dependency",
+        "m-hiring-timeline",
+        "d-release-target"
+      ],
+      "relevant_note_ids": [
+        "m-hiring-timeline",
+        "m-hiring-dependency"
+      ],
+      "precision_at_k": 0.6666666666666666,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "multi-demo",
+      "query": "What is in the stakeholder demo and what is excluded?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "m-demo-scope",
+        "m-demo-risk"
+      ],
+      "relevant_note_ids": [
+        "m-demo-scope",
+        "m-demo-risk"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "multi-observability",
+      "query": "Who owns the observability proposal and what must it include?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "m-proposal-owner",
+        "m-proposal-requirement",
+        "n-excluded",
+        "d-project-owner",
+        "m-hiring-dependency"
+      ],
+      "relevant_note_ids": [
+        "m-proposal-requirement",
+        "m-proposal-owner"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "multi-security",
+      "query": "What did the security audit find and what is the fix plan?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "m-audit-fix",
+        "m-audit-finding",
+        "n-not-approved"
+      ],
+      "relevant_note_ids": [
+        "m-audit-finding",
+        "m-audit-fix"
+      ],
+      "precision_at_k": 0.6666666666666666,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "conflict-launch",
+      "query": "When is the mobile launch planned?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "c-launch-old",
+        "c-launch-new",
+        "c-date-b"
+      ],
+      "relevant_note_ids": [
+        "c-launch-old",
+        "c-launch-new"
+      ],
+      "precision_at_k": 0.6666666666666666,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "conflict-vendor",
+      "query": "Is the vendor API contract follow-up complete?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "c-vendor-complete",
+        "c-vendor-reopened",
+        "n-vendor-incomplete",
+        "e-contract-v2",
+        "s-support"
+      ],
+      "relevant_note_ids": [
+        "c-vendor-complete",
+        "c-vendor-reopened"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "conflict-vector-store",
+      "query": "Should the beta use a managed vector database?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "c-proposal",
+        "c-proposal-approved",
+        "n-excluded",
+        "s-design",
+        "d-release-target"
+      ],
+      "relevant_note_ids": [
+        "c-proposal",
+        "c-proposal-approved"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "conflict-priority",
+      "query": "What should the next sprint prioritize?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "c-priority-a",
+        "c-priority-b",
+        "m-retro-context",
+        "m-retro-action"
+      ],
+      "relevant_note_ids": [
+        "c-priority-a",
+        "c-priority-b"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "conflict-compliance-scope",
+      "query": "When is the compliance review?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "c-date-a",
+        "c-date-b",
+        "c-retrieval-partial-old",
+        "e-date",
+        "d-cadence"
+      ],
+      "relevant_note_ids": [
+        "c-date-a",
+        "c-date-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "conflict-risk",
+      "query": "How severe is the prompt logging risk?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "c-risk-low",
+        "c-risk-high",
+        "s-cleanup",
+        "d-risk"
+      ],
+      "relevant_note_ids": [
+        "c-risk-low",
+        "c-risk-high"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "conflict-rewrite-experiment",
+      "query": "Is the retrieval rewrite experiment ready for review?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "c-retrieval-partial-old",
+        "c-retrieval-partial-new",
+        "e-date",
+        "c-date-a",
+        "c-date-b"
+      ],
+      "relevant_note_ids": [
+        "c-retrieval-partial-old",
+        "c-retrieval-partial-new"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "negation-production",
+      "query": "Is the production deployment approved?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "n-not-approved",
+        "n-vendor-incomplete"
+      ],
+      "relevant_note_ids": [
+        "n-not-approved"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "negation-friday",
+      "query": "Can the Lambda worker deploy on Friday?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "n-no-deploy",
+        "m-proposal-owner",
+        "m-hiring-dependency",
+        "e-incident-482"
+      ],
+      "relevant_note_ids": [
+        "n-no-deploy"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "negation-vendor",
+      "query": "Is the data-retention vendor review complete?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "n-vendor-incomplete",
+        "s-cleanup",
+        "s-support",
+        "c-vendor-complete",
+        "c-vendor-reopened"
+      ],
+      "relevant_note_ids": [
+        "n-vendor-incomplete"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "negation-cohort",
+      "query": "Are external contractors in the beta cohort?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "n-excluded",
+        "d-release-target",
+        "c-proposal",
+        "c-proposal-approved"
+      ],
+      "relevant_note_ids": [
+        "n-excluded"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context-parking",
+      "query": "What is the office parking policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "e-flag"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context-benefits",
+      "query": "What is the dental benefits provider?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": true,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-travel",
+      "query": "When does my Seattle work trip start?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "i-travel-primary",
+        "n-excluded",
+        "d-release-target",
+        "m-retro-action",
+        "s-design"
+      ],
+      "relevant_note_ids": [
+        "i-travel-primary"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-health",
+      "query": "When should I schedule my annual eye exam?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "i-health-primary",
+        "i-travel-primary"
+      ],
+      "relevant_note_ids": [
+        "i-health-primary"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    }
+  ]
+}

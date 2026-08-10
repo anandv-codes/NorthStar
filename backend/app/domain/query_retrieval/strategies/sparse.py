@@ -5,7 +5,6 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any, List, Sequence
 
-from ....infrastructure.db.supabase_client import query_notes_for_user
 from ..utils import combine_note_text, fingerprint_notes, tokenize
 from .base import BaseRetrieval
 
@@ -102,6 +101,8 @@ _INDEX_CACHE: dict[str, tuple[str, BM25Index]] = {}
 
 
 def _get_index_for_user(user_id: str) -> BM25Index:
+    from ....infrastructure.db.supabase_client import query_notes_for_user
+
     notes = query_notes_for_user(user_id=user_id)
     cache_key = fingerprint_notes(notes)
     cached = _INDEX_CACHE.get(user_id)
