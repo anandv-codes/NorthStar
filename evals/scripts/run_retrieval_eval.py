@@ -104,25 +104,27 @@ def format_markdown_report(report: dict[str, Any]) -> str:
         "| --- | ---: |",
         f"| Precision@{configuration['k']} | {summary['precision_at_k']:.3f} |",
         f"| Recall@{configuration['k']} | {summary['recall_at_k']:.3f} |",
+        f"| MRR@{configuration['k']} | {summary['mean_reciprocal_rank_at_k']:.3f} |",
         f"| Isolation failures | {summary['isolation_failure_count']} |",
         f"| No-context checks | {summary['no_context_pass_count']}/{summary['no_context_case_count']} |",
         f"| Conflict retrieval checks | {summary['conflict_retrieval_pass_count']}/{summary['conflict_case_count']} |",
         "",
         "## Scenario Results",
         "",
-        "| Scenario | Query | Retrieved notes | Relevant notes | Precision | Recall | Isolation | No context | Conflict evidence |",
-        "| --- | --- | --- | --- | ---: | ---: | --- | --- | --- |",
+        "| Scenario | Query | Retrieved notes | Relevant notes | Precision | Recall | Reciprocal rank | Isolation | No context | Conflict evidence |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |",
     ]
 
     for result in report["cases"]:
         lines.append(
-            "| {scenario} | {query} | {retrieved} | {relevant} | {precision} | {recall} | {isolation} | {no_context} | {conflict} |".format(
+            "| {scenario} | {query} | {retrieved} | {relevant} | {precision} | {recall} | {reciprocal_rank} | {isolation} | {no_context} | {conflict} |".format(
                 scenario=_markdown_cell(str(result["id"])),
                 query=_markdown_cell(str(result["query"])),
                 retrieved=_format_ids(result["retrieved_note_ids"]),
                 relevant=_format_ids(result["relevant_note_ids"]),
                 precision=_format_number(result["precision_at_k"]),
                 recall=_format_number(result["recall_at_k"]),
+                reciprocal_rank=_format_number(result["reciprocal_rank_at_k"]),
                 isolation=_format_status(result["isolation_passed"]),
                 no_context=_format_status(result["no_context_passed"]),
                 conflict=_format_status(result["conflict_retrieval_complete"]),

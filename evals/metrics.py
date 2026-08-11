@@ -28,6 +28,18 @@ def recall_at_k(retrieved_ids: Sequence[str], relevant_ids: Iterable[str], k: in
     return len(set(retrieved_ids[:k]).intersection(relevant)) / len(relevant)
 
 
+def reciprocal_rank_at_k(retrieved_ids: Sequence[str], relevant_ids: Iterable[str], k: int) -> float:
+    """Return the reciprocal rank of the first relevant item in the first k results."""
+    if k <= 0:
+        raise ValueError("k must be greater than zero")
+
+    relevant = set(relevant_ids)
+    for rank, note_id in enumerate(retrieved_ids[:k], start=1):
+        if note_id in relevant:
+            return 1.0 / rank
+    return 0.0
+
+
 def foreign_result_ids(retrieved_ids: Sequence[str], allowed_ids: Iterable[str]) -> list[str]:
     """Return retrieved IDs outside the evaluation case's permitted user corpus."""
     allowed = set(allowed_ids)

@@ -8,7 +8,7 @@ NorthStar is a personal work-management application. This plan evaluates one use
 
 The initial approach is deliberately narrow:
 
-- Build a versioned, 40-case golden dataset for personal work-memory questions.
+- Maintain the versioned v1 golden dataset as 100 detailed personal work-memory questions over an isolated synthetic corpus.
 - Include conflicting-source evaluation in the first dataset version.
 - Begin with report-only results; do not block development until a baseline is trustworthy.
 - Establish offline evaluation before adding OpenTelemetry tracing.
@@ -65,6 +65,10 @@ $$
 \text{Recall@k} = \frac{\text{relevant retrieved notes in top k}}{\text{all relevant notes}}
 $$
 
+$$
+	ext{MRR@k} = \frac{1}{|Q|} \sum_{q \in Q} \frac{1}{\text{rank of the first relevant note for } q}
+$$
+
 - **Isolation failure rate:** any result from a different synthetic user is a critical failure, not an averaged metric.
 
 Run the dataset under these configurations:
@@ -79,7 +83,7 @@ Run the dataset under these configurations:
 
 | RAG-trinity dimension | Metric | Definition |
 | --- | --- | --- |
-| Context relevance | Precision@k, Recall@k | Retrieved evidence is relevant and complete for the query. |
+| Context relevance | Precision@k, Recall@k, MRR@k | Retrieved evidence is relevant, complete, and ranked for the query. |
 | Groundedness | Claim support rate, unsupported-claim rate, contradiction rate | Material answer claims are entailed by retrieved evidence. |
 | Answer relevance | LLM-judge relevance score | The response directly addresses the user's question and requested format. |
 
@@ -172,28 +176,26 @@ Use generated, non-sensitive notes for the first dataset. Do not commit personal
 }
 ```
 
-### Forty-Case Coverage Target
+### Expanded V1 Coverage Target
 
 | Category | Target cases | Purpose |
 | --- | ---: | --- |
-| Direct fact and decision lookup | 8 | Establish simple retrieval and answer baselines. |
-| Exact names, project codes, dates, and numbers | 6 | Verify sparse retrieval and rewrite preservation. |
-| Semantic paraphrase | 6 | Verify dense retrieval and hybrid fusion. |
-| Multi-note synthesis | 5 | Require complete evidence rather than one-note answers. |
-| Conflicting sources | 7 | Test resolution, explanation, and safe abstention. |
-| Negation, tentative language, and status changes | 4 | Catch harmful rewrite and grounding errors. |
-| No-context and abstention | 2 | Verify safe non-answer behavior. |
-| Synthetic cross-user isolation | 2 | Verify `user_id` filtering in vector and sparse retrieval. |
+| Exact ITEM ownership, status, and delivery targets | 20 | Verify exact item-ID lookup under realistic work-item detail. |
+| Datafix identifiers, record counts, and affected data | 15 | Test numeric and identifier precision, including `DFX-*` records. |
+| Progress summaries and active blockers | 10 | Require chronology-aware synthesis across plan and update notes. |
+| Operational learnings | 10 | Test semantic retrieval of postmortem and runbook conclusions. |
+| Dependency and rollout synthesis | 15 | Require complete evidence across ownership, scope, and prerequisite notes. |
+| Ambiguous conflicting sources | 15 | Require the answer to surface both positions; timestamps alone cannot resolve them. |
+| No-context and abstention | 5 | Verify safe non-answer behavior in a denser corpus. |
+| Synthetic cross-user collisions | 10 | Verify `user_id` filtering when the same `ITEM-*` identifier exists for another user. |
 
-The seven conflict cases should include:
+The 100 cases use 350 complex, synthetic notes: 250 for the primary evaluation user and 100 for the secondary-user isolation corpus. Every note has a non-indexed `note_type` for fixture auditability; all retrieval-relevant facts remain in its `raw_text`, matching the current sparse and dense retrieval interfaces.
 
-- Later explicit decision supersedes an older plan.
-- Older completed status conflicts with a later reopening.
-- Tentative proposal conflicts with a confirmed decision.
-- Equal-authority notes with no clear recency winner.
-- Date conflict where one note omits a year or scope.
-- Conflicting risks or priorities.
-- Relevant but partially retrieved conflict, where the correct behavior is to avoid false certainty.
+The 15 ambiguity cases follow one fixed policy:
+
+- Surface both documented positions and request clarification or an authoritative source when needed.
+- Do not treat a later timestamp as sufficient authority to resolve a disagreement.
+- Do not silently choose a source when the evidence remains ambiguous.
 
 ## Todo Plan
 
@@ -203,18 +205,18 @@ The seven conflict cases should include:
 - [x] Write paired JSON and scenario-level Markdown results for the v0 retrieval baseline.
 - [x] Create the `evals/` directory structure and a short runner README.
 - [x] Define a JSONL schema for corpus notes and evaluation queries.
-- [x] Write 40 synthetic personal work-memory cases using the coverage target above.
+- [x] Expand the v1 fixture in place to 100 detailed synthetic work-memory cases using the coverage target above.
 - [x] Assign relevant note IDs to every case.
 - [x] Add expected claims and expected answer behavior to every end-to-end case.
 - [x] Add conflict metadata and a context-dependent expected resolution policy to all conflict cases.
 - [x] Add two synthetic second-user notes designed to be tempting false positives.
 - [x] Create a deterministic ingestion/reset routine for the evaluation Chroma collection and sparse-retriever source data.
 - [x] Implement a retrieval-only runner that calls the real retrieval strategies without a chat-model invocation.
-- [x] Write ranking-metric functions for Precision@k, Recall@k, and isolation failure rate.
+- [x] Write ranking-metric functions for Precision@k, Recall@k, MRR@k, and isolation failure rate.
 - [x] Emit JSON and Markdown baseline reports with retrieval configuration and code revision metadata.
 - [ ] Run and save baseline results for sparse, dense, RRF, rewrite, and rerank configurations.
 
-**Exit criterion:** each of the 40 cases runs deterministically against an isolated synthetic corpus, and the report compares all five retrieval configurations.
+**Exit criterion:** each of the 100 cases runs deterministically against an isolated synthetic corpus, and the report compares all five retrieval configurations.
 
 ### Phase 2: End-to-End Claim Evaluation
 
@@ -241,8 +243,18 @@ The seven conflict cases should include:
 
 **Exit criterion:** confidence and guardrail policies are based on measured results, not only heuristic defaults.
 
-### Phase 4: Quality Gates and Continuous Improvement
+### Phase 4: CI/CD Quality Gates and Continuous Improvement
 
+- [ ] Add an always-run GitHub Actions `rag-evals` workflow that detects retrieval, grounding, prompt, embedding, vector, and generation changes.
+- [ ] Make the workflow rebuild and validate the synthetic fixture, then run the deterministic sparse v1 evaluation for RAG-impacting pull requests.
+- [ ] Upload JSON and Markdown evaluation artifacts and publish metric deltas plus failing scenario IDs in the pull-request summary.
+- [ ] Freeze the expanded v1 fixture as the first approved comparison baseline; create a new dataset version for future corpus changes.
+- [ ] Implement a baseline comparator that reports deltas for Precision@5, Recall@5, MRR@5, no-context behavior, isolation, and conflict evidence.
+- [ ] Block pull requests on invalid fixtures, any isolation failure, or regression in required conflict-evidence coverage; keep other metric thresholds report-only until repeated runs establish defensible variance.
+- [ ] Add an explicit reviewed waiver process for intentional quality regressions, including owner, rationale, expiry date, and approved replacement baseline.
+- [ ] Run the dense Chroma evaluation only in a trusted protected environment, merge queue, manual label, or nightly workflow; never expose model secrets to untrusted pull requests.
+- [ ] Run end-to-end generation and claim-based evaluation on a scheduled cadence and release candidates with fixed model, prompt, retrieval, and judge-rubric versions.
+- [ ] Add a staging synthetic smoke check and require candidate evaluation evidence before high-risk retrieval, grounding, prompt, or model releases.
 - [ ] Add a small, deterministic retrieval smoke subset to pull-request checks.
 - [ ] Keep the full suite report-only until repeated runs establish stable metric variance.
 - [ ] Define regression thresholds for Recall@5, unsupported-claim rate, conflict-handling pass rate, isolation failures, latency, and LLM cost.
@@ -250,7 +262,7 @@ The seven conflict cases should include:
 - [ ] Add reviewed production failures as anonymized synthetic or redacted cases in the next dataset version.
 - [ ] Version datasets, judge rubrics, prompts, runner code, and reports together.
 
-**Exit criterion:** changes to retrieval, prompts, grounding, or models have measurable quality evidence before release.
+**Exit criterion:** changes to retrieval, prompts, grounding, or models automatically produce the appropriate evaluation evidence before release, with hard safety failures blocked and other thresholds governed by an approved baseline policy.
 
 ### Phase 5: OpenTelemetry After Offline Baselines
 

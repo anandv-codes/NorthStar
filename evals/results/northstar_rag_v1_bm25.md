@@ -1,64 +1,125 @@
 # NorthStar Retrieval Evaluation Result
 
 - Runner: `bm25_smoke`
-- Code revision: `3740f0a`
+- Code revision: `6166430`
 - Configuration: `k=5`, `k1=1.5`, `b=0.75`
-- Scenario count: 40
+- Scenario count: 100
 
 ## Summary
 
 | Metric | Result |
 | --- | ---: |
-| Precision@5 | 0.379 |
-| Recall@5 | 0.974 |
+| Precision@5 | 0.284 |
+| Recall@5 | 1.000 |
+| MRR@5 | 1.000 |
 | Isolation failures | 0 |
-| No-context checks | 1/2 |
-| Conflict retrieval checks | 7/7 |
+| No-context checks | 3/5 |
+| Conflict retrieval checks | 15/15 |
 
 ## Scenario Results
 
-| Scenario | Query | Retrieved notes | Relevant notes | Precision | Recall | Isolation | No context | Conflict evidence |
-| --- | --- | --- | --- | ---: | ---: | --- | --- | --- |
-| direct-owner | Who owns the Northstar onboarding redesign? | `d-project-owner`, `d-cadence` | `d-project-owner` | 0.500 | 1.000 | Pass | N/A | N/A |
-| direct-storage | Where is durable work memory stored? | `d-storage-decision`, `d-release-target`, `s-migration`, `i-travel-primary`, `m-retro-action` | `d-storage-decision` | 0.200 | 1.000 | Pass | N/A | N/A |
-| direct-milestone | When is the retrieval evaluation milestone due? | `d-milestone`, `s-migration`, `e-budget`, `c-retrieval-partial-old`, `c-retrieval-partial-new` | `d-milestone` | 0.200 | 1.000 | Pass | N/A | N/A |
-| direct-risk | What could delay batch note processing? | `d-risk`, `s-support`, `c-launch-old`, `m-demo-scope`, `c-priority-a` | `d-risk` | 0.200 | 1.000 | Pass | N/A | N/A |
-| direct-backend-owner | Who handles the FastAPI authentication migration? | `d-backend-owner`, `n-not-approved`, `d-auth-decision`, `m-audit-fix` | `d-backend-owner` | 0.250 | 1.000 | Pass | N/A | N/A |
-| direct-cadence | When is the planning review held? | `d-cadence`, `c-launch-old`, `i-travel-primary`, `c-retrieval-partial-old`, `e-date` | `d-cadence` | 0.200 | 1.000 | Pass | N/A | N/A |
-| direct-release-target | Who is the first work-memory beta for? | `d-release-target`, `d-storage-decision`, `n-excluded`, `c-proposal`, `s-migration` | `d-release-target` | 0.200 | 1.000 | Pass | N/A | N/A |
-| direct-auth | What happens after a successful refresh request? | `d-auth-decision`, `c-proposal`, `s-cleanup`, `m-audit-fix`, `m-hiring-timeline` | `d-auth-decision` | 0.200 | 1.000 | Pass | N/A | N/A |
-| exact-incident | What caused INC-482? | `e-incident-482` | `e-incident-482` | 1.000 | 1.000 | Pass | N/A | N/A |
-| exact-budget | What is the evaluation tooling budget cap? | `e-budget`, `d-milestone`, `s-migration` | `e-budget` | 0.333 | 1.000 | Pass | N/A | N/A |
-| exact-build | What changed in build 2026.02.03.7? | `e-build`, `e-date`, `c-vendor-reopened` | `e-build` | 0.333 | 1.000 | Pass | N/A | N/A |
-| exact-contract | What notes API contract version requires text? | `e-contract-v2`, `c-vendor-reopened`, `c-vendor-complete`, `c-date-a`, `c-risk-high` | `e-contract-v2` | 0.200 | 1.000 | Pass | N/A | N/A |
-| exact-date | When is the architecture review in 2026? | `e-date`, `m-hiring-timeline`, `e-build`, `c-retrieval-partial-old`, `d-storage-decision` | `e-date` | 0.200 | 1.000 | Pass | N/A | N/A |
-| exact-flag | What does RAG_GUARDRAIL_V2 control? | `e-flag`, `n-excluded`, `e-contract-v2` | `e-flag` | 0.333 | 1.000 | Pass | N/A | N/A |
-| semantic-sync | How will the team clear blockers every day? | `s-sync`, `m-proposal-owner`, `d-cadence`, `d-auth-decision`, `n-no-deploy` | `s-sync` | 0.200 | 1.000 | Pass | N/A | N/A |
-| semantic-cleanup | What should happen to old prompt logs? | `s-cleanup`, `c-risk-low`, `c-risk-high` | `s-cleanup` | 0.333 | 1.000 | Pass | N/A | N/A |
-| semantic-design | What dashboard style supports quick work review? | `s-design`, `c-priority-a`, `c-priority-b`, `c-retrieval-partial-old`, `e-date` | `s-design` | 0.200 | 1.000 | Pass | N/A | N/A |
-| semantic-support | How should failed note processing be documented for users? | `s-support`, `d-risk`, `c-launch-old`, `m-demo-scope`, `c-priority-a` | `s-support` | 0.200 | 1.000 | Pass | N/A | N/A |
-| semantic-migration | What must happen to older notes before retrieval testing? | `s-migration`, `m-hiring-dependency`, `c-risk-high`, `c-priority-a`, `c-priority-b` | `s-migration` | 0.200 | 1.000 | Pass | N/A | N/A |
-| semantic-knowledge | Why write down the retrieval architecture? | `d-storage-decision`, `e-date`, `m-hiring-timeline`, `c-retrieval-partial-old`, `d-milestone` | `s-knowledge` | 0.000 | 0.000 | Pass | N/A | N/A |
-| multi-retro | What did the retrospective find and what action follows? | `m-retro-context`, `m-retro-action` | `m-retro-context`, `m-retro-action` | 1.000 | 1.000 | Pass | N/A | N/A |
-| multi-hiring | When can backend engineer interviews begin and what must happen first? | `m-hiring-dependency`, `m-hiring-timeline`, `d-release-target` | `m-hiring-timeline`, `m-hiring-dependency` | 0.667 | 1.000 | Pass | N/A | N/A |
-| multi-demo | What is in the stakeholder demo and what is excluded? | `m-demo-scope`, `m-demo-risk` | `m-demo-scope`, `m-demo-risk` | 1.000 | 1.000 | Pass | N/A | N/A |
-| multi-observability | Who owns the observability proposal and what must it include? | `m-proposal-owner`, `m-proposal-requirement`, `n-excluded`, `d-project-owner`, `m-hiring-dependency` | `m-proposal-requirement`, `m-proposal-owner` | 0.400 | 1.000 | Pass | N/A | N/A |
-| multi-security | What did the security audit find and what is the fix plan? | `m-audit-fix`, `m-audit-finding`, `n-not-approved` | `m-audit-finding`, `m-audit-fix` | 0.667 | 1.000 | Pass | N/A | N/A |
-| conflict-launch | When is the mobile launch planned? | `c-launch-old`, `c-launch-new`, `c-date-b` | `c-launch-old`, `c-launch-new` | 0.667 | 1.000 | Pass | N/A | Pass |
-| conflict-vendor | Is the vendor API contract follow-up complete? | `c-vendor-complete`, `c-vendor-reopened`, `n-vendor-incomplete`, `e-contract-v2`, `s-support` | `c-vendor-complete`, `c-vendor-reopened` | 0.400 | 1.000 | Pass | N/A | Pass |
-| conflict-vector-store | Should the beta use a managed vector database? | `c-proposal`, `c-proposal-approved`, `n-excluded`, `s-design`, `d-release-target` | `c-proposal`, `c-proposal-approved` | 0.400 | 1.000 | Pass | N/A | Pass |
-| conflict-priority | What should the next sprint prioritize? | `c-priority-a`, `c-priority-b`, `m-retro-context`, `m-retro-action` | `c-priority-a`, `c-priority-b` | 0.500 | 1.000 | Pass | N/A | Pass |
-| conflict-compliance-scope | When is the compliance review? | `c-date-a`, `c-date-b`, `c-retrieval-partial-old`, `e-date`, `d-cadence` | `c-date-a`, `c-date-b` | 0.400 | 1.000 | Pass | N/A | Pass |
-| conflict-risk | How severe is the prompt logging risk? | `c-risk-low`, `c-risk-high`, `s-cleanup`, `d-risk` | `c-risk-low`, `c-risk-high` | 0.500 | 1.000 | Pass | N/A | Pass |
-| conflict-rewrite-experiment | Is the retrieval rewrite experiment ready for review? | `c-retrieval-partial-old`, `c-retrieval-partial-new`, `e-date`, `c-date-a`, `c-date-b` | `c-retrieval-partial-old`, `c-retrieval-partial-new` | 0.400 | 1.000 | Pass | N/A | Pass |
-| negation-production | Is the production deployment approved? | `n-not-approved`, `n-vendor-incomplete` | `n-not-approved` | 0.500 | 1.000 | Pass | N/A | N/A |
-| negation-friday | Can the Lambda worker deploy on Friday? | `n-no-deploy`, `m-proposal-owner`, `m-hiring-dependency`, `e-incident-482` | `n-no-deploy` | 0.250 | 1.000 | Pass | N/A | N/A |
-| negation-vendor | Is the data-retention vendor review complete? | `n-vendor-incomplete`, `s-cleanup`, `s-support`, `c-vendor-complete`, `c-vendor-reopened` | `n-vendor-incomplete` | 0.200 | 1.000 | Pass | N/A | N/A |
-| negation-cohort | Are external contractors in the beta cohort? | `n-excluded`, `d-release-target`, `c-proposal`, `c-proposal-approved` | `n-excluded` | 0.250 | 1.000 | Pass | N/A | N/A |
-| no-context-parking | What is the office parking policy? | `e-flag` | None | N/A | N/A | Pass | Fail | N/A |
-| no-context-benefits | What is the dental benefits provider? | None | None | N/A | N/A | Pass | Pass | N/A |
-| isolation-travel | When does my Seattle work trip start? | `i-travel-primary`, `n-excluded`, `d-release-target`, `m-retro-action`, `s-design` | `i-travel-primary` | 0.200 | 1.000 | Pass | N/A | N/A |
-| isolation-health | When should I schedule my annual eye exam? | `i-health-primary`, `i-travel-primary` | `i-health-primary` | 0.500 | 1.000 | Pass | N/A | N/A |
+| Scenario | Query | Retrieved notes | Relevant notes | Precision | Recall | Reciprocal rank | Isolation | No context | Conflict evidence |
+| --- | --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |
+| item-lookup-01 | Who owns ITEM-4101, what is its status, and when is it targeted? | `item-item-4101`, `datafix-dfx-7201`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4101` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-02 | Who owns ITEM-4102, what is its status, and when is it targeted? | `item-item-4102`, `datafix-dfx-7202`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4102` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-03 | Who owns ITEM-4103, what is its status, and when is it targeted? | `item-item-4103`, `datafix-dfx-7203`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4103` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-04 | Who owns ITEM-4104, what is its status, and when is it targeted? | `item-item-4104`, `datafix-dfx-7204`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4104` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-05 | Who owns ITEM-4105, what is its status, and when is it targeted? | `item-item-4105`, `datafix-dfx-7205`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4105` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-06 | Who owns ITEM-4106, what is its status, and when is it targeted? | `item-item-4106`, `datafix-dfx-7206`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4106` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-07 | Who owns ITEM-4107, what is its status, and when is it targeted? | `item-item-4107`, `datafix-dfx-7207`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4107` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-08 | Who owns ITEM-4108, what is its status, and when is it targeted? | `item-item-4108`, `datafix-dfx-7208`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4108` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-09 | Who owns ITEM-4109, what is its status, and when is it targeted? | `item-item-4109`, `datafix-dfx-7209`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4109` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-10 | Who owns ITEM-4110, what is its status, and when is it targeted? | `item-item-4110`, `datafix-dfx-7210`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4110` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-11 | Who owns ITEM-4111, what is its status, and when is it targeted? | `item-item-4111`, `datafix-dfx-7211`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4111` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-12 | Who owns ITEM-4112, what is its status, and when is it targeted? | `item-item-4112`, `datafix-dfx-7212`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4112` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-13 | Who owns ITEM-4113, what is its status, and when is it targeted? | `item-item-4113`, `datafix-dfx-7213`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4113` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-14 | Who owns ITEM-4114, what is its status, and when is it targeted? | `item-item-4114`, `datafix-dfx-7214`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4114` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-15 | Who owns ITEM-4115, what is its status, and when is it targeted? | `item-item-4115`, `datafix-dfx-7215`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope` | `item-item-4115` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-16 | Who owns ITEM-4116, what is its status, and when is it targeted? | `item-item-4116`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope`, `multi-04-scope` | `item-item-4116` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-17 | Who owns ITEM-4117, what is its status, and when is it targeted? | `item-item-4117`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope`, `multi-04-scope` | `item-item-4117` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-18 | Who owns ITEM-4118, what is its status, and when is it targeted? | `item-item-4118`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope`, `multi-04-scope` | `item-item-4118` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-19 | Who owns ITEM-4119, what is its status, and when is it targeted? | `item-item-4119`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope`, `multi-04-scope` | `item-item-4119` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| item-lookup-20 | Who owns ITEM-4120, what is its status, and when is it targeted? | `item-item-4120`, `multi-01-scope`, `multi-02-scope`, `multi-03-scope`, `multi-04-scope` | `item-item-4120` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-01 | How many rows did DFX-7201 correct, and which record set did it affect? | `datafix-dfx-7201`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7201` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-02 | How many rows did DFX-7202 correct, and which record set did it affect? | `datafix-dfx-7202`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7202` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-03 | How many rows did DFX-7203 correct, and which record set did it affect? | `datafix-dfx-7203`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7203` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-04 | How many rows did DFX-7204 correct, and which record set did it affect? | `datafix-dfx-7204`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7204` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-05 | How many rows did DFX-7205 correct, and which record set did it affect? | `datafix-dfx-7205`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7205` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-06 | How many rows did DFX-7206 correct, and which record set did it affect? | `datafix-dfx-7206`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7206` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-07 | How many rows did DFX-7207 correct, and which record set did it affect? | `datafix-dfx-7207`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7207` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-08 | How many rows did DFX-7208 correct, and which record set did it affect? | `datafix-dfx-7208`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7208` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-09 | How many rows did DFX-7209 correct, and which record set did it affect? | `datafix-dfx-7209`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7209` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-10 | How many rows did DFX-7210 correct, and which record set did it affect? | `datafix-dfx-7210`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7210` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-11 | How many rows did DFX-7211 correct, and which record set did it affect? | `datafix-dfx-7211`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7211` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-12 | How many rows did DFX-7212 correct, and which record set did it affect? | `datafix-dfx-7212`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7212` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-13 | How many rows did DFX-7213 correct, and which record set did it affect? | `datafix-dfx-7213`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7213` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-14 | How many rows did DFX-7214 correct, and which record set did it affect? | `datafix-dfx-7214`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7214` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| datafix-count-15 | How many rows did DFX-7215 correct, and which record set did it affect? | `datafix-dfx-7215`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `datafix-dfx-7215` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-01 | Summarize the current progress and blocker for Atlas checkpoint 1. | `progress-01-current`, `progress-06-current`, `progress-01-baseline`, `progress-03-current`, `progress-08-current` | `progress-01-baseline`, `progress-01-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-02 | Summarize the current progress and blocker for Relay checkpoint 2. | `progress-02-current`, `progress-07-current`, `progress-02-baseline`, `progress-03-current`, `progress-08-current` | `progress-02-baseline`, `progress-02-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-03 | Summarize the current progress and blocker for Ledger checkpoint 3. | `progress-03-current`, `progress-08-current`, `progress-03-baseline`, `progress-01-current`, `progress-02-current` | `progress-03-baseline`, `progress-03-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-04 | Summarize the current progress and blocker for Beacon checkpoint 4. | `progress-04-current`, `progress-09-current`, `progress-04-baseline`, `progress-03-current`, `progress-08-current` | `progress-04-baseline`, `progress-04-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-05 | Summarize the current progress and blocker for Harbor checkpoint 5. | `progress-05-current`, `progress-10-current`, `progress-05-baseline`, `progress-03-current`, `progress-08-current` | `progress-05-baseline`, `progress-05-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-06 | Summarize the current progress and blocker for Atlas checkpoint 6. | `progress-06-current`, `progress-01-current`, `progress-06-baseline`, `progress-03-current`, `progress-08-current` | `progress-06-baseline`, `progress-06-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-07 | Summarize the current progress and blocker for Relay checkpoint 7. | `progress-07-current`, `progress-02-current`, `progress-07-baseline`, `progress-03-current`, `progress-08-current` | `progress-07-baseline`, `progress-07-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-08 | Summarize the current progress and blocker for Ledger checkpoint 8. | `progress-08-current`, `progress-03-current`, `progress-08-baseline`, `progress-01-current`, `progress-02-current` | `progress-08-baseline`, `progress-08-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-09 | Summarize the current progress and blocker for Beacon checkpoint 9. | `progress-09-current`, `progress-04-current`, `progress-09-baseline`, `progress-03-current`, `progress-08-current` | `progress-09-baseline`, `progress-09-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| progress-summary-10 | Summarize the current progress and blocker for Harbor checkpoint 10. | `progress-10-current`, `progress-05-current`, `progress-10-baseline`, `progress-03-current`, `progress-08-current` | `progress-10-baseline`, `progress-10-current` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-01 | What did the team learn about handling retry storms? | `learning-01`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `learning-01` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-02 | What did the team learn about handling unowned alerts? | `learning-02`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `learning-02` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-03 | What did the team learn about handling prompt exports? | `learning-03`, `conflict-14-a`, `conflict-14-b`, `conflict-01-a`, `conflict-03-a` | `learning-03` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-04 | What did the team learn about handling stale embeddings? | `learning-04`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `learning-04` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-05 | What did the team learn about handling silent data fixes? | `learning-05`, `conflict-10-b`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a` | `learning-05` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-06 | What did the team learn about handling ambiguous status reports? | `learning-06`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `learning-06` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-07 | What did the team learn about handling retrieval noise? | `learning-07`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `learning-07` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-08 | What did the team learn about handling handoff gaps? | `learning-08`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `learning-08` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-09 | What did the team learn about handling schema drift? | `learning-09`, `conflict-01-a`, `conflict-03-a`, `conflict-08-a`, `conflict-11-a` | `learning-09` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| learning-paraphrase-10 | What did the team learn about handling incident summaries? | `learning-10`, `conflict-10-a`, `conflict-10-b`, `conflict-01-a`, `conflict-03-a` | `learning-10` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-01 | For ITEM-5101, who owns the rollout and what must finish before it begins? | `multi-01-scope`, `multi-01-dependency`, `learning-03`, `learning-09`, `multi-02-scope` | `multi-01-scope`, `multi-01-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-02 | For ITEM-5102, who owns the rollout and what must finish before it begins? | `multi-02-scope`, `multi-02-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-02-scope`, `multi-02-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-03 | For ITEM-5103, who owns the rollout and what must finish before it begins? | `multi-03-scope`, `multi-03-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-03-scope`, `multi-03-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-04 | For ITEM-5104, who owns the rollout and what must finish before it begins? | `multi-04-scope`, `multi-04-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-04-scope`, `multi-04-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-05 | For ITEM-5105, who owns the rollout and what must finish before it begins? | `multi-05-scope`, `multi-05-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-05-scope`, `multi-05-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-06 | For ITEM-5106, who owns the rollout and what must finish before it begins? | `multi-06-scope`, `multi-06-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-06-scope`, `multi-06-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-07 | For ITEM-5107, who owns the rollout and what must finish before it begins? | `multi-07-scope`, `multi-07-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-07-scope`, `multi-07-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-08 | For ITEM-5108, who owns the rollout and what must finish before it begins? | `multi-08-scope`, `multi-08-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-08-scope`, `multi-08-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-09 | For ITEM-5109, who owns the rollout and what must finish before it begins? | `multi-09-scope`, `multi-09-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-09-scope`, `multi-09-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-10 | For ITEM-5110, who owns the rollout and what must finish before it begins? | `multi-10-scope`, `multi-10-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-10-scope`, `multi-10-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-11 | For ITEM-5111, who owns the rollout and what must finish before it begins? | `multi-11-scope`, `multi-11-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-11-scope`, `multi-11-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-12 | For ITEM-5112, who owns the rollout and what must finish before it begins? | `multi-12-scope`, `multi-12-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-12-scope`, `multi-12-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-13 | For ITEM-5113, who owns the rollout and what must finish before it begins? | `multi-13-scope`, `multi-13-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-13-scope`, `multi-13-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-14 | For ITEM-5114, who owns the rollout and what must finish before it begins? | `multi-14-scope`, `multi-14-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-14-scope`, `multi-14-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| dependency-synthesis-15 | For ITEM-5115, who owns the rollout and what must finish before it begins? | `multi-15-scope`, `multi-15-dependency`, `learning-03`, `learning-09`, `multi-01-scope` | `multi-15-scope`, `multi-15-dependency` | 0.400 | 1.000 | 1.000 | Pass | N/A | N/A |
+| ambiguous-conflict-01 | What is the agreed decision for the production rollout window? | `conflict-01-a`, `conflict-01-b`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03` | `conflict-01-a`, `conflict-01-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-02 | What is the agreed decision for the customer export retention period? | `conflict-02-a`, `conflict-02-b`, `progress-02-current`, `progress-07-current`, `conflict-14-a` | `conflict-02-a`, `conflict-02-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-03 | What is the agreed decision for the Relay notification fallback? | `conflict-03-a`, `conflict-03-b`, `progress-02-current`, `progress-07-current`, `learning-01` | `conflict-03-a`, `conflict-03-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-04 | What is the agreed decision for the Ledger reconciliation threshold? | `conflict-04-a`, `conflict-04-b`, `conflict-10-a`, `progress-03-current`, `progress-08-current` | `conflict-04-a`, `conflict-04-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-05 | What is the agreed decision for the Atlas migration cohort? | `conflict-05-b`, `conflict-05-a`, `multi-01-scope`, `multi-06-scope`, `multi-11-scope` | `conflict-05-a`, `conflict-05-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-06 | What is the agreed decision for the Beacon audit evidence format? | `conflict-06-b`, `conflict-06-a`, `progress-04-current`, `progress-09-current`, `progress-05-current` | `conflict-06-a`, `conflict-06-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-07 | What is the agreed decision for the Harbor support escalation route? | `conflict-07-a`, `conflict-07-b`, `progress-05-current`, `progress-10-current`, `learning-02` | `conflict-07-a`, `conflict-07-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-08 | What is the agreed decision for the datafix approval owner? | `conflict-08-a`, `conflict-08-b`, `progress-04-current`, `progress-09-current`, `learning-08` | `conflict-08-a`, `conflict-08-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-09 | What is the agreed decision for the work-item completion definition? | `conflict-09-a`, `conflict-09-b`, `progress-03-current`, `progress-08-current`, `progress-01-current` | `conflict-09-a`, `conflict-09-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-10 | What is the agreed decision for the incident severity threshold? | `conflict-10-a`, `conflict-10-b`, `learning-10`, `conflict-04-a`, `conflict-04-b` | `conflict-10-a`, `conflict-10-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-11 | What is the agreed decision for the embedding refresh cadence? | `conflict-11-a`, `conflict-11-b`, `learning-04`, `learning-01`, `learning-08` | `conflict-11-a`, `conflict-11-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-12 | What is the agreed decision for the model-cost reporting method? | `conflict-12-a`, `conflict-12-b`, `learning-01`, `learning-08`, `progress-03-current` | `conflict-12-a`, `conflict-12-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-13 | What is the agreed decision for the release-readiness checklist? | `conflict-13-a`, `conflict-13-b`, `learning-02`, `learning-01`, `learning-08` | `conflict-13-a`, `conflict-13-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-14 | What is the agreed decision for the prompt-log retention policy? | `conflict-14-a`, `conflict-14-b`, `learning-03`, `conflict-02-a`, `conflict-02-b` | `conflict-14-a`, `conflict-14-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| ambiguous-conflict-15 | What is the agreed decision for the partner contract review date? | `conflict-15-a`, `conflict-15-b`, `learning-08`, `progress-02-current`, `progress-07-current` | `conflict-15-a`, `conflict-15-b` | 0.400 | 1.000 | 1.000 | Pass | N/A | Pass |
+| isolation-item-01 | What is my approved recovery window for ITEM-8101? | `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-04`, `isolation-primary-05` | `isolation-primary-01` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-02 | What is my approved recovery window for ITEM-8102? | `isolation-primary-02`, `isolation-primary-01`, `isolation-primary-03`, `isolation-primary-04`, `isolation-primary-05` | `isolation-primary-02` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-03 | What is my approved recovery window for ITEM-8103? | `isolation-primary-03`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-04`, `isolation-primary-05` | `isolation-primary-03` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-04 | What is my approved recovery window for ITEM-8104? | `isolation-primary-04`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-05` | `isolation-primary-04` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-05 | What is my approved recovery window for ITEM-8105? | `isolation-primary-05`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-04` | `isolation-primary-05` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-06 | What is my approved recovery window for ITEM-8106? | `isolation-primary-06`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-04` | `isolation-primary-06` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-07 | What is my approved recovery window for ITEM-8107? | `isolation-primary-07`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-04` | `isolation-primary-07` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-08 | What is my approved recovery window for ITEM-8108? | `isolation-primary-08`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-04` | `isolation-primary-08` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-09 | What is my approved recovery window for ITEM-8109? | `isolation-primary-09`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-04` | `isolation-primary-09` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| isolation-item-10 | What is my approved recovery window for ITEM-8110? | `isolation-primary-10`, `isolation-primary-01`, `isolation-primary-02`, `isolation-primary-03`, `isolation-primary-04` | `isolation-primary-10` | 0.200 | 1.000 | 1.000 | Pass | N/A | N/A |
+| no-context-01 | What is the office parking reimbursement policy? | `conflict-14-a`, `conflict-14-b` | None | N/A | N/A | N/A | Pass | Fail | N/A |
+| no-context-02 | Which dental insurer covers contractor dependents? | None | None | N/A | N/A | N/A | Pass | Pass | N/A |
+| no-context-03 | What was the keynote speaker's travel itinerary? | None | None | N/A | N/A | N/A | Pass | Pass | N/A |
+| no-context-04 | When does the company cafeteria close on Fridays? | `context-primary-001`, `context-primary-002`, `context-primary-003`, `context-primary-005`, `context-primary-006` | None | N/A | N/A | N/A | Pass | Fail | N/A |
+| no-context-05 | What is the corporate holiday gift budget? | None | None | N/A | N/A | N/A | Pass | Pass | N/A |
 
 ## Interpretation
 

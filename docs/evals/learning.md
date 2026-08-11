@@ -17,7 +17,7 @@ This log captures evaluation decisions, measured outcomes, and deliberate deferr
 ### Decisions Avoided or Deferred
 
 - **nDCG:** deferred because graded relevance labels would add annotation work before the initial retrieval baseline is stable.
-- **MRR:** removed from the initial scorecard because first-result ordering is not yet a product requirement; Precision and Recall answer the immediate questions.
+- **MRR:** included in the scorecard as MRR@5 to measure whether the first useful note appears early enough to reduce context noise. It complements Precision and Recall; it does not replace multi-note Recall or conflict-evidence completeness.
 - **LLM-as-judge and claim decomposition:** deferred until the retrieval configurations can be compared against the v1 corpus. Retrieval quality must be understood before measuring generated-answer groundedness.
 - **OpenTelemetry:** deferred until the offline benchmark is useful. Telemetry will explain production behavior but does not replace known-answer evaluation.
 - **Production notes:** excluded from committed fixtures to prevent personal work data from entering the repository.
@@ -32,6 +32,7 @@ This log captures evaluation decisions, measured outcomes, and deliberate deferr
 | Scenario count | 8 |
 | Precision@5 | 0.786 |
 | Recall@5 | 1.000 |
+| MRR@5 | 0.929 |
 | Isolation failures | 0 |
 | No-context checks | 1/1 |
 | Conflict-evidence checks | 2/2 |
@@ -42,15 +43,16 @@ This log captures evaluation decisions, measured outcomes, and deliberate deferr
 - BM25 retrieved both sides of the two small conflict scenarios, which confirms that conflict evaluation can begin at the retrieval layer before judging final answer wording.
 - Even in the small corpus, BM25 ranked an earlier launch target before the later superseding decision and retrieved related-but-unnecessary Atlas notes. Retrieval completeness alone is not sufficient for personal work memory.
 
-## 2026-08-11: V1 BM25 Baseline
+## 2026-08-11: Initial V1 BM25 Baseline (Retired)
 
-**Artifacts:** `evals/results/northstar_rag_v1_bm25.json` and `evals/results/northstar_rag_v1_bm25.md`.
+The original 40-case fixture was expanded in place at the user's direction. Its prior results remain recorded below as historical context, but the corresponding v1 report artifacts were regenerated for the 100-case fixture and are no longer comparable.
 
 | Measure | Result |
 | --- | ---: |
 | Scenario count | 40 |
 | Precision@5 | 0.379 |
 | Recall@5 | 0.974 |
+| MRR@5 | 0.974 |
 | Isolation failures | 0 |
 | No-context checks | 1/2 |
 | Conflict-evidence checks | 7/7 |
@@ -70,17 +72,39 @@ This log captures evaluation decisions, measured outcomes, and deliberate deferr
 - Conflict completeness is not conflict resolution. The current BM25 report does not assess whether a later explicit decision is ranked first, whether ambiguity is surfaced, or whether the final answer preserves provenance.
 - The zero isolation failures validate only this isolated in-memory BM25 benchmark. Chroma, hybrid fusion, request authentication, and production storage boundaries must be evaluated separately before making a stronger security claim.
 
+## 2026-08-11: Expanded V1 Golden Dataset and BM25 Baseline
+
+**Artifacts:** `evals/datasets/northstar_rag_v1.jsonl`, `evals/datasets/northstar_rag_v1_corpus.jsonl`, `evals/results/northstar_rag_v1_bm25.json`, and `evals/results/northstar_rag_v1_bm25.md`.
+
+| Measure | Result |
+| --- | ---: |
+| Scenario count | 100 |
+| Synthetic notes | 350 |
+| Precision@5 | 0.284 |
+| Recall@5 | 1.000 |
+| MRR@5 | 1.000 |
+| Isolation failures | 0 |
+| No-context checks | 3/5 |
+| Conflict-evidence checks | 15/15 |
+
+### Dataset Decisions
+
+- V1 was expanded in place, so its earlier 40-case metrics are retired rather than treated as a score trend.
+- The corpus is one connected synthetic delivery portfolio with 250 primary-user notes and 100 deliberately similar secondary-user notes.
+- The 15 conflict cases always require ambiguity to be surfaced. A more recent timestamp does not justify choosing one conflicting note.
+- Notes include a fixture-audit `note_type`, but all facts that retrieval should find are stated in `raw_text`. This prevents labels from becoming an unmeasured retrieval feature.
+- `evals/scripts/build_rag_v1_expanded_dataset.py` deterministically rebuilds the fixture; `evals/scripts/validate_rag_v1_dataset.py` enforces its count, reference, category, and user-boundary contract.
+
+### Baseline Learning
+
+- Every answerable case has a relevant note in the top five, and the first relevant result is ranked first for this sparse baseline. The detailed fixture's exact identifiers make this a useful retrieval-reference result, not evidence of answer-level quality.
+- Precision@5 drops in the denser corpus because five-candidate context includes related operational notes beyond the required evidence. This is the intended context-noise pressure for later dense and hybrid comparisons.
+- BM25 retrieves both required notes for all 15 ambiguity cases, but retrieval completeness does not show whether a generated answer surfaces the disagreement. That remains a claim-evaluation task.
+- The no-context baseline is only 3/5, so weak lexical overlap still yields unsupported candidates in two abstention scenarios.
+
 ### Next Experiment
 
-Run the same immutable v1 dataset through dense Chroma retrieval, then compare it with the current hybrid RRF path. Keep the case IDs, relevant note IDs, and expected conflict behavior unchanged. Compare at minimum:
-
-- Whether dense retrieval fixes `semantic-knowledge` without worsening no-context retrieval.
-- Precision@5 changes for direct and exact-match cases.
-- Recall@5 for multi-note and conflicting-source cases.
-- Isolation failure count, which must remain zero.
-- Conflict-evidence completeness, which must not regress below 7/7.
-
-Do not tune rewrite thresholds, reranking, or response prompts until dense and hybrid retrieval results exist for the same dataset.
+Run this fixed 100-case v1 fixture through isolated dense Chroma retrieval, then compare dense and the current hybrid RRF path with the sparse result. Preserve all case IDs, relevant note IDs, expected claims, and ambiguity policies. Do not tune retrieval, rewriting, reranking, or response prompts until those comparisons exist.
 
 ## 2026-08-11: Dense Chroma Runner Readiness
 
