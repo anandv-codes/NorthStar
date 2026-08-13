@@ -1,6 +1,6 @@
 {
   "runner": "bm25_smoke",
-  "code_revision": "357d060",
+  "code_revision": "a7770a7",
   "configuration": {
     "k": 5,
     "k1": 1.5,

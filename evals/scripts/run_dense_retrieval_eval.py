@@ -76,7 +76,7 @@ def run_dense_evaluation(
 
     try:
         client.delete_collection(collection_name)
-    except ValueError:
+    except (ValueError, chromadb.errors.NotFoundError):
         pass
     collection = client.get_or_create_collection(collection_name)
     collection.add(
