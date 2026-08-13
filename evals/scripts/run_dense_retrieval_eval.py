@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from evals.retrieval import evaluate_retriever
+import time
+from typing import Callable
 from evals.scripts.run_retrieval_eval import (
     WORKSPACE_ROOT,
     format_markdown_report,
@@ -68,6 +70,7 @@ def run_dense_evaluation(
     k: int,
     chroma_path: Path,
     collection_name: str,
+    recreate: bool = False,
 ) -> dict[str, Any]:
     _validate_isolated_target(chroma_path, collection_name)
     chromadb, embeddings, embedding_model = _load_dense_dependencies()
@@ -79,27 +82,66 @@ def run_dense_evaluation(
     except (ValueError, chromadb.errors.NotFoundError):
         pass
     collection = client.get_or_create_collection(collection_name)
-    collection.add(
-        ids=[f"{note['user_id']}:{note['note_id']}" for note in corpus],
-        embeddings=embeddings.embed_documents([str(note["raw_text"]) for note in corpus]),
-        metadatas=[
-            {
-                "user_id": str(note["user_id"]),
-                "note_id": str(note["note_id"]),
-                "created_at": str(note["created_at"]),
-            }
-            for note in corpus
-        ],
-        documents=[str(note["raw_text"]) for note in corpus],
-    )
+
+    def _retry_call(fn: Callable, *args, retries: int = 5, base_backoff: float = 1.0, **kwargs):
+        last_exc = None
+        for attempt in range(retries):
+            try:
+                return fn(*args, **kwargs)
+            except Exception as exc:
+                last_exc = exc
+                msg = str(exc).lower()
+                if "rate" in msg or "429" in msg or "quota" in msg or "limit" in msg:
+                    sleep_for = base_backoff * (2 ** attempt)
+                    time.sleep(sleep_for)
+                    continue
+                # Non-rate errors: re-raise immediately
+                raise
+        # Retries exhausted
+        raise last_exc
+
+    # Only add embeddings/documents if the collection appears empty. This avoids
+    # re-embedding the entire corpus on repeated local runs (which hits API limits).
+    existing_count = 0
+    try:
+        # chroma's collection API may expose count(); try that first
+        existing_count = collection.count() if hasattr(collection, "count") else 0
+        if isinstance(existing_count, dict) and "current" in existing_count:
+            existing_count = int(existing_count.get("current", 0))
+    except Exception:
+        try:
+            result = collection.get(include=["ids"]) or {}
+            existing_count = len(result.get("ids") or [])
+        except Exception:
+            existing_count = 0
+
+    if existing_count == 0:
+        docs = [str(note["raw_text"]) for note in corpus]
+        embeddings_list = _retry_call(embeddings.embed_documents, docs)
+        collection.add(
+            ids=[f"{note['user_id']}:{note['note_id']}" for note in corpus],
+            embeddings=embeddings_list,
+            metadatas=[
+                {
+                    "user_id": str(note["user_id"]),
+                    "note_id": str(note["note_id"]),
+                    "created_at": str(note["created_at"]),
+                }
+                for note in corpus
+            ],
+            documents=docs,
+        )
+    else:
+        print(f"Reusing existing collection '{collection_name}' with {existing_count} embeddings; skipping re-embed.")
 
     notes_by_user: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for note in corpus:
         notes_by_user[str(note["user_id"])].append(note)
 
     def retrieve_candidates(query: str, user_id: str, limit: int) -> list[dict[str, Any]]:
+        query_emb = _retry_call(embeddings.embed_query, query)
         result = collection.query(
-            query_embeddings=[embeddings.embed_query(query)],
+            query_embeddings=[query_emb],
             n_results=limit,
             where={"user_id": user_id},
             include=["metadatas", "documents", "distances"],
@@ -148,6 +190,7 @@ def main() -> None:
     parser.add_argument("--markdown-output", type=Path)
     parser.add_argument("--chroma-path", type=Path, default=DEFAULT_CHROMA_PATH)
     parser.add_argument("--collection", default=DEFAULT_COLLECTION)
+    parser.add_argument("--recreate", action="store_true", help="Delete and recreate the chroma collection (force re-embed).")
     parser.add_argument("--k", type=int, default=5)
     args = parser.parse_args()
 
@@ -161,6 +204,7 @@ def main() -> None:
             k=args.k,
             chroma_path=args.chroma_path,
             collection_name=args.collection,
+            recreate=args.recreate,
         )
     except (DenseEvaluationPrerequisiteError, ValueError) as error:
         parser.error(str(error))
