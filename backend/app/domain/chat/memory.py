@@ -3,22 +3,19 @@ from __future__ import annotations
 from typing import Any
 
 from ..constants import SHORT_TERM_WINDOW, SUMMARY_MAX_CHARS, SUMMARY_TRIGGER_MESSAGES
-from ...infrastructure.db.supabase_client import (
-    create_chat_thread,
-    get_chat_thread_item,
-    insert_chat_message_item,
-    query_chat_messages_for_thread,
-    touch_chat_thread_item,
-    update_chat_thread_item,
-)
+from ...infrastructure.db.chat_repository import get_chat_repository
+from ..ports import ChatRepository
 
 
-def ensure_chat_thread(user_id: str, thread_id: str | None, title: str | None = None) -> dict[str, Any]:
+def ensure_chat_thread(
+    user_id: str, thread_id: str | None, title: str | None = None, repo: ChatRepository | None = None
+) -> dict[str, Any]:
+    repo = repo or get_chat_repository()
     if thread_id:
-        thread = get_chat_thread_item(user_id=user_id, thread_id=thread_id)
+        thread = repo.get_chat_thread_item(user_id=user_id, thread_id=thread_id)
         if thread:
             return thread
-    return create_chat_thread(user_id=user_id, title=title)
+    return repo.create_chat_thread(user_id=user_id, title=title)
 
 
 def store_chat_message(
@@ -28,8 +25,10 @@ def store_chat_message(
     content: str,
     intent: str | None = None,
     metadata: dict[str, Any] | None = None,
+    repo: ChatRepository | None = None,
 ) -> dict[str, Any]:
-    message = insert_chat_message_item(
+    repo = repo or get_chat_repository()
+    message = repo.insert_chat_message_item(
         user_id=user_id,
         thread_id=thread_id,
         role=role,
@@ -37,12 +36,15 @@ def store_chat_message(
         intent=intent,
         metadata=metadata,
     )
-    touch_chat_thread_item(user_id=user_id, thread_id=thread_id)
+    repo.touch_chat_thread_item(user_id=user_id, thread_id=thread_id)
     return message
 
 
-def load_recent_chat_messages(user_id: str, thread_id: str, limit: int = SHORT_TERM_WINDOW) -> list[dict[str, Any]]:
-    return query_chat_messages_for_thread(user_id=user_id, thread_id=thread_id, limit=limit)
+def load_recent_chat_messages(
+    user_id: str, thread_id: str, limit: int = SHORT_TERM_WINDOW, repo: ChatRepository | None = None
+) -> list[dict[str, Any]]:
+    repo = repo or get_chat_repository()
+    return repo.query_chat_messages_for_thread(user_id=user_id, thread_id=thread_id, limit=limit)
 
 
 def build_short_term_context(messages: list[dict[str, Any]]) -> str:
@@ -72,7 +74,9 @@ def refresh_thread_summary(
     thread_id: str,
     messages: list[dict[str, Any]],
     existing_summary: str | None = None,
+    repo: ChatRepository | None = None,
 ) -> str | None:
+    repo = repo or get_chat_repository()
     if not should_refresh_summary(messages, existing_summary):
         return existing_summary
 
@@ -95,7 +99,7 @@ def refresh_thread_summary(
     if not summary:
         return existing_summary
 
-    updated = update_chat_thread_item(
+    updated = repo.update_chat_thread_item(
         user_id=user_id,
         thread_id=thread_id,
         updates={

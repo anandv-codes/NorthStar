@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import dataclass
 from typing import Any
 
+from ...infrastructure.llm.gemini_client import get_chat_model
 from ...infrastructure.llm.prompt_logger import append_pipeline_log
+from ...infrastructure.llm.prompt_loader import load_prompt
+from ..ports import ChatModel
 from ..query_retrieval.services import retrieve_query_context
 from ..routing.classifier import build_default_intent_classifier
 from ..routing.contracts import GroundingSnapshot, RoutingContext, RoutingDecision, RoutingOutcome, RoutingPlanStep
@@ -20,8 +22,11 @@ class ChatRoutingConfig:
     retrieval_limit: int = 5
 
 
-def build_chat_routing_orchestrator(config: ChatRoutingConfig | None = None) -> RoutingOrchestrator:
+def build_chat_routing_orchestrator(
+    config: ChatRoutingConfig | None = None, chat_model: ChatModel | None = None
+) -> RoutingOrchestrator:
     config = config or ChatRoutingConfig()
+    chat_model = chat_model or get_chat_model()
     classifier = build_default_intent_classifier()
 
     def _retrieve_context(context: RoutingContext) -> dict[str, Any] | None:
@@ -74,7 +79,7 @@ def build_chat_routing_orchestrator(config: ChatRoutingConfig | None = None) -> 
             tool_context="No tool results.",
         )
         try:
-            answer = _generate_chat_answer(prompt)
+            answer = chat_model.generate(prompt)
         except Exception as exc:
             append_pipeline_log(
                 "chat orchestrator",
@@ -153,20 +158,21 @@ def _build_chat_prompt(
     grounding_context: str,
     tool_context: str,
 ) -> str:
-    return f"""
+    version = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
+    default = """
 You are NorthStar, an assistant for life and work memory.
 
 Follow this workflow:
 User Message -> Intent Detection -> Planner -> Retrieval/Tool Calls -> Merge Results -> Conversation Memory -> LLM -> Answer
 
 Intent:
-{json.dumps(intent_payload, indent=2)}
+{intent_payload_json}
 
 Plan:
-{json.dumps(plan, indent=2)}
+{plan_json}
 
 Conversation summary memory:
-{summary_memory or "No summary memory yet."}
+{summary_memory}
 
 Short-term conversation memory:
 {short_term_context}
@@ -188,37 +194,18 @@ Answer rules:
 - Use knowledge memory when relevant.
 - If the answer depends on unavailable tools, say so clearly.
 - If you are unsure, ask one focused follow-up question.
-""".strip()
+"""
 
-
-def _generate_chat_answer(prompt: str) -> str:
-    from langchain_core.messages import HumanMessage
-    from langchain_google_genai import ChatGoogleGenerativeAI
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY must be set")
-
-    model_id = os.getenv("CHAT_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash"))
-    model = ChatGoogleGenerativeAI(
-        google_api_key=api_key,
-        model=model_id,
-        temperature=0.2,
-        max_retries=2,
-        timeout=90,
-    )
-
-    response = model.invoke([HumanMessage(content=prompt)])
-    content = getattr(response, "content", response)
-    if isinstance(content, str):
-        return content.strip()
-    if isinstance(content, list) and content:
-        first = content[0]
-        if isinstance(first, str):
-            return first.strip()
-        if isinstance(first, dict) and isinstance(first.get("text"), str):
-            return first["text"].strip()
-    return str(content).strip()
+    template = load_prompt(version, "02-chat_prompt.txt", default=default)
+    prompt = template.replace("{intent_payload_json}", json.dumps(intent_payload, indent=2))
+    prompt = prompt.replace("{plan_json}", json.dumps(plan, indent=2))
+    prompt = prompt.replace("{summary_memory}", summary_memory or "No summary memory yet.")
+    prompt = prompt.replace("{short_term_context}", short_term_context)
+    prompt = prompt.replace("{knowledge_context}", knowledge_context)
+    prompt = prompt.replace("{grounding_context}", grounding_context)
+    prompt = prompt.replace("{tool_context}", tool_context)
+    prompt = prompt.replace("{user_message}", user_message)
+    return prompt.strip()
 
 
 def _snapshot_from_decision(decision: GroundingDecision) -> GroundingSnapshot:

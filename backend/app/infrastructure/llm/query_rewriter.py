@@ -6,6 +6,7 @@ from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from .prompt_logger import append_pipeline_log
+from .prompt_loader import load_prompt
 from ...schemas.models import QueryRewriteResponse
 
 
@@ -109,7 +110,8 @@ def generate_rewrite_prompt(
     recent_memory: dict[str, list[dict[str, Any]]] | None = None,
 ) -> str:
     memory_context = build_recent_memory_context(recent_memory)
-    return f"""
+        version = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
+        default = """
 You rewrite retrieval queries for a note/memory search system.
 
 Original user query:
@@ -119,12 +121,12 @@ Recent memory context:
 {memory_context}
 
 Return JSON only with this exact structure:
-{{
-  "rewritten_query": "A concise search-friendly query",
-  "likely_answer": "A short plausible answer or resolution the user is probably referring to",
-  "confidence": 0.0,
-  "risk_flags": ["missing_number", "negation_lost", "entity_conflict", "too_broad", "low_context"]
-}}
+{
+    "rewritten_query": "A concise search-friendly query",
+    "likely_answer": "A short plausible answer or resolution the user is probably referring to",
+    "confidence": 0.0,
+    "risk_flags": ["missing_number", "negation_lost", "entity_conflict", "too_broad", "low_context"]
+}
 
 Rules:
 - Preserve exact numbers, IDs, names, dates, and negations.
@@ -132,7 +134,12 @@ Rules:
 - If the query is already specific, keep the rewrite close to the original.
 - Use the recent memory context only as disambiguating context.
 - If the query is too vague to rewrite safely, keep rewritten_query close to the original and lower confidence.
-""".strip()
+"""
+
+        template = load_prompt(version, "01-query_rewrite_prompt.txt", default=default)
+        prompt = template.replace("{user_query}", user_query)
+        prompt = prompt.replace("{memory_context}", memory_context)
+        return prompt.strip()
 
 
 def parse_query_rewrite_response(output_text: str) -> dict[str, Any]:
@@ -160,6 +167,30 @@ def parse_query_rewrite_response(output_text: str) -> dict[str, Any]:
 
     parsed = QueryRewriteResponse.model_validate(normalized)
     return parsed.model_dump(mode="json")
+
+
+class GeminiQueryRewriter:
+    """Concrete ``QueryRewriter`` implementation backed by Gemini."""
+
+    def rewrite(
+        self,
+        user_query: str,
+        recent_memory: dict[str, list[dict[str, Any]]] | None = None,
+    ) -> dict[str, Any]:
+        return rewrite_query_with_llm(user_query=user_query, recent_memory=recent_memory)
+
+
+_DEFAULT_QUERY_REWRITER: GeminiQueryRewriter | None = None
+
+
+def get_query_rewriter() -> GeminiQueryRewriter:
+    """Return the process-wide default ``QueryRewriter`` implementation."""
+    global _DEFAULT_QUERY_REWRITER
+    if _DEFAULT_QUERY_REWRITER is None:
+        _DEFAULT_QUERY_REWRITER = GeminiQueryRewriter()
+    return _DEFAULT_QUERY_REWRITER
+
+
 
 
 def extract_text_from_response(response: Any) -> str:

@@ -1,0 +1,76 @@
+You are an assistant that processes work notes and extracts structured memory.
+
+Raw notes:
+{normalized_text}
+
+Related past notes for cross-reference:
+{related_notes_context}
+
+Action items identified:
+{action_items_json}
+
+Questions identified:
+{questions_json}
+
+Please provide the following:
+1. A concise summary of the notes.
+2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.
+3. For each extracted item, include confidence when possible.
+4. Include only items grounded in the note or clearly supported by related notes.
+5. If related past notes are relevant, use them only as context and do not invent unsupported facts.
+
+Format your response as JSON with the following structure:
+{
+    "summary": "Concise summary here",
+    "tasks": [
+        {
+            "description": "Action item 1",
+            "confidence": 0.9,
+            "entities": ["Supabase"]
+        }
+    ],
+    "facts": [
+        {
+            "content": "A key fact extracted from the notes",
+            "confidence": 0.85,
+            "entities": ["EntityName"]
+        }
+    ],
+    "questions": [
+        {
+            "question": "Question 1?",
+            "confidence": 0.8,
+            "entities": []
+        }
+    ],
+    "decisions": [
+        {
+            "decision": "A decision that was made",
+            "rationale": "Why this decision was made",
+            "confidence": 0.8,
+            "entities": []
+        }
+    ],
+    "risks": [
+        {
+            "risk": "A potential risk identified",
+            "severity": "high",
+            "confidence": 0.75,
+            "entities": []
+        }
+    ],
+    "entities": [
+        {
+            "name": "Supabase",
+            "entity_type": "technology"
+        }
+    ],
+    "concepts": [
+        
+        {
+            "concept": "A learned concept or insight",
+            "confidence": 0.7,
+            "entities": ["EntityName"]
+        }
+    ]
+}

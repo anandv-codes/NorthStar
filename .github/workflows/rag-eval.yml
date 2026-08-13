@@ -27,7 +27,11 @@ on:
   workflow_dispatch:
     inputs:
       run_dense:
-        description: "Also run the dense Chroma+Gemini baseline (requires GEMINI_API_KEY secret)"
+        description: "Run dense, RRF, and reranker baselines (requires GEMINI_API_KEY secret)"
+        type: boolean
+        default: false
+      run_rewrite:
+        description: "Run guarded-rewrite baseline with controlled synthetic memory (requires GEMINI_API_KEY secret)"
         type: boolean
         default: false
 
@@ -98,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && inputs.run_dense == true)
+      (github.event_name == 'workflow_dispatch' && (inputs.run_dense == true || inputs.run_rewrite == true))
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     steps:
@@ -128,14 +132,30 @@ jobs:
           python -m evals.scripts.validate_rag_v1_dataset
 
       - name: Run v1 dense retrieval baseline
+        if: github.event_name == 'push' || inputs.run_dense == true
         run: python -m evals.scripts.run_dense_retrieval_eval
+
+      - name: Run v1 RRF retrieval baseline
+        if: github.event_name == 'push' || inputs.run_dense == true
+        run: python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf
+
+      - name: Run v1 RRF plus reranker baseline
+        if: github.event_name == 'push' || inputs.run_dense == true
+        run: python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank
+
+      - name: Run v1 guarded-rewrite baseline
+        if: github.event_name == 'workflow_dispatch' && inputs.run_rewrite == true
+        run: python -m evals.scripts.run_hybrid_retrieval_eval --mode rewrite
 
       - name: Publish job summary
         if: always()
         run: |
-          if [ -f evals/results/northstar_rag_v1_dense.md ]; then
-            cat evals/results/northstar_rag_v1_dense.md >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for report in evals/results/northstar_rag_v1_dense.md evals/results/northstar_rag_v1_rrf.md evals/results/northstar_rag_v1_rerank.md; do
+            if [ -f "$report" ]; then
+              cat "$report" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
 
       - name: Upload dense evaluation results
         if: always()
@@ -145,4 +165,10 @@ jobs:
           path: |
             evals/results/northstar_rag_v1_dense.json
             evals/results/northstar_rag_v1_dense.md
+            evals/results/northstar_rag_v1_rrf.json
+            evals/results/northstar_rag_v1_rrf.md
+            evals/results/northstar_rag_v1_rerank.json
+            evals/results/northstar_rag_v1_rerank.md
+            evals/results/northstar_rag_v1_rewrite.json
+            evals/results/northstar_rag_v1_rewrite.md
           retention-days: 30

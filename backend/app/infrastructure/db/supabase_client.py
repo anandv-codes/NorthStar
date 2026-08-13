@@ -80,6 +80,24 @@ def query_notes_for_user(user_id: str, status: str | None = None) -> List[Dict[s
     return result
 
 
+class SupabaseNoteRepository:
+    """Concrete ``NoteRepository`` implementation backed by Supabase."""
+
+    def query_notes_for_user(self, user_id: str, status: str | None = None) -> List[Dict[str, Any]]:
+        return query_notes_for_user(user_id=user_id, status=status)
+
+
+_DEFAULT_NOTE_REPOSITORY: SupabaseNoteRepository | None = None
+
+
+def get_note_repository() -> SupabaseNoteRepository:
+    """Return the process-wide default ``NoteRepository`` implementation."""
+    global _DEFAULT_NOTE_REPOSITORY
+    if _DEFAULT_NOTE_REPOSITORY is None:
+        _DEFAULT_NOTE_REPOSITORY = SupabaseNoteRepository()
+    return _DEFAULT_NOTE_REPOSITORY
+
+
 def create_chat_thread(user_id: str, title: str | None = None) -> Dict[str, Any]:
     row = {
         "thread_id": str(uuid.uuid4()),

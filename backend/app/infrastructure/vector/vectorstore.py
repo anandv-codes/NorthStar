@@ -32,6 +32,30 @@ def upsert_note_embedding(
     )
 
 
+class ChromaVectorStore:
+    """Concrete ``VectorStore`` implementation backed by Chroma."""
+
+    def query_related_notes(
+        self,
+        user_id: str,
+        embedding: list[float],
+        k: int = 3,
+        exclude_note_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return query_related_notes(user_id=user_id, embedding=embedding, k=k, exclude_note_id=exclude_note_id)
+
+
+_DEFAULT_VECTOR_STORE: ChromaVectorStore | None = None
+
+
+def get_vector_store() -> ChromaVectorStore:
+    """Return the process-wide default ``VectorStore`` implementation."""
+    global _DEFAULT_VECTOR_STORE
+    if _DEFAULT_VECTOR_STORE is None:
+        _DEFAULT_VECTOR_STORE = ChromaVectorStore()
+    return _DEFAULT_VECTOR_STORE
+
+
 def query_related_notes(
     user_id: str,
     embedding: list[float],

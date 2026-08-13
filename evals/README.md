@@ -53,6 +53,18 @@ python -m evals.scripts.run_dense_retrieval_eval
 
 It writes `evals/results/northstar_rag_v1_dense.json` and a matching scenario-by-scenario Markdown report. It measures retrieval only; it does not modify or evaluate generated answer wording.
 
+## RRF and Reranker Baselines
+
+The hybrid runner compares the existing production RRF fusion with the same fusion followed by the existing token-overlap reranker. It also evaluates the current guarded production query rewrite against a controlled empty synthetic recent-memory input. It uses an isolated evaluation Chroma collection, an in-memory production `BM25Index`, and the shared scorecard. It does not call the production retrieval orchestrator, Supabase, or application vector collection.
+
+```powershell
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rewrite
+```
+
+All three commands have the same dependency and `GEMINI_API_KEY` requirements as the dense baseline. They write `evals/results/northstar_rag_v1_rrf.*`, `evals/results/northstar_rag_v1_rerank.*`, and `evals/results/northstar_rag_v1_rewrite.*`. Rewrite reports also retain each case's query quality, confidence, risk flags, and guard decision in JSON. Because the rewrite run makes one model call for each eligible case, CI runs it only through opted-in manual dispatch.
+
 ## Fixture Rules
 
 - Commit only synthetic, non-sensitive notes and queries.

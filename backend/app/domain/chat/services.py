@@ -4,8 +4,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from ...infrastructure.db.supabase_client import get_chat_thread_item
+from ...infrastructure.db.chat_repository import get_chat_repository
 from ...infrastructure.llm.prompt_logger import append_pipeline_log
+from ..ports import ChatRepository
 from ..routing.contracts import RoutingContext
 from .memory import (
     SHORT_TERM_WINDOW,
@@ -31,7 +32,10 @@ def _title_from_message(message: str) -> str:
     return cleaned[:60]
 
 
-def handle_chat_message(user_id: str, message: str, thread_id: str | None = None) -> dict[str, Any]:
+def handle_chat_message(
+    user_id: str, message: str, thread_id: str | None = None, repo: ChatRepository | None = None
+) -> dict[str, Any]:
+    repo = repo or get_chat_repository()
     normalized_message = str(message or "").strip()
     if not normalized_message:
         raise ValueError("message is required")
@@ -46,7 +50,9 @@ def handle_chat_message(user_id: str, message: str, thread_id: str | None = None
         ],
     )
 
-    thread = ensure_chat_thread(user_id=user_id, thread_id=thread_id, title=_title_from_message(normalized_message))
+    thread = ensure_chat_thread(
+        user_id=user_id, thread_id=thread_id, title=_title_from_message(normalized_message), repo=repo
+    )
     thread_id = str(thread.get("thread_id") or "")
     if not thread_id:
         thread_id = str(uuid.uuid4())
@@ -64,6 +70,7 @@ def handle_chat_message(user_id: str, message: str, thread_id: str | None = None
         role="user",
         content=normalized_message,
         metadata={"created_at": _utc_now()},
+        repo=repo,
     )
     append_pipeline_log(
         "chat service",
@@ -77,6 +84,7 @@ def handle_chat_message(user_id: str, message: str, thread_id: str | None = None
         thread_id=thread_id,
         user_message_id=str(user_message_row.get("message_id") or ""),
         user_message=normalized_message,
+        repo=repo,
     )
     thread_summary = str(thread.get("summary") or "").strip()
 
@@ -117,6 +125,7 @@ def handle_chat_message(user_id: str, message: str, thread_id: str | None = None
             "route": outcome.decision.route,
             "knowledge_error": outcome.metadata.get("knowledge_error"),
         },
+        repo=repo,
     )
     append_pipeline_log(
         "chat service",
@@ -126,16 +135,17 @@ def handle_chat_message(user_id: str, message: str, thread_id: str | None = None
         ],
     )
 
-    full_messages = load_recent_chat_messages(user_id=user_id, thread_id=thread_id, limit=100)
+    full_messages = load_recent_chat_messages(user_id=user_id, thread_id=thread_id, limit=100, repo=repo)
     updated_summary = refresh_thread_summary(
         user_id=user_id,
         thread_id=thread_id,
         messages=full_messages,
         existing_summary=thread_summary or None,
+        repo=repo,
     )
     updated_thread = thread
     if updated_summary != thread_summary:
-        updated_thread = get_chat_thread_item(user_id=user_id, thread_id=thread_id) or thread
+        updated_thread = repo.get_chat_thread_item(user_id=user_id, thread_id=thread_id) or thread
 
     thread_payload = {
         "thread_id": thread_id,
@@ -160,8 +170,10 @@ def handle_chat_message(user_id: str, message: str, thread_id: str | None = None
     }
 
 
-def _load_recent_messages(user_id: str, thread_id: str, user_message_id: str, user_message: str) -> list[dict[str, Any]]:
-    recent_messages = load_recent_chat_messages(user_id=user_id, thread_id=thread_id, limit=SHORT_TERM_WINDOW)
+def _load_recent_messages(
+    user_id: str, thread_id: str, user_message_id: str, user_message: str, repo: ChatRepository | None = None
+) -> list[dict[str, Any]]:
+    recent_messages = load_recent_chat_messages(user_id=user_id, thread_id=thread_id, limit=SHORT_TERM_WINDOW, repo=repo)
     filtered_messages = [
         item
         for item in recent_messages

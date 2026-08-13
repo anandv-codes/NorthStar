@@ -66,7 +66,7 @@ $$
 $$
 
 $$
-	ext{MRR@k} = \frac{1}{|Q|} \sum_{q \in Q} \frac{1}{\text{rank of the first relevant note for } q}
+\mathrm{MRR@k} = \frac{1}{|Q|} \sum_{q \in Q} \frac{1}{\text{rank of the first relevant note for } q}
 $$
 
 - **Isolation failure rate:** any result from a different synthetic user is a critical failure, not an averaged metric.
@@ -113,11 +113,11 @@ Each conflict case must specify the expected behavior, not just an expected sent
 | `surface_conflict` | Sources disagree and neither source is clearly authoritative enough to resolve the disagreement. |
 | `abstain_or_request_clarification` | Relevant evidence is missing, weak, or too ambiguous to answer safely. |
 
-The v1 conflict policy is **context-dependent**:
+The v1 conflict policy is **always surface ambiguity**:
 
-- Prefer a later explicit decision when it is clearly more authoritative and directly addresses the same subject.
-- Explain the conflict and cite both sources when authority, scope, or timing is ambiguous.
-- Do not silently choose one source when the evidence does not justify doing so.
+- Retrieve both conflicting notes and describe both documented positions.
+- Do not treat a later timestamp as sufficient authority to choose one position.
+- Request clarification or an authoritative source when a decision is required.
 
 Score each conflict case for retrieval completeness, conflict detection, expected response behavior, and provenance coverage.
 
@@ -208,13 +208,13 @@ The 15 ambiguity cases follow one fixed policy:
 - [x] Expand the v1 fixture in place to 100 detailed synthetic work-memory cases using the coverage target above.
 - [x] Assign relevant note IDs to every case.
 - [x] Add expected claims and expected answer behavior to every end-to-end case.
-- [x] Add conflict metadata and a context-dependent expected resolution policy to all conflict cases.
+- [x] Add conflict metadata and an always-surface-ambiguity policy to all conflict cases.
 - [x] Add two synthetic second-user notes designed to be tempting false positives.
 - [x] Create a deterministic ingestion/reset routine for the evaluation Chroma collection and sparse-retriever source data.
 - [x] Implement a retrieval-only runner that calls the real retrieval strategies without a chat-model invocation.
 - [x] Write ranking-metric functions for Precision@k, Recall@k, MRR@k, and isolation failure rate.
 - [x] Emit JSON and Markdown baseline reports with retrieval configuration and code revision metadata.
-- [ ] Run and save baseline results for sparse, dense, RRF, rewrite, and rerank configurations.
+- [ ] Run and save baseline results for sparse, dense, RRF, guarded rewrite, and rerank configurations. All configurations have isolated runners; dense, RRF, and rerank run on trusted `main` pushes, while guarded rewrite uses controlled empty synthetic recent-memory input and manual opt-in because it performs per-case model calls.
 
 **Exit criterion:** each of the 100 cases runs deterministically against an isolated synthetic corpus, and the report compares all five retrieval configurations.
 
@@ -245,8 +245,8 @@ The 15 ambiguity cases follow one fixed policy:
 
 ### Phase 4: CI/CD Quality Gates and Continuous Improvement
 
-- [ ] Add an always-run GitHub Actions `rag-evals` workflow that detects retrieval, grounding, prompt, embedding, vector, and generation changes.
-- [ ] Make the workflow rebuild and validate the synthetic fixture, then run the deterministic sparse v1 evaluation for RAG-impacting pull requests.
+- [x] Add an always-run GitHub Actions `rag-evals` workflow that detects retrieval, grounding, prompt, embedding, vector, and generation changes.
+- [x] Make the workflow rebuild and validate the synthetic fixture, then run the deterministic sparse v1 evaluation for RAG-impacting pull requests.
 - [ ] Upload JSON and Markdown evaluation artifacts and publish metric deltas plus failing scenario IDs in the pull-request summary.
 - [ ] Freeze the expanded v1 fixture as the first approved comparison baseline; create a new dataset version for future corpus changes.
 - [ ] Implement a baseline comparator that reports deltas for Precision@5, Recall@5, MRR@5, no-context behavior, isolation, and conflict evidence.
@@ -255,8 +255,8 @@ The 15 ambiguity cases follow one fixed policy:
 - [ ] Run the dense Chroma evaluation only in a trusted protected environment, merge queue, manual label, or nightly workflow; never expose model secrets to untrusted pull requests.
 - [ ] Run end-to-end generation and claim-based evaluation on a scheduled cadence and release candidates with fixed model, prompt, retrieval, and judge-rubric versions.
 - [ ] Add a staging synthetic smoke check and require candidate evaluation evidence before high-risk retrieval, grounding, prompt, or model releases.
-- [ ] Add a small, deterministic retrieval smoke subset to pull-request checks.
-- [ ] Keep the full suite report-only until repeated runs establish stable metric variance.
+- [x] Add a small, deterministic retrieval smoke subset to pull-request checks.
+- [x] Keep the full suite report-only until repeated runs establish stable metric variance.
 - [ ] Define regression thresholds for Recall@5, unsupported-claim rate, conflict-handling pass rate, isolation failures, latency, and LLM cost.
 - [ ] Promote the full suite to a blocking quality gate after thresholds are approved.
 - [ ] Add reviewed production failures as anonymized synthetic or redacted cases in the next dataset version.

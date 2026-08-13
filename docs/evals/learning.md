@@ -9,7 +9,7 @@ This log captures evaluation decisions, measured outcomes, and deliberate deferr
 - NorthStar is evaluated as a personal work-management application. The benchmark uses one primary synthetic user, plus a second synthetic user only to detect retrieval-isolation regressions.
 - The first golden dataset is `northstar_rag_v1`: 40 synthetic, non-sensitive work-memory queries and their supporting corpus notes.
 - V1 coverage includes 8 direct lookups, 6 exact identifiers/numbers/dates, 6 semantic paraphrases, 5 multi-note synthesis cases, 7 conflicting-source cases, 4 negation/status cases, 2 no-context cases, and 2 isolation cases.
-- Conflicting-source evaluation is required from the first benchmark version. The expected behavior is context-dependent: resolve with provenance only when a later explicit decision or status clearly supersedes an earlier note; otherwise surface the conflict or abstain.
+- Conflicting-source evaluation is required from the first benchmark version. The original context-dependent policy was superseded when v1 expanded to 100 cases: all current v1 ambiguity cases surface both positions and request clarification rather than resolving by timestamp.
 - Retrieval v1 uses report-only baselines. No score currently blocks a change.
 - Every runner execution writes a JSON artifact for tools and a scenario-by-scenario Markdown report for review.
 - V1 retrieval metrics are intentionally limited to Precision@5, Recall@5, a zero-tolerance isolation-failure count, no-context behavior, and conflict-evidence completeness.
@@ -124,3 +124,32 @@ Run this fixed 100-case v1 fixture through isolated dense Chroma retrieval, then
 ### Next Experiment
 
 Install `backend/requirements.txt` in the selected Python environment, configure `GEMINI_API_KEY`, then run `python -m evals.scripts.run_dense_retrieval_eval`. Record the per-scenario artifacts and compare them with the existing v1 BM25 report before implementing any hybrid measurement.
+
+## 2026-08-12: Retrieval-Mode Evaluation Methodology and CI
+
+### Completed Methodology
+
+- The benchmark has one shared scorer in `evals/retrieval.py`. Sparse, dense, RRF, reranker, and rewrite runs therefore calculate the same Precision@5, Recall@5, MRR@5, isolation, no-context, and conflict-evidence measures against the unchanged synthetic v1 fixture.
+- Each run writes a machine-readable JSON artifact and a scenario-level Markdown report with configuration and Git revision metadata. This makes a result reviewable without treating a single aggregate score as sufficient evidence.
+- The fixture builder and validator run before v1 evaluation. The validator enforces the 100-case and 350-note contract, source-note references, claim support references, category coverage, the 250/100 synthetic user split, and all 15 ambiguity-case policies.
+
+### Retrieval Modes
+
+- **Sparse BM25:** builds the production `BM25Index` in memory from synthetic notes. It is deterministic and does not access Supabase, Chroma, or Gemini.
+- **Dense Chroma:** uses the existing embedding provider but writes only to a dedicated collection under `evals/.chroma`; every query filters on synthetic `user_id`.
+- **RRF:** combines the synthetic sparse and dense candidate lists through the production `fuse_candidates` implementation.
+- **Reranker:** applies the production `TokenOverlapReranker` after RRF fusion. It is measured separately from RRF so a ranking change is not attributed to fusion.
+- **Guarded rewrite:** calls the production query rewriter with an explicit empty synthetic recent-memory input, then uses the production quality threshold, confidence threshold, and risk detector before adding rewritten dense candidates. Its JSON report retains the per-case rewrite decision, confidence, and risk flags.
+
+### CI and Cost Decisions
+
+- `.github/workflows/rag-eval.yml` runs fixture validation plus v0 and v1 sparse benchmarks for qualifying pull requests and qualifying pushes to `main`.
+- Trusted `main` pushes run dense, RRF, and reranker baselines with `GEMINI_API_KEY`; pull requests do not receive that secret-backed work.
+- Guarded rewrite is manual-dispatch only because an expanded v1 run can make up to one model call per case. This preserves measurable rewrite behavior while avoiding routine model cost on every push.
+- The workflow publishes JSON and Markdown artifacts but remains report-only. There is no baseline-delta comparator, branch-protection requirement, or metric threshold yet.
+
+### Boundaries and Remaining Evidence
+
+- Retrieval and generation modules remain read-only evaluation subjects. The harness changes only `evals/`, documentation, and CI workflow files.
+- The local environment does not currently have Chroma, the Gemini LangChain package, or `GEMINI_API_KEY`; no dense, RRF, reranker, or rewrite quality result has been claimed from it.
+- Do not infer that RRF, reranking, or rewriting improves quality until their protected-run artifacts exist for the same v1 fixture. Compare category failures, no-context behavior, and conflict evidence alongside aggregate metrics.

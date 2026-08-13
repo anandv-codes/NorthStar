@@ -1,7 +1,7 @@
 # NorthStar Retrieval Evaluation Result
 
 - Runner: `bm25_smoke`
-- Code revision: `6166430`
+- Code revision: `357d060`
 - Configuration: `k=5`, `k1=1.5`, `b=0.75`
 - Scenario count: 8
 

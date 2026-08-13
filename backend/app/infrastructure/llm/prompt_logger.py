@@ -217,3 +217,21 @@ def append_pipeline_log(stage: str, lines: list[str]) -> None:
         print(f"[PROMPT_LOGGER] Pipeline log appended to: {log_path}")
     except Exception as exc:
         print(f"[PROMPT_LOGGER] Failed to append pipeline log: {exc}")
+
+
+class FilePipelineLogger:
+    """Concrete ``PipelineLogger`` implementation backed by the shared log file."""
+
+    def log(self, stage: str, lines: list[str]) -> None:
+        append_pipeline_log(stage=stage, lines=lines)
+
+
+_DEFAULT_PIPELINE_LOGGER: FilePipelineLogger | None = None
+
+
+def get_pipeline_logger() -> FilePipelineLogger:
+    """Return the process-wide default ``PipelineLogger`` implementation."""
+    global _DEFAULT_PIPELINE_LOGGER
+    if _DEFAULT_PIPELINE_LOGGER is None:
+        _DEFAULT_PIPELINE_LOGGER = FilePipelineLogger()
+    return _DEFAULT_PIPELINE_LOGGER

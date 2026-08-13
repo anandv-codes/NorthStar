@@ -7,6 +7,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from ...schemas.models import WorkMemoryExtraction
 from .prompt_logger import log_gemini_interaction
+from .prompt_loader import load_prompt
 
 def call_gemini_api(note_text: str, related_notes: list[dict[str, Any]] | None = None) -> dict:
 
@@ -100,84 +101,140 @@ def parse_gemini_response(output_text: str) -> dict:
         ) from exc
 
 
-def normalize_work_memory_output(raw: dict) -> dict:
-    if not isinstance(raw, dict):
-        raise RuntimeError(f"Gemini output must be a JSON object, got {type(raw)}")
+def generate_chat_answer(prompt: str) -> str:
+    """Generate the final chat answer text for a fully-built prompt."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY must be set")
 
-    normalized = {
-        "summary": raw.get("summary", "") or "",
-        "tasks": raw.get("tasks") or [],
-        "facts": raw.get("facts") or [],
-        "questions": raw.get("questions") or [],
-        "decisions": raw.get("decisions") or [],
-        "risks": raw.get("risks") or [],
-        "entities": raw.get("entities") or [],
-        "concepts": raw.get("concepts") or [],
-    }
+    model_id = os.getenv("CHAT_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash"))
+    model = ChatGoogleGenerativeAI(
+        google_api_key=api_key,
+        model=model_id,
+        temperature=0.2,
+        max_retries=2,
+        timeout=90,
+    )
 
-    # Backward compatibility with the older note-digest contract.
-    if not normalized["tasks"] and raw.get("action_items"):
-        normalized["tasks"] = [
-            {"description": item, "confidence": None, "entities": []}
-            for item in raw.get("action_items", [])
-            if str(item).strip()
+    response = model.invoke([HumanMessage(content=prompt)])
+    content = getattr(response, "content", response)
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list) and content:
+        first = content[0]
+        if isinstance(first, str):
+            return first.strip()
+        if isinstance(first, dict) and isinstance(first.get("text"), str):
+            return first["text"].strip()
+    return str(content).strip()
+
+
+class GeminiChatModel:
+    """Concrete ``ChatModel`` implementation backed by Gemini."""
+
+    def generate(self, prompt: str) -> str:
+        return generate_chat_answer(prompt)
+
+
+_DEFAULT_CHAT_MODEL: GeminiChatModel | None = None
+
+
+def get_chat_model() -> GeminiChatModel:
+    """Return the process-wide default ``ChatModel`` implementation."""
+    global _DEFAULT_CHAT_MODEL
+    if _DEFAULT_CHAT_MODEL is None:
+        _DEFAULT_CHAT_MODEL = GeminiChatModel()
+    return _DEFAULT_CHAT_MODEL
+
+        related_context = generate_related_notes_context(related_notes or [])
+        version = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
+        # Try to load the versioned prompt template; fall back to the original inline template
+        default = """
+    You are an assistant that processes work notes and extracts structured memory.
+
+    Raw notes:
+    {normalized_text}
+
+    Related past notes for cross-reference:
+    {related_notes_context}
+
+    Action items identified:
+    {action_items_json}
+
+    Questions identified:
+    {questions_json}
+
+    Please provide the following:
+    1. A concise summary of the notes.
+    2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.
+    3. For each extracted item, include confidence when possible.
+    4. Include only items grounded in the note or clearly supported by related notes.
+    5. If related past notes are relevant, use them only as context and do not invent unsupported facts.
+
+    Format your response as JSON with the following structure:
+    {
+        "summary": "Concise summary here",
+        "tasks": [
+            {
+                "description": "Action item 1",
+                "confidence": 0.9,
+                "entities": ["Supabase"]
+            }
+        ],
+        "facts": [
+            {
+                "content": "A key fact extracted from the notes",
+                "confidence": 0.85,
+                "entities": ["EntityName"]
+            }
+        ],
+        "questions": [
+            {
+                "question": "Question 1?",
+                "confidence": 0.8,
+                "entities": []
+            }
+        ],
+        "decisions": [
+            {
+                "decision": "A decision that was made",
+                "rationale": "Why this decision was made",
+                "confidence": 0.8,
+                "entities": []
+            }
+        ],
+        "risks": [
+            {
+                "risk": "A potential risk identified",
+                "severity": "high",
+                "confidence": 0.75,
+                "entities": []
+            }
+        ],
+        "entities": [
+            {
+                "name": "Supabase",
+                "entity_type": "technology"
+            }
+        ],
+        "concepts": [
+        
+            {
+                "concept": "A learned concept or insight",
+                "confidence": 0.7,
+                "entities": ["EntityName"]
+            }
         ]
-    if not normalized["questions"] and raw.get("questions"):
-        normalized["questions"] = [
-            {"question": item, "confidence": None, "entities": []}
-            for item in raw.get("questions", [])
-            if str(item).strip()
-        ]
-
-    extraction = WorkMemoryExtraction.model_validate(normalized)
-    return extraction.model_dump(mode="json")
-
-
-def clean_markdown_json(text: str) -> str:
-    text = text.strip()
-    if text.startswith("```") and text.endswith("```"):
-        text = text[3:-3].strip()
-    if text.startswith("json"):
-        text = text[len("json"):].strip()
-    if text.startswith("```json") and text.endswith("```"):
-        text = text[len("```json"): -3].strip()
-    return text
-
-def parse_note_text(raw_text: str) -> dict:
-    text = str(raw_text)
-    action_items = []
-    questions = []
-    stripped_lines = [line.strip() for line in text.splitlines() if line.strip()]
-    normalized_text = "\n".join(stripped_lines)
-
-    for line in stripped_lines:
-        lower = line.lower()
-        if re.search(r"\b(todo|action item|follow up|next step | reminder | remind)\b", lower):
-            action_items.append(line)
-        if line.strip().endswith("?"):
-            questions.append(line)
-
-    return {
-        "normalized_text": normalized_text,
-        "action_items": action_items,
-        "questions": questions,
     }
+    """
 
-def generate_related_notes_context(related_notes: list[dict[str, Any]]) -> str:
-    if not related_notes:
-        return "No related past notes were retrieved."
-
-    lines = []
-    for index, note in enumerate(related_notes, start=1):
-        lines.append(
-            "\n".join(
-                [
-                    f"{index}. note_id: {note.get('note_id', 'unknown')}",
-                    f"   text: {note.get('text', '')}",
-                    f"   summary: {note.get('summary', '')}",
-                ]
-            )
-        )
+        template = load_prompt(version, "00-gemini_extraction_prompt.txt", default=default)
+        # Replace only the specific placeholders we intend to populate.
+        prompt = template.replace("{normalized_text}", parsed_text.get("normalized_text", ""))
+        prompt = prompt.replace("{related_notes_context}", related_context)
+        prompt = prompt.replace("{action_items_json}", json.dumps(parsed_text.get("action_items", []), indent=2))
+        prompt = prompt.replace("{questions_json}", json.dumps(parsed_text.get("questions", []), indent=2))
+        return prompt
     return "\n".join(lines)
 
 

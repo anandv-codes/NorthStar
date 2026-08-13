@@ -7,10 +7,15 @@ from typing import Any, Sequence
 
 from ..constants import GENERIC_QUERY_TERMS, NEGATION_TERMS
 from ..memory.services import query_recent_memory_for_user
+from ..ports import EmbeddingProvider, QueryRewriter, VectorStore
 from ...infrastructure.llm.prompt_logger import append_pipeline_log
+from ...infrastructure.llm.query_rewriter import get_query_rewriter
 from .reranker.heuristic import TokenOverlapReranker
 from .strategies.sparse import SparseBM25Retriever
 from .utils import tokenize
+from ...infrastructure.vector.embeddings import get_embedding_provider
+from ...infrastructure.vector.vectorstore import get_vector_store
+
 
 
 MIN_QUERY_QUALITY_TO_REWRITE = float(os.getenv("QUERY_REWRITE_MIN_QUERY_QUALITY", "0.35"))
@@ -22,7 +27,18 @@ SPARSE_RETRIEVER = SparseBM25Retriever()
 RERANKER = TokenOverlapReranker() if RERANKER_MODE in {"token_overlap", "heuristic", "local", "true", "1", "yes", "on"} else None
 
 
-def retrieve_query_context(user_id: str, query: str, limit: int = DEFAULT_QUERY_LIMIT) -> dict[str, Any]:
+def retrieve_query_context(
+    user_id: str,
+    query: str,
+    limit: int = DEFAULT_QUERY_LIMIT,
+    embedding_provider: EmbeddingProvider | None = None,
+    vector_store: VectorStore | None = None,
+    query_rewriter: QueryRewriter | None = None,
+) -> dict[str, Any]:
+    embedding_provider = embedding_provider or get_embedding_provider()
+    vector_store = vector_store or get_vector_store()
+    query_rewriter = query_rewriter or get_query_rewriter()
+
     normalized_query = str(query or "").strip()
     if not normalized_query:
         raise ValueError("query is required")
@@ -38,12 +54,10 @@ def retrieve_query_context(user_id: str, query: str, limit: int = DEFAULT_QUERY_
         ],
     )
 
-    from ...infrastructure.vector.embeddings import get_embeddings
-    from ...infrastructure.vector.vectorstore import query_related_notes
 
-    embeddings = get_embeddings()
+    embeddings = embedding_provider
     original_embedding = embeddings.embed_query(normalized_query)
-    dense_original_results = query_related_notes(
+    dense_original_results = vector_store.query_related_notes(
         user_id=user_id,
         embedding=original_embedding,
         k=clamped_limit,
@@ -77,9 +91,7 @@ def retrieve_query_context(user_id: str, query: str, limit: int = DEFAULT_QUERY_
 
     if query_quality >= MIN_QUERY_QUALITY_TO_REWRITE:
         try:
-            from ...infrastructure.llm.query_rewriter import rewrite_query_with_llm
-
-            rewrite_result = rewrite_query_with_llm(
+            rewrite_result = query_rewriter.rewrite(
                 user_query=normalized_query,
                 recent_memory=recent_memory,
             )
@@ -98,7 +110,7 @@ def retrieve_query_context(user_id: str, query: str, limit: int = DEFAULT_QUERY_
                     part for part in [normalized_query, rewritten_query, likely_answer] if part
                 ).strip()
                 rewritten_embedding = embeddings.embed_query(expanded_query)
-                rewritten_results = query_related_notes(
+                rewritten_results = vector_store.query_related_notes(
                     user_id=user_id,
                     embedding=rewritten_embedding,
                     k=clamped_limit,

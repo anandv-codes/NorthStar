@@ -22,3 +22,13 @@ def get_embeddings():
 
 def get_embedding_model_id() -> str:
     return _normalized_embedding_model_id()
+
+
+def get_embedding_provider():
+    """Return the default ``EmbeddingProvider`` implementation.
+
+    The returned object already satisfies the domain ``EmbeddingProvider``
+    protocol (it exposes ``embed_query``), so no separate adapter class is
+    required.
+    """
+    return get_embeddings()

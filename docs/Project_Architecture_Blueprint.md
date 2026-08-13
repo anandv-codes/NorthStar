@@ -119,7 +119,7 @@ flowchart TB
 
 ### Dependency Rules
 
-The intended direction is API to domain to infrastructure. The code generally follows this direction, although the domain layer imports concrete infrastructure modules directly instead of depending on injected interfaces. This keeps the MVP compact but limits test isolation and provider portability.
+The intended direction is API to domain to infrastructure. The code follows this direction: the domain layer depends on `Protocol`-based ports declared in `backend/app/domain/ports.py` (repositories, embedding/vector-store/query-rewrite/chat-model providers, and a pipeline logger) instead of importing concrete infrastructure modules directly. Each port defaults to the current Supabase/Chroma/Gemini adapter via an optional constructor or function parameter, so behavior is unchanged while allowing providers to be swapped and dependencies to be faked in tests.
 
 The frontend follows a lightweight feature-oriented structure:
 

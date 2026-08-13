@@ -5,8 +5,10 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any, List, Sequence
 
+from ...ports import NoteRepository
 from ..utils import combine_note_text, fingerprint_notes, tokenize
 from .base import BaseRetrieval
+from ....infrastructure.db.supabase_client import get_note_repository
 
 
 @dataclass(slots=True)
@@ -100,10 +102,8 @@ class BM25Index:
 _INDEX_CACHE: dict[str, tuple[str, BM25Index]] = {}
 
 
-def _get_index_for_user(user_id: str) -> BM25Index:
-    from ....infrastructure.db.supabase_client import query_notes_for_user
-
-    notes = query_notes_for_user(user_id=user_id)
+def _get_index_for_user(user_id: str, note_repository: NoteRepository) -> BM25Index:
+    notes = note_repository.query_notes_for_user(user_id=user_id)
     cache_key = fingerprint_notes(notes)
     cached = _INDEX_CACHE.get(user_id)
     if cached and cached[0] == cache_key:
@@ -115,9 +115,10 @@ def _get_index_for_user(user_id: str) -> BM25Index:
 
 
 class SparseBM25Retriever(BaseRetrieval):
-    def __init__(self, k1: float = 1.5, b: float = 0.75):
+    def __init__(self, k1: float = 1.5, b: float = 0.75, note_repository: NoteRepository | None = None):
         self.k1 = k1
         self.b = b
+        self._note_repository = note_repository
 
     def retrieve(self, query: str, user_id: str, limit: int = 5) -> List[dict[str, Any]]:
         normalized_query = str(query or "").strip()
@@ -128,5 +129,6 @@ class SparseBM25Retriever(BaseRetrieval):
         if not query_tokens:
             return []
 
-        index = _get_index_for_user(user_id)
+        note_repository = self._note_repository or get_note_repository()
+        index = _get_index_for_user(user_id, note_repository)
         return index.search(normalized_query, limit=limit, k1=self.k1, b=self.b)
