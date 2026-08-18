@@ -110,8 +110,8 @@ def generate_rewrite_prompt(
     recent_memory: dict[str, list[dict[str, Any]]] | None = None,
 ) -> str:
     memory_context = build_recent_memory_context(recent_memory)
-        version = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
-        default = """
+    version = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
+    default = """
 You rewrite retrieval queries for a note/memory search system.
 
 Original user query:
@@ -136,10 +136,10 @@ Rules:
 - If the query is too vague to rewrite safely, keep rewritten_query close to the original and lower confidence.
 """
 
-        template = load_prompt(version, "01-query_rewrite_prompt.txt", default=default)
-        prompt = template.replace("{user_query}", user_query)
-        prompt = prompt.replace("{memory_context}", memory_context)
-        return prompt.strip()
+    template = load_prompt(version, "01-query_rewrite_prompt.txt", default=default)
+    prompt = template.replace("{user_query}", user_query)
+    prompt = prompt.replace("{memory_context}", memory_context)
+    return prompt.strip()
 
 
 def parse_query_rewrite_response(output_text: str) -> dict[str, Any]:

@@ -1,0 +1,3354 @@
+{
+  "runner": "hybrid_rewrite_eval",
+  "code_revision": "f8e9cf1",
+  "configuration": {
+    "k": 5,
+    "mode": "rewrite",
+    "embedding_model": "gemini-embedding-001",
+    "collection": "northstar_rag_v1_rewrite_eval",
+    "storage_path": "evals\\.chroma",
+    "fusion": "production_rrf",
+    "reranker": "off",
+    "rewrite": "production_guarded_rewrite_with_empty_synthetic_memory",
+    "rewrite_cache": "evals\\cache\\northstar_rag_v1_rewrites.json",
+    "rewrite_latency_seconds": 6.0,
+    "refresh_rewrite_cache": false
+  },
+  "case_count": 100,
+  "summary": {
+    "precision_at_k": 0.2778947368421053,
+    "recall_at_k": 0.968421052631579,
+    "mean_reciprocal_rank_at_k": 0.937719298245614,
+    "isolation_failure_count": 0,
+    "no_context_pass_count": 0,
+    "no_context_case_count": 5,
+    "conflict_retrieval_pass_count": 15,
+    "conflict_case_count": 15,
+    "rewrite_used_count": 8,
+    "rewrite_case_count": 100,
+    "rewrite_cache_hit_count": 0,
+    "rewrite_cache_miss_count": 100,
+    "rewrite_cache_refresh_count": 0
+  },
+  "cases": [
+    {
+      "id": "item-lookup-01",
+      "query": "Who owns ITEM-4101, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4101",
+        "item-item-4102",
+        "datafix-dfx-7201",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4101"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership status and target date for ITEM-4101",
+        "likely_answer": "The user is seeking specific metadata regarding the possession, current operational status, and scheduled timeline for ITEM-4101.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-02",
+      "query": "Who owns ITEM-4102, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4102",
+        "datafix-dfx-7202",
+        "item-item-4110",
+        "multi-01-scope",
+        "item-item-4104"
+      ],
+      "relevant_note_ids": [
+        "item-item-4102"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership, status, and target date for ITEM-4102",
+        "likely_answer": "The user is seeking specific metadata and scheduling information regarding the asset identified as ITEM-4102.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-03",
+      "query": "Who owns ITEM-4103, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4102",
+        "item-item-4110",
+        "item-item-4103",
+        "item-item-4108",
+        "datafix-dfx-7203"
+      ],
+      "relevant_note_ids": [
+        "item-item-4103"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "ownership, status, and target date for ITEM-4103",
+        "likely_answer": "ITEM-4103 is currently assigned to a specific owner with a defined operational status and a scheduled target date.",
+        "rewrite_confidence": 0.95,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "item-lookup-04",
+      "query": "Who owns ITEM-4104, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4104",
+        "item-item-4102",
+        "datafix-dfx-7204",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4104"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership status and target date for ITEM-4104",
+        "likely_answer": "The user is seeking the current owner, operational status, and scheduled target date associated with the specific asset ITEM-4104.",
+        "rewrite_confidence": 0.95,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-05",
+      "query": "Who owns ITEM-4105, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4105",
+        "item-item-4110",
+        "datafix-dfx-7205",
+        "item-item-4102",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4105"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "owner, status, and target date of ITEM-4105",
+        "likely_answer": "ITEM-4105 is currently assigned to a specific owner with a defined status and target completion date.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-06",
+      "query": "Who owns ITEM-4106, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4102",
+        "item-item-4110",
+        "item-item-4108",
+        "item-item-4106",
+        "datafix-dfx-7206"
+      ],
+      "relevant_note_ids": [
+        "item-item-4106"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.25,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "ownership, status, and target date for ITEM-4106",
+        "likely_answer": "ITEM-4106 is assigned to a specific owner, currently in a defined status, with a scheduled target date.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "item-lookup-07",
+      "query": "Who owns ITEM-4107, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4107",
+        "item-item-4102",
+        "datafix-dfx-7207",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4107"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "owner, status, and target date of ITEM-4107",
+        "likely_answer": "ITEM-4107 is currently assigned to a specific owner with a defined operational status and a scheduled target date.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-08",
+      "query": "Who owns ITEM-4108, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4108",
+        "item-item-4102",
+        "datafix-dfx-7208",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4108"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership, status, and target date for ITEM-4108",
+        "likely_answer": "The user is seeking specific metadata and scheduling information regarding the asset identified as ITEM-4108.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-09",
+      "query": "Who owns ITEM-4109, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4109",
+        "item-item-4110",
+        "datafix-dfx-7209",
+        "item-item-4102",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4109"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership, status, and target date for ITEM-4109",
+        "likely_answer": "The user is seeking metadata and scheduling information for the specific asset identified as ITEM-4109.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-10",
+      "query": "Who owns ITEM-4110, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4110",
+        "item-item-4119",
+        "item-item-4118",
+        "item-item-4112",
+        "item-item-4113"
+      ],
+      "relevant_note_ids": [
+        "item-item-4110"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "ownership, status, and target date for ITEM-4110",
+        "likely_answer": "The user is seeking metadata and scheduling information for the specific asset identified as ITEM-4110.",
+        "rewrite_confidence": 0.95,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "item-lookup-11",
+      "query": "Who owns ITEM-4111, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4110",
+        "item-item-4119",
+        "item-item-4118",
+        "item-item-4112",
+        "item-item-4113"
+      ],
+      "relevant_note_ids": [
+        "item-item-4111"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "ownership, status, and target date of ITEM-4111",
+        "likely_answer": "The user is seeking specific metadata and scheduling information regarding the asset identified as ITEM-4111.",
+        "rewrite_confidence": 0.95,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "item-lookup-12",
+      "query": "Who owns ITEM-4112, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4112",
+        "item-item-4110",
+        "datafix-dfx-7212",
+        "item-item-4119",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4112"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Ownership, status, and target date for ITEM-4112",
+        "likely_answer": "The user is seeking specific metadata and scheduling information regarding the asset identified as ITEM-4112.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-13",
+      "query": "Who owns ITEM-4113, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4113",
+        "item-item-4119",
+        "datafix-dfx-7213",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4113"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "owner, status, and target date of ITEM-4113",
+        "likely_answer": "The user is seeking specific metadata and scheduling information regarding the asset identified as ITEM-4113.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-14",
+      "query": "Who owns ITEM-4114, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4119",
+        "item-item-4110",
+        "item-item-4113",
+        "item-item-4112",
+        "item-item-4118"
+      ],
+      "relevant_note_ids": [
+        "item-item-4114"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "ownership, status, and target date for ITEM-4114",
+        "likely_answer": "The user is seeking specific metadata and scheduling information regarding the asset identified as ITEM-4114.",
+        "rewrite_confidence": 0.95,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "item-lookup-15",
+      "query": "Who owns ITEM-4115, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4115",
+        "item-item-4110",
+        "datafix-dfx-7215",
+        "item-item-4119",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4115"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "owner, status, and target date of ITEM-4115",
+        "likely_answer": "The user is seeking specific metadata (owner, status, and target date) associated with the record for ITEM-4115.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-16",
+      "query": "Who owns ITEM-4116, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4116",
+        "item-item-4119",
+        "multi-01-scope",
+        "item-item-4110",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4116"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership, status, and target date for ITEM-4116",
+        "likely_answer": "The user is seeking specific metadata and scheduling information regarding the asset identified as ITEM-4116.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-17",
+      "query": "Who owns ITEM-4117, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4110",
+        "item-item-4119",
+        "item-item-4118",
+        "item-item-4112",
+        "item-item-4113"
+      ],
+      "relevant_note_ids": [
+        "item-item-4117"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "ownership, status, and target date of ITEM-4117",
+        "likely_answer": "The user is seeking specific metadata regarding the possession, current operational status, and scheduled timeline for ITEM-4117.",
+        "rewrite_confidence": 0.95,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "item-lookup-18",
+      "query": "Who owns ITEM-4118, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4118",
+        "item-item-4119",
+        "multi-01-scope",
+        "item-item-4110",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4118"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership, status, and target date for ITEM-4118",
+        "likely_answer": "The user is seeking specific metadata regarding the possession, operational status, and scheduled timeline of ITEM-4118.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-19",
+      "query": "Who owns ITEM-4119, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4119",
+        "multi-01-scope",
+        "item-item-4110",
+        "multi-02-scope",
+        "item-item-4112"
+      ],
+      "relevant_note_ids": [
+        "item-item-4119"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "ownership, status, and target date of ITEM-4119",
+        "likely_answer": "The user is seeking specific metadata regarding the possession, current operational state, and scheduled timeline for ITEM-4119.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "item-lookup-20",
+      "query": "Who owns ITEM-4120, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4120",
+        "item-item-4110",
+        "item-item-4119",
+        "item-item-4118",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4120"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "Retrieve owner, status, and target date for ITEM-4120.",
+        "likely_answer": "The user is seeking specific metadata (ownership, current status, and scheduled timeline) for the entity identified as ITEM-4120.",
+        "rewrite_confidence": 0.95,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "datafix-count-01",
+      "query": "How many rows did DFX-7201 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7201",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7201"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7201 correction row count and affected record set",
+        "likely_answer": "The user is looking for specific metadata or a log entry regarding the DFX-7201 data correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-02",
+      "query": "How many rows did DFX-7202 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7202",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7202"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7202 correction row count and affected record set",
+        "likely_answer": "The user is seeking specific metadata or a change log entry regarding the DFX-7202 data correction task.",
+        "rewrite_confidence": 0.7,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-03",
+      "query": "How many rows did DFX-7203 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7206",
+        "conflict-03-a",
+        "datafix-dfx-7211"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7203"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7203 correction row count and affected record set",
+        "likely_answer": "The user is seeking specific metadata or a summary report regarding the DFX-7203 data correction task.",
+        "rewrite_confidence": 0.7,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-04",
+      "query": "How many rows did DFX-7204 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7204",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7204"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7204 correction row count and affected record set",
+        "likely_answer": "The user is looking for specific technical documentation or a log entry detailing the impact of the DFX-7204 correction.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-05",
+      "query": "How many rows did DFX-7205 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7205",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7206",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7205"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7205 correction row count and affected record set",
+        "likely_answer": "The user is looking for specific technical documentation or a log entry regarding the DFX-7205 data correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-06",
+      "query": "How many rows did DFX-7206 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7206",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "conflict-03-a",
+        "datafix-dfx-7211"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7206"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7206 correction row count and affected record set",
+        "likely_answer": "The user is seeking specific metadata or a log summary regarding the DFX-7206 data correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-07",
+      "query": "How many rows did DFX-7207 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7207",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7207"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7207 correction row count and affected record set",
+        "likely_answer": "The user is seeking specific metadata or a log summary regarding the DFX-7207 data correction task.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-08",
+      "query": "How many rows did DFX-7208 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7208",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7208 row correction count and affected record set",
+        "likely_answer": "The user is seeking specific metadata or a summary report regarding the DFX-7208 data correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-09",
+      "query": "How many rows did DFX-7209 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7209",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7206",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7209"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7209 correction row count and affected record set",
+        "likely_answer": "The user is looking for the specific impact metrics (number of rows and record set name) associated with the DFX-7209 correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-10",
+      "query": "How many rows did DFX-7210 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7210",
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7210"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7210 correction row count and affected record set",
+        "likely_answer": "The user is looking for specific metadata or a log entry regarding the DFX-7210 data correction process.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-11",
+      "query": "How many rows did DFX-7211 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a",
+        "datafix-dfx-7208"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7211"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7211 correction row count and affected record set",
+        "likely_answer": "The user is looking for the specific impact metrics (number of rows and record set name) associated with the DFX-7211 correction task.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-12",
+      "query": "How many rows did DFX-7212 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7212",
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7212"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7212 correction row count and affected record set",
+        "likely_answer": "The user is looking for the specific impact metrics (number of rows and record set name) associated with the DFX-7212 correction task.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-13",
+      "query": "How many rows did DFX-7213 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7213",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7213"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7213 correction row count and affected record set",
+        "likely_answer": "The user is seeking specific metadata or a change log entry regarding the DFX-7213 data correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-14",
+      "query": "How many rows did DFX-7214 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7214",
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7214"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7214 correction row count and affected record set",
+        "likely_answer": "The user is seeking specific metadata regarding the impact of the DFX-7214 correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "datafix-count-15",
+      "query": "How many rows did DFX-7215 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7215",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7215"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "DFX-7215 correction row count and affected record set",
+        "likely_answer": "The user is seeking specific metadata or a log summary regarding the DFX-7215 data correction task.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-01",
+      "query": "Summarize the current progress and blocker for Atlas checkpoint 1.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-01-current",
+        "progress-06-current",
+        "progress-01-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-01-baseline",
+        "progress-01-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Atlas project checkpoint 1 status report, progress updates, and identified blockers",
+        "likely_answer": "The user is seeking a status update on the first milestone of the Atlas project, specifically looking for completed tasks and current impediments.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-02",
+      "query": "Summarize the current progress and blocker for Relay checkpoint 2.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-02-current",
+        "progress-07-current",
+        "progress-02-baseline",
+        "progress-03-current",
+        "progress-04-current"
+      ],
+      "relevant_note_ids": [
+        "progress-02-baseline",
+        "progress-02-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Relay checkpoint 2 status update, progress, and blockers",
+        "likely_answer": "The user is looking for a status report or project management update regarding the second milestone of the Relay project.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-03",
+      "query": "Summarize the current progress and blocker for Ledger checkpoint 3.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-03-current",
+        "progress-08-current",
+        "progress-03-baseline",
+        "progress-01-current",
+        "progress-08-baseline"
+      ],
+      "relevant_note_ids": [
+        "progress-03-baseline",
+        "progress-03-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "status and blockers for Ledger checkpoint 3",
+        "likely_answer": "The user is seeking the current completion status and any outstanding issues preventing the finalization of Ledger checkpoint 3.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-04",
+      "query": "Summarize the current progress and blocker for Beacon checkpoint 4.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-04-current",
+        "progress-09-current",
+        "progress-04-baseline",
+        "progress-05-current",
+        "progress-03-current"
+      ],
+      "relevant_note_ids": [
+        "progress-04-baseline",
+        "progress-04-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Beacon project checkpoint 4 status update and blockers",
+        "likely_answer": "The user is seeking a status report on the fourth milestone of the Beacon project, specifically identifying completed tasks and current impediments.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-05",
+      "query": "Summarize the current progress and blocker for Harbor checkpoint 5.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-05-current",
+        "progress-10-current",
+        "progress-05-baseline",
+        "progress-03-current",
+        "progress-10-baseline"
+      ],
+      "relevant_note_ids": [
+        "progress-05-baseline",
+        "progress-05-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Harbor checkpoint 5 status update, progress report, and identified blockers",
+        "likely_answer": "The user is looking for the status report or project management notes regarding the fifth checkpoint of the Harbor project.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-06",
+      "query": "Summarize the current progress and blocker for Atlas checkpoint 6.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-06-current",
+        "progress-01-current",
+        "progress-06-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-06-baseline",
+        "progress-06-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Atlas project checkpoint 6 status update and blockers",
+        "likely_answer": "The user is looking for a status report or project management note detailing the completion status and any impediments for the sixth milestone of the Atlas project.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-07",
+      "query": "Summarize the current progress and blocker for Relay checkpoint 7.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-07-current",
+        "progress-02-current",
+        "progress-07-baseline",
+        "progress-03-current",
+        "progress-05-current"
+      ],
+      "relevant_note_ids": [
+        "progress-07-baseline",
+        "progress-07-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Relay checkpoint 7 status update and blockers",
+        "likely_answer": "The user is looking for the status report or project management notes regarding the seventh checkpoint of the Relay project.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-08",
+      "query": "Summarize the current progress and blocker for Ledger checkpoint 8.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-08-current",
+        "progress-03-current",
+        "progress-08-baseline",
+        "progress-01-current",
+        "progress-03-baseline"
+      ],
+      "relevant_note_ids": [
+        "progress-08-baseline",
+        "progress-08-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "status and blockers for Ledger checkpoint 8",
+        "likely_answer": "The user is seeking the current completion status and any outstanding issues preventing the finalization of Ledger checkpoint 8.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-09",
+      "query": "Summarize the current progress and blocker for Beacon checkpoint 9.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-09-current",
+        "progress-04-current",
+        "progress-09-baseline",
+        "progress-10-current",
+        "progress-03-current"
+      ],
+      "relevant_note_ids": [
+        "progress-09-baseline",
+        "progress-09-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "status and blockers for Beacon checkpoint 9",
+        "likely_answer": "The user is looking for the current completion status and any outstanding issues preventing the finalization of Beacon checkpoint 9.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "progress-summary-10",
+      "query": "Summarize the current progress and blocker for Harbor checkpoint 10.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-10-current",
+        "progress-05-current",
+        "progress-10-baseline",
+        "progress-03-current",
+        "progress-09-current"
+      ],
+      "relevant_note_ids": [
+        "progress-10-baseline",
+        "progress-10-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Harbor checkpoint 10 status update and blockers",
+        "likely_answer": "The user is seeking a status report on the specific project milestone 'Harbor checkpoint 10', including completed tasks and current impediments.",
+        "rewrite_confidence": 0.7,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-01",
+      "query": "What did the team learn about handling retry storms?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-01",
+        "conflict-01-a",
+        "learning-02",
+        "conflict-03-a",
+        "learning-10"
+      ],
+      "relevant_note_ids": [
+        "learning-01"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team learnings handling retry storms",
+        "likely_answer": "The team likely identified strategies such as exponential backoff with jitter, circuit breakers, or rate limiting to mitigate retry storms.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context",
+          "too_broad"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-02",
+      "query": "What did the team learn about handling unowned alerts?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-02",
+        "conflict-01-a",
+        "multi-04-scope",
+        "conflict-03-a",
+        "multi-09-scope"
+      ],
+      "relevant_note_ids": [
+        "learning-02"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team learnings handling unowned alerts",
+        "likely_answer": "The team likely established a protocol for assigning, triaging, or automating the resolution of unowned alerts.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-03",
+      "query": "What did the team learn about handling prompt exports?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-03",
+        "conflict-14-a",
+        "progress-07-baseline",
+        "conflict-14-b",
+        "progress-02-baseline"
+      ],
+      "relevant_note_ids": [
+        "learning-03"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team learnings regarding prompt exports",
+        "likely_answer": "The user is likely looking for a summary of best practices, technical constraints, or lessons learned from a specific project involving the export of prompts.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-04",
+      "query": "What did the team learn about handling stale embeddings?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-04",
+        "conflict-01-a",
+        "learning-09",
+        "conflict-03-a",
+        "learning-07"
+      ],
+      "relevant_note_ids": [
+        "learning-04"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team findings on handling stale embeddings",
+        "likely_answer": "The team likely identified a strategy or best practice for refreshing or re-indexing stale vector embeddings.",
+        "rewrite_confidence": 0.7,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-05",
+      "query": "What did the team learn about handling silent data fixes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-05",
+        "conflict-10-b",
+        "learning-09",
+        "conflict-01-a",
+        "datafix-dfx-7202"
+      ],
+      "relevant_note_ids": [
+        "learning-05"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team learnings regarding silent data fixes",
+        "likely_answer": "The team likely identified best practices, post-mortem insights, or specific protocols for addressing silent data corruption or background data reconciliation.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-06",
+      "query": "What did the team learn about handling ambiguous status reports?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-06",
+        "conflict-10-b",
+        "conflict-01-a",
+        "conflict-03-a",
+        "conflict-13-b"
+      ],
+      "relevant_note_ids": [
+        "learning-06"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team lessons learned handling ambiguous status reports",
+        "likely_answer": "The team likely established a protocol to request clarification or standardized templates for status reporting.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-07",
+      "query": "What did the team learn about handling retrieval noise?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-07",
+        "conflict-01-a",
+        "learning-05",
+        "conflict-03-a",
+        "learning-01"
+      ],
+      "relevant_note_ids": [
+        "learning-07"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team findings on handling retrieval noise in RAG systems",
+        "likely_answer": "The team likely identified strategies such as reranking, query expansion, or context filtering to mitigate the impact of irrelevant retrieved documents.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context",
+          "too_broad"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-08",
+      "query": "What did the team learn about handling handoff gaps?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-08",
+        "conflict-01-a",
+        "multi-12-scope",
+        "conflict-03-a",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "learning-08"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team learnings regarding handoff gaps",
+        "likely_answer": "The user is likely looking for a summary of insights, process improvements, or post-mortem findings related to communication or task transitions between team members.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context",
+          "too_broad"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-09",
+      "query": "What did the team learn about handling schema drift?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-09",
+        "conflict-01-a",
+        "item-item-4106",
+        "conflict-03-a",
+        "item-item-4116"
+      ],
+      "relevant_note_ids": [
+        "learning-09"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team findings on handling schema drift",
+        "likely_answer": "The team likely identified specific strategies such as schema versioning, automated schema evolution, or using a schema registry to manage drift.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context",
+          "too_broad"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "learning-paraphrase-10",
+      "query": "What did the team learn about handling incident summaries?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-10",
+        "conflict-10-a",
+        "conflict-10-b",
+        "conflict-01-a",
+        "conflict-06-b"
+      ],
+      "relevant_note_ids": [
+        "learning-10"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "team learnings incident summaries handling process",
+        "likely_answer": "The team likely identified best practices, templates, or automated workflows for summarizing incidents effectively.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-01",
+      "query": "For ITEM-5101, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-01-dependency",
+        "multi-01-scope",
+        "multi-05-dependency",
+        "learning-03",
+        "multi-09-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-01-scope",
+        "multi-01-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5101 rollout and what are the prerequisites for its start?",
+        "likely_answer": "The user is seeking the project lead and the dependency requirements for the ITEM-5101 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-02",
+      "query": "For ITEM-5102, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-02-scope",
+        "multi-05-dependency",
+        "multi-02-dependency",
+        "item-item-4118",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-02-scope",
+        "multi-02-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5102 rollout and what are the prerequisites for ITEM-5102 rollout?",
+        "likely_answer": "The user is seeking the project lead and the dependency list for the ITEM-5102 rollout process.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-03",
+      "query": "For ITEM-5103, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-03-dependency",
+        "multi-03-scope",
+        "multi-05-dependency",
+        "learning-03",
+        "multi-09-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-03-scope",
+        "multi-03-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5103 rollout and what are the prerequisites for ITEM-5103?",
+        "likely_answer": "The user is seeking the project lead and the dependency requirements for the ITEM-5103 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-04",
+      "query": "For ITEM-5104, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-04-dependency",
+        "multi-04-scope",
+        "multi-05-dependency",
+        "item-item-4118",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-04-scope",
+        "multi-04-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5104 rollout and what are the prerequisites for ITEM-5104?",
+        "likely_answer": "The user is looking for the project lead and the dependency tasks or milestones required to initiate the ITEM-5104 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-05",
+      "query": "For ITEM-5105, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-05-dependency",
+        "multi-05-scope",
+        "multi-09-dependency",
+        "learning-03",
+        "multi-06-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-05-scope",
+        "multi-05-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5105 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The owner of ITEM-5105 and the specific tasks or milestones that must be completed prior to the rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-06",
+      "query": "For ITEM-5106, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-06-dependency",
+        "multi-06-scope",
+        "multi-05-dependency",
+        "learning-03",
+        "multi-09-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-06-scope",
+        "multi-06-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5106 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is looking for the project lead and the dependency tasks associated with the ITEM-5106 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-07",
+      "query": "For ITEM-5107, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-07-dependency",
+        "multi-07-scope",
+        "multi-05-dependency",
+        "item-item-4118",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-07-scope",
+        "multi-07-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5107 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is looking for the project lead and the dependency tasks associated with the ITEM-5107 rollout plan.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-08",
+      "query": "For ITEM-5108, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-08-dependency",
+        "item-item-4118",
+        "multi-08-scope",
+        "multi-05-dependency",
+        "multi-09-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-08-scope",
+        "multi-08-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": true,
+        "rewritten_query": "Who is the owner of ITEM-5108 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The owner of ITEM-5108 and the specific tasks or milestones required to be completed before the rollout starts.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [],
+        "fallback_reason": null
+      }
+    },
+    {
+      "id": "dependency-synthesis-09",
+      "query": "For ITEM-5109, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-09-dependency",
+        "multi-09-scope",
+        "item-item-4118",
+        "multi-05-dependency",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-09-scope",
+        "multi-09-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5109 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is seeking the project lead and the dependency requirements for the ITEM-5109 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-10",
+      "query": "For ITEM-5110, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-10-dependency",
+        "multi-10-scope",
+        "item-item-4118",
+        "learning-03",
+        "item-item-4103"
+      ],
+      "relevant_note_ids": [
+        "multi-10-scope",
+        "multi-10-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5110 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is looking for the project lead and the dependency tasks associated with the ITEM-5110 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-11",
+      "query": "For ITEM-5111, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-11-scope",
+        "item-item-4118",
+        "multi-11-dependency",
+        "item-item-4110",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-11-scope",
+        "multi-11-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5111 rollout and what are the prerequisites for ITEM-5111 rollout?",
+        "likely_answer": "The user is seeking the project lead and the dependency requirements for the ITEM-5111 rollout process.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-12",
+      "query": "For ITEM-5112, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-12-scope",
+        "item-item-4118",
+        "multi-12-dependency",
+        "multi-10-dependency",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-12-scope",
+        "multi-12-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5112 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is seeking the project lead and the dependency requirements for the ITEM-5112 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-13",
+      "query": "For ITEM-5113, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-13-dependency",
+        "multi-13-scope",
+        "item-item-4118",
+        "item-item-4103",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-13-scope",
+        "multi-13-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5113 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is seeking the project lead and dependency requirements for the ITEM-5113 rollout process.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-14",
+      "query": "For ITEM-5114, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-14-dependency",
+        "multi-14-scope",
+        "item-item-4118",
+        "multi-15-dependency",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-14-scope",
+        "multi-14-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5114 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is looking for the project lead and the dependency tasks associated with the ITEM-5114 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "dependency-synthesis-15",
+      "query": "For ITEM-5115, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-15-dependency",
+        "multi-15-scope",
+        "item-item-4118",
+        "learning-03",
+        "item-item-4103"
+      ],
+      "relevant_note_ids": [
+        "multi-15-scope",
+        "multi-15-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the owner of ITEM-5115 rollout and what are the prerequisites for it to begin?",
+        "likely_answer": "The user is seeking the project lead and the dependency requirements for the ITEM-5115 rollout.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-01",
+      "query": "What is the agreed decision for the production rollout window?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-01-a",
+        "conflict-01-b",
+        "progress-03-baseline",
+        "isolation-primary-01",
+        "progress-08-baseline"
+      ],
+      "relevant_note_ids": [
+        "conflict-01-a",
+        "conflict-01-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "agreed production rollout window schedule",
+        "likely_answer": "The specific date or time frame previously discussed for the production deployment.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-02",
+      "query": "What is the agreed decision for the customer export retention period?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-02-a",
+        "conflict-02-b",
+        "conflict-14-a",
+        "progress-02-current",
+        "progress-07-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-02-a",
+        "conflict-02-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "customer export retention period agreed decision",
+        "likely_answer": "The specific duration (e.g., 30 days, 90 days) established for how long customer export files are stored before deletion.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-03",
+      "query": "What is the agreed decision for the Relay notification fallback?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-03-a",
+        "conflict-03-b",
+        "progress-02-current",
+        "item-item-4107",
+        "progress-07-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-03-a",
+        "conflict-03-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.9333333333333333,
+        "rewrite_used": false,
+        "rewritten_query": "What is the agreed decision for the Relay notification fallback mechanism?",
+        "likely_answer": "The specific fallback protocol or configuration decided upon for Relay notifications.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-04",
+      "query": "What is the agreed decision for the Ledger reconciliation threshold?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-04-a",
+        "conflict-04-b",
+        "progress-03-current",
+        "progress-08-current",
+        "conflict-10-a"
+      ],
+      "relevant_note_ids": [
+        "conflict-04-a",
+        "conflict-04-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "Ledger reconciliation threshold agreed decision",
+        "likely_answer": "The specific monetary or percentage limit established for reconciling ledger discrepancies.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-05",
+      "query": "What is the agreed decision for the Atlas migration cohort?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-05-b",
+        "conflict-05-a",
+        "multi-01-scope",
+        "progress-01-baseline",
+        "multi-06-scope"
+      ],
+      "relevant_note_ids": [
+        "conflict-05-a",
+        "conflict-05-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "What is the final agreed decision regarding the Atlas migration cohort?",
+        "likely_answer": "The specific migration strategy, timeline, or approval status for the Atlas cohort.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-06",
+      "query": "What is the agreed decision for the Beacon audit evidence format?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-06-b",
+        "conflict-06-a",
+        "progress-04-current",
+        "context-primary-064",
+        "progress-09-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-06-a",
+        "conflict-06-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Beacon audit evidence format agreed decision",
+        "likely_answer": "The specific file format or documentation standard (e.g., PDF, JSON, CSV) mandated for Beacon project audit logs.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-07",
+      "query": "What is the agreed decision for the Harbor support escalation route?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-07-a",
+        "conflict-07-b",
+        "progress-05-current",
+        "progress-05-baseline",
+        "progress-10-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-07-a",
+        "conflict-07-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "Harbor support escalation route agreed decision",
+        "likely_answer": "The specific protocol or point of contact established for escalating Harbor-related support issues.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-08",
+      "query": "What is the agreed decision for the datafix approval owner?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-08-a",
+        "conflict-08-b",
+        "progress-04-current",
+        "conflict-01-a",
+        "progress-09-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-08-a",
+        "conflict-08-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "Who is the designated approval owner for datafix requests?",
+        "likely_answer": "The specific individual or role assigned to authorize datafix operations.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-09",
+      "query": "What is the agreed decision for the work-item completion definition?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-09-a",
+        "conflict-09-b",
+        "progress-03-current",
+        "progress-09-baseline",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-09-a",
+        "conflict-09-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "definition of done for work-items agreed decision",
+        "likely_answer": "The specific criteria or checklist established by the team to mark a work-item as complete.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-10",
+      "query": "What is the agreed decision for the incident severity threshold?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-10-a",
+        "conflict-10-b",
+        "learning-10",
+        "conflict-04-a",
+        "conflict-04-b"
+      ],
+      "relevant_note_ids": [
+        "conflict-10-a",
+        "conflict-10-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "incident severity threshold agreed decision",
+        "likely_answer": "The specific severity level (e.g., P1, P2, or numerical value) defined in the incident management policy or team documentation.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-11",
+      "query": "What is the agreed decision for the embedding refresh cadence?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-11-a",
+        "conflict-11-b",
+        "learning-04",
+        "learning-01",
+        "learning-08"
+      ],
+      "relevant_note_ids": [
+        "conflict-11-a",
+        "conflict-11-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "What is the agreed decision for the embedding refresh cadence?",
+        "likely_answer": "The specific frequency or schedule (e.g., daily, weekly, or event-triggered) decided upon for updating system embeddings.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-12",
+      "query": "What is the agreed decision for the model-cost reporting method?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-12-a",
+        "conflict-12-b",
+        "learning-08",
+        "learning-01",
+        "progress-01-baseline"
+      ],
+      "relevant_note_ids": [
+        "conflict-12-a",
+        "conflict-12-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "What is the agreed decision for the model-cost reporting method?",
+        "likely_answer": "The specific reporting methodology (e.g., per-token, per-request, or aggregate) decided upon for model cost tracking.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-13",
+      "query": "What is the agreed decision for the release-readiness checklist?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-13-a",
+        "conflict-13-b",
+        "learning-08",
+        "learning-02",
+        "learning-06"
+      ],
+      "relevant_note_ids": [
+        "conflict-13-a",
+        "conflict-13-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "What is the agreed decision regarding the release-readiness checklist?",
+        "likely_answer": "The specific criteria or approval status for the release-readiness checklist.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-14",
+      "query": "What is the agreed decision for the prompt-log retention policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-14-a",
+        "conflict-14-b",
+        "conflict-02-a",
+        "learning-03",
+        "multi-04-scope"
+      ],
+      "relevant_note_ids": [
+        "conflict-14-a",
+        "conflict-14-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "What is the agreed retention policy for prompt-logs?",
+        "likely_answer": "A specific duration (e.g., 30 days, 90 days) or storage strategy previously decided for prompt-log data.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "ambiguous-conflict-15",
+      "query": "What is the agreed decision for the partner contract review date?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-15-a",
+        "conflict-15-b",
+        "learning-08",
+        "conflict-13-a",
+        "progress-02-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-15-a",
+        "conflict-15-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "agreed decision partner contract review date",
+        "likely_answer": "The specific date or deadline established for the partner contract review.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-01",
+      "query": "What is my approved recovery window for ITEM-8101?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-01",
+        "isolation-primary-09",
+        "isolation-primary-02",
+        "isolation-primary-10"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-01"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "What is the approved recovery window for ITEM-8101?",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8101.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-02",
+      "query": "What is my approved recovery window for ITEM-8102?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-02",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06",
+        "isolation-primary-03"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-02"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "approved recovery window for ITEM-8102",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8102.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-03",
+      "query": "What is my approved recovery window for ITEM-8103?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-03",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-03"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "approved recovery window for ITEM-8103",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8103.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-04",
+      "query": "What is my approved recovery window for ITEM-8104?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-04",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-04"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "approved recovery window for ITEM-8104",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8104.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-05",
+      "query": "What is my approved recovery window for ITEM-8105?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-02",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-05"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "What is the approved recovery window for ITEM-8105?",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8105.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-06",
+      "query": "What is my approved recovery window for ITEM-8106?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-06",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-02",
+        "isolation-primary-08"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-06"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "What is the approved recovery window for ITEM-8106?",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8106.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-07",
+      "query": "What is my approved recovery window for ITEM-8107?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-07",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06",
+        "isolation-primary-02"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-07"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "approved recovery window for ITEM-8107",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8107.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-08",
+      "query": "What is my approved recovery window for ITEM-8108?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-08",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06",
+        "isolation-primary-02"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-08"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "What is the approved recovery window for ITEM-8108?",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8108.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-09",
+      "query": "What is my approved recovery window for ITEM-8109?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-10",
+        "isolation-primary-02",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-09"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "approved recovery window for ITEM-8109",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8109.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "isolation-item-10",
+      "query": "What is my approved recovery window for ITEM-8110?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-10",
+        "isolation-primary-01",
+        "isolation-primary-09",
+        "isolation-primary-02",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-10"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 1.0,
+        "rewrite_used": false,
+        "rewritten_query": "What is the approved recovery window for ITEM-8110?",
+        "likely_answer": "The specific time frame or duration authorized for the recovery of ITEM-8110.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "no-context-01",
+      "query": "What is the office parking reimbursement policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-14-a",
+        "multi-06-scope",
+        "conflict-14-b",
+        "multi-14-scope",
+        "multi-04-scope"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 0.6666666666666666,
+        "rewrite_used": false,
+        "rewritten_query": "office parking reimbursement policy",
+        "likely_answer": "The company's policy regarding the reimbursement of employee parking expenses.",
+        "rewrite_confidence": 0.8,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "no-context-02",
+      "query": "Which dental insurer covers contractor dependents?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-11-scope",
+        "multi-03-scope",
+        "multi-06-scope",
+        "multi-01-scope",
+        "multi-08-scope"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "Which dental insurance plan provides coverage for contractor dependents?",
+        "likely_answer": "The user is looking for the specific dental insurance provider or policy details regarding dependent eligibility for contractors.",
+        "rewrite_confidence": 0.6,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "no-context-03",
+      "query": "What was the keynote speaker's travel itinerary?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-07",
+        "conflict-05-a",
+        "context-primary-006",
+        "context-primary-086",
+        "context-primary-111"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 0.9333333333333333,
+        "rewrite_used": false,
+        "rewritten_query": "keynote speaker travel itinerary details",
+        "likely_answer": "The specific flight, hotel, or schedule information for the keynote speaker of a recent event.",
+        "rewrite_confidence": 0.3,
+        "risk_flags": [
+          "low_context",
+          "too_broad"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "no-context-04",
+      "query": "When does the company cafeteria close on Fridays?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "context-primary-001",
+        "learning-08",
+        "context-primary-002",
+        "multi-05-scope",
+        "context-primary-003"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 0.8333333333333334,
+        "rewrite_used": false,
+        "rewritten_query": "company cafeteria Friday closing time",
+        "likely_answer": "The specific closing time for the company cafeteria on Fridays.",
+        "rewrite_confidence": 0.9,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    },
+    {
+      "id": "no-context-05",
+      "query": "What is the corporate holiday gift budget?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4103",
+        "item-item-4108",
+        "item-item-4118",
+        "multi-03-scope",
+        "multi-08-scope"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null,
+      "rewrite": {
+        "query_quality": 0.6666666666666666,
+        "rewrite_used": false,
+        "rewritten_query": "corporate holiday gift budget policy amount",
+        "likely_answer": "The specific monetary limit or per-employee allowance allocated for corporate holiday gifts.",
+        "rewrite_confidence": 0.4,
+        "risk_flags": [
+          "low_context"
+        ],
+        "fallback_reason": "rewrite_confidence_or_risk_threshold"
+      }
+    }
+  ]
+}

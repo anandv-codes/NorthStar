@@ -1,0 +1,2257 @@
+{
+  "runner": "hybrid_rrf_eval",
+  "code_revision": "f8e9cf1",
+  "configuration": {
+    "k": 5,
+    "mode": "rrf",
+    "embedding_model": "gemini-embedding-001",
+    "collection": "northstar_rag_v1_rrf_eval",
+    "storage_path": "evals\\.chroma",
+    "fusion": "production_rrf",
+    "reranker": "off",
+    "rewrite": "off"
+  },
+  "case_count": 100,
+  "summary": {
+    "precision_at_k": 0.28421052631578947,
+    "recall_at_k": 1.0,
+    "mean_reciprocal_rank_at_k": 0.9842105263157894,
+    "isolation_failure_count": 0,
+    "no_context_pass_count": 0,
+    "no_context_case_count": 5,
+    "conflict_retrieval_pass_count": 15,
+    "conflict_case_count": 15
+  },
+  "cases": [
+    {
+      "id": "item-lookup-01",
+      "query": "Who owns ITEM-4101, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4101",
+        "item-item-4102",
+        "datafix-dfx-7201",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4101"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-02",
+      "query": "Who owns ITEM-4102, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4102",
+        "datafix-dfx-7202",
+        "item-item-4110",
+        "multi-01-scope",
+        "item-item-4104"
+      ],
+      "relevant_note_ids": [
+        "item-item-4102"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-03",
+      "query": "Who owns ITEM-4103, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4103",
+        "item-item-4102",
+        "datafix-dfx-7203",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4103"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-04",
+      "query": "Who owns ITEM-4104, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4104",
+        "item-item-4102",
+        "datafix-dfx-7204",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4104"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-05",
+      "query": "Who owns ITEM-4105, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4105",
+        "item-item-4110",
+        "datafix-dfx-7205",
+        "item-item-4102",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4105"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-06",
+      "query": "Who owns ITEM-4106, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4106",
+        "item-item-4102",
+        "datafix-dfx-7206",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4106"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-07",
+      "query": "Who owns ITEM-4107, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4107",
+        "item-item-4102",
+        "datafix-dfx-7207",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4107"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-08",
+      "query": "Who owns ITEM-4108, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4108",
+        "item-item-4102",
+        "datafix-dfx-7208",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4108"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-09",
+      "query": "Who owns ITEM-4109, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4109",
+        "item-item-4110",
+        "datafix-dfx-7209",
+        "item-item-4102",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4109"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-10",
+      "query": "Who owns ITEM-4110, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4110",
+        "item-item-4119",
+        "datafix-dfx-7210",
+        "multi-01-scope",
+        "item-item-4112"
+      ],
+      "relevant_note_ids": [
+        "item-item-4110"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-11",
+      "query": "Who owns ITEM-4111, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4111",
+        "item-item-4110",
+        "datafix-dfx-7211",
+        "item-item-4119",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4111"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-12",
+      "query": "Who owns ITEM-4112, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4112",
+        "item-item-4110",
+        "datafix-dfx-7212",
+        "item-item-4119",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4112"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-13",
+      "query": "Who owns ITEM-4113, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4113",
+        "item-item-4119",
+        "datafix-dfx-7213",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4113"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-14",
+      "query": "Who owns ITEM-4114, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4114",
+        "item-item-4119",
+        "datafix-dfx-7214",
+        "item-item-4110",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4114"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-15",
+      "query": "Who owns ITEM-4115, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4115",
+        "item-item-4110",
+        "datafix-dfx-7215",
+        "item-item-4119",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4115"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-16",
+      "query": "Who owns ITEM-4116, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4116",
+        "item-item-4119",
+        "multi-01-scope",
+        "item-item-4110",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4116"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-17",
+      "query": "Who owns ITEM-4117, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4117",
+        "item-item-4119",
+        "multi-01-scope",
+        "item-item-4110",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4117"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-18",
+      "query": "Who owns ITEM-4118, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4118",
+        "item-item-4119",
+        "multi-01-scope",
+        "item-item-4110",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4118"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-19",
+      "query": "Who owns ITEM-4119, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4119",
+        "multi-01-scope",
+        "item-item-4110",
+        "multi-02-scope",
+        "item-item-4112"
+      ],
+      "relevant_note_ids": [
+        "item-item-4119"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "item-lookup-20",
+      "query": "Who owns ITEM-4120, what is its status, and when is it targeted?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4120",
+        "item-item-4110",
+        "multi-01-scope",
+        "item-item-4119",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "item-item-4120"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-01",
+      "query": "How many rows did DFX-7201 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7201",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7201"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-02",
+      "query": "How many rows did DFX-7202 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7202",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7202"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-03",
+      "query": "How many rows did DFX-7203 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7206",
+        "conflict-03-a",
+        "datafix-dfx-7211"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7203"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-04",
+      "query": "How many rows did DFX-7204 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7204",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7204"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-05",
+      "query": "How many rows did DFX-7205 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7205",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7206",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7205"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-06",
+      "query": "How many rows did DFX-7206 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7206",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "conflict-03-a",
+        "datafix-dfx-7211"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7206"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-07",
+      "query": "How many rows did DFX-7207 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7207",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7207"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-08",
+      "query": "How many rows did DFX-7208 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7208",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-09",
+      "query": "How many rows did DFX-7209 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7209",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7206",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7209"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-10",
+      "query": "How many rows did DFX-7210 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7210",
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7210"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-11",
+      "query": "How many rows did DFX-7211 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a",
+        "datafix-dfx-7208"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7211"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-12",
+      "query": "How many rows did DFX-7212 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7212",
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7212"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-13",
+      "query": "How many rows did DFX-7213 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7213",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7213"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-14",
+      "query": "How many rows did DFX-7214 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7214",
+        "datafix-dfx-7211",
+        "conflict-01-a",
+        "datafix-dfx-7203",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7214"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "datafix-count-15",
+      "query": "How many rows did DFX-7215 correct, and which record set did it affect?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7215",
+        "datafix-dfx-7203",
+        "conflict-01-a",
+        "datafix-dfx-7211",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7215"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-01",
+      "query": "Summarize the current progress and blocker for Atlas checkpoint 1.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-01-current",
+        "progress-06-current",
+        "progress-01-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-01-baseline",
+        "progress-01-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-02",
+      "query": "Summarize the current progress and blocker for Relay checkpoint 2.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-02-current",
+        "progress-07-current",
+        "progress-02-baseline",
+        "progress-03-current",
+        "progress-04-current"
+      ],
+      "relevant_note_ids": [
+        "progress-02-baseline",
+        "progress-02-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-03",
+      "query": "Summarize the current progress and blocker for Ledger checkpoint 3.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-03-current",
+        "progress-08-current",
+        "progress-03-baseline",
+        "progress-01-current",
+        "progress-08-baseline"
+      ],
+      "relevant_note_ids": [
+        "progress-03-baseline",
+        "progress-03-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-04",
+      "query": "Summarize the current progress and blocker for Beacon checkpoint 4.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-04-current",
+        "progress-09-current",
+        "progress-04-baseline",
+        "progress-05-current",
+        "progress-03-current"
+      ],
+      "relevant_note_ids": [
+        "progress-04-baseline",
+        "progress-04-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-05",
+      "query": "Summarize the current progress and blocker for Harbor checkpoint 5.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-05-current",
+        "progress-10-current",
+        "progress-05-baseline",
+        "progress-03-current",
+        "progress-10-baseline"
+      ],
+      "relevant_note_ids": [
+        "progress-05-baseline",
+        "progress-05-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-06",
+      "query": "Summarize the current progress and blocker for Atlas checkpoint 6.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-06-current",
+        "progress-01-current",
+        "progress-06-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-06-baseline",
+        "progress-06-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-07",
+      "query": "Summarize the current progress and blocker for Relay checkpoint 7.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-07-current",
+        "progress-02-current",
+        "progress-07-baseline",
+        "progress-03-current",
+        "progress-05-current"
+      ],
+      "relevant_note_ids": [
+        "progress-07-baseline",
+        "progress-07-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-08",
+      "query": "Summarize the current progress and blocker for Ledger checkpoint 8.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-08-current",
+        "progress-03-current",
+        "progress-08-baseline",
+        "progress-01-current",
+        "progress-03-baseline"
+      ],
+      "relevant_note_ids": [
+        "progress-08-baseline",
+        "progress-08-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-09",
+      "query": "Summarize the current progress and blocker for Beacon checkpoint 9.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-09-current",
+        "progress-04-current",
+        "progress-09-baseline",
+        "progress-10-current",
+        "progress-03-current"
+      ],
+      "relevant_note_ids": [
+        "progress-09-baseline",
+        "progress-09-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "progress-summary-10",
+      "query": "Summarize the current progress and blocker for Harbor checkpoint 10.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-10-current",
+        "progress-05-current",
+        "progress-10-baseline",
+        "progress-03-current",
+        "progress-09-current"
+      ],
+      "relevant_note_ids": [
+        "progress-10-baseline",
+        "progress-10-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-01",
+      "query": "What did the team learn about handling retry storms?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-01",
+        "conflict-01-a",
+        "learning-02",
+        "conflict-03-a",
+        "learning-10"
+      ],
+      "relevant_note_ids": [
+        "learning-01"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-02",
+      "query": "What did the team learn about handling unowned alerts?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-02",
+        "conflict-01-a",
+        "multi-04-scope",
+        "conflict-03-a",
+        "multi-09-scope"
+      ],
+      "relevant_note_ids": [
+        "learning-02"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-03",
+      "query": "What did the team learn about handling prompt exports?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-03",
+        "conflict-14-a",
+        "progress-07-baseline",
+        "conflict-14-b",
+        "progress-02-baseline"
+      ],
+      "relevant_note_ids": [
+        "learning-03"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-04",
+      "query": "What did the team learn about handling stale embeddings?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-04",
+        "conflict-01-a",
+        "learning-09",
+        "conflict-03-a",
+        "learning-07"
+      ],
+      "relevant_note_ids": [
+        "learning-04"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-05",
+      "query": "What did the team learn about handling silent data fixes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-05",
+        "conflict-10-b",
+        "learning-09",
+        "conflict-01-a",
+        "datafix-dfx-7202"
+      ],
+      "relevant_note_ids": [
+        "learning-05"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-06",
+      "query": "What did the team learn about handling ambiguous status reports?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-06",
+        "conflict-10-b",
+        "conflict-01-a",
+        "conflict-03-a",
+        "conflict-13-b"
+      ],
+      "relevant_note_ids": [
+        "learning-06"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-07",
+      "query": "What did the team learn about handling retrieval noise?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-07",
+        "conflict-01-a",
+        "learning-05",
+        "conflict-03-a",
+        "learning-01"
+      ],
+      "relevant_note_ids": [
+        "learning-07"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-08",
+      "query": "What did the team learn about handling handoff gaps?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-08",
+        "conflict-01-a",
+        "multi-12-scope",
+        "conflict-03-a",
+        "multi-02-scope"
+      ],
+      "relevant_note_ids": [
+        "learning-08"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-09",
+      "query": "What did the team learn about handling schema drift?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-09",
+        "conflict-01-a",
+        "item-item-4106",
+        "conflict-03-a",
+        "item-item-4116"
+      ],
+      "relevant_note_ids": [
+        "learning-09"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "learning-paraphrase-10",
+      "query": "What did the team learn about handling incident summaries?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-10",
+        "conflict-10-a",
+        "conflict-10-b",
+        "conflict-01-a",
+        "conflict-06-b"
+      ],
+      "relevant_note_ids": [
+        "learning-10"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-01",
+      "query": "For ITEM-5101, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-01-dependency",
+        "multi-01-scope",
+        "multi-05-dependency",
+        "learning-03",
+        "multi-09-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-01-scope",
+        "multi-01-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-02",
+      "query": "For ITEM-5102, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-02-scope",
+        "multi-05-dependency",
+        "multi-02-dependency",
+        "item-item-4118",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-02-scope",
+        "multi-02-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-03",
+      "query": "For ITEM-5103, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-03-dependency",
+        "multi-03-scope",
+        "multi-05-dependency",
+        "learning-03",
+        "multi-09-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-03-scope",
+        "multi-03-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-04",
+      "query": "For ITEM-5104, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-04-dependency",
+        "multi-04-scope",
+        "multi-05-dependency",
+        "item-item-4118",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-04-scope",
+        "multi-04-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-05",
+      "query": "For ITEM-5105, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-05-dependency",
+        "multi-05-scope",
+        "multi-09-dependency",
+        "learning-03",
+        "multi-06-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-05-scope",
+        "multi-05-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-06",
+      "query": "For ITEM-5106, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-06-dependency",
+        "multi-06-scope",
+        "multi-05-dependency",
+        "learning-03",
+        "multi-09-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-06-scope",
+        "multi-06-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-07",
+      "query": "For ITEM-5107, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-07-dependency",
+        "multi-07-scope",
+        "multi-05-dependency",
+        "item-item-4118",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-07-scope",
+        "multi-07-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-08",
+      "query": "For ITEM-5108, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-08-dependency",
+        "multi-08-scope",
+        "multi-05-dependency",
+        "multi-09-dependency",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-08-scope",
+        "multi-08-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-09",
+      "query": "For ITEM-5109, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-09-dependency",
+        "multi-09-scope",
+        "item-item-4118",
+        "multi-05-dependency",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-09-scope",
+        "multi-09-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-10",
+      "query": "For ITEM-5110, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-10-dependency",
+        "multi-10-scope",
+        "item-item-4118",
+        "learning-03",
+        "item-item-4103"
+      ],
+      "relevant_note_ids": [
+        "multi-10-scope",
+        "multi-10-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-11",
+      "query": "For ITEM-5111, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-11-scope",
+        "item-item-4118",
+        "multi-11-dependency",
+        "item-item-4110",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-11-scope",
+        "multi-11-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-12",
+      "query": "For ITEM-5112, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-12-scope",
+        "item-item-4118",
+        "multi-12-dependency",
+        "multi-10-dependency",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-12-scope",
+        "multi-12-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-13",
+      "query": "For ITEM-5113, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-13-dependency",
+        "multi-13-scope",
+        "item-item-4118",
+        "item-item-4103",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-13-scope",
+        "multi-13-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-14",
+      "query": "For ITEM-5114, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-14-dependency",
+        "multi-14-scope",
+        "item-item-4118",
+        "multi-15-dependency",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "multi-14-scope",
+        "multi-14-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "dependency-synthesis-15",
+      "query": "For ITEM-5115, who owns the rollout and what must finish before it begins?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-15-dependency",
+        "multi-15-scope",
+        "item-item-4118",
+        "learning-03",
+        "item-item-4103"
+      ],
+      "relevant_note_ids": [
+        "multi-15-scope",
+        "multi-15-dependency"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "ambiguous-conflict-01",
+      "query": "What is the agreed decision for the production rollout window?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-01-a",
+        "conflict-01-b",
+        "progress-03-baseline",
+        "isolation-primary-01",
+        "progress-08-baseline"
+      ],
+      "relevant_note_ids": [
+        "conflict-01-a",
+        "conflict-01-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-02",
+      "query": "What is the agreed decision for the customer export retention period?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-02-a",
+        "conflict-02-b",
+        "conflict-14-a",
+        "progress-02-current",
+        "progress-07-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-02-a",
+        "conflict-02-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-03",
+      "query": "What is the agreed decision for the Relay notification fallback?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-03-a",
+        "conflict-03-b",
+        "progress-02-current",
+        "item-item-4107",
+        "progress-07-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-03-a",
+        "conflict-03-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-04",
+      "query": "What is the agreed decision for the Ledger reconciliation threshold?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-04-a",
+        "conflict-04-b",
+        "progress-03-current",
+        "progress-08-current",
+        "conflict-10-a"
+      ],
+      "relevant_note_ids": [
+        "conflict-04-a",
+        "conflict-04-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-05",
+      "query": "What is the agreed decision for the Atlas migration cohort?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-05-b",
+        "conflict-05-a",
+        "multi-01-scope",
+        "progress-01-baseline",
+        "multi-06-scope"
+      ],
+      "relevant_note_ids": [
+        "conflict-05-a",
+        "conflict-05-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-06",
+      "query": "What is the agreed decision for the Beacon audit evidence format?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-06-b",
+        "conflict-06-a",
+        "progress-04-current",
+        "context-primary-064",
+        "progress-09-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-06-a",
+        "conflict-06-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-07",
+      "query": "What is the agreed decision for the Harbor support escalation route?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-07-a",
+        "conflict-07-b",
+        "progress-05-current",
+        "progress-05-baseline",
+        "progress-10-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-07-a",
+        "conflict-07-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-08",
+      "query": "What is the agreed decision for the datafix approval owner?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-08-a",
+        "conflict-08-b",
+        "progress-04-current",
+        "conflict-01-a",
+        "progress-09-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-08-a",
+        "conflict-08-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-09",
+      "query": "What is the agreed decision for the work-item completion definition?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-09-a",
+        "conflict-09-b",
+        "progress-03-current",
+        "progress-09-baseline",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-09-a",
+        "conflict-09-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-10",
+      "query": "What is the agreed decision for the incident severity threshold?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-10-a",
+        "conflict-10-b",
+        "learning-10",
+        "conflict-04-a",
+        "conflict-04-b"
+      ],
+      "relevant_note_ids": [
+        "conflict-10-a",
+        "conflict-10-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-11",
+      "query": "What is the agreed decision for the embedding refresh cadence?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-11-a",
+        "conflict-11-b",
+        "learning-04",
+        "learning-01",
+        "learning-08"
+      ],
+      "relevant_note_ids": [
+        "conflict-11-a",
+        "conflict-11-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-12",
+      "query": "What is the agreed decision for the model-cost reporting method?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-12-a",
+        "conflict-12-b",
+        "learning-08",
+        "learning-01",
+        "progress-01-baseline"
+      ],
+      "relevant_note_ids": [
+        "conflict-12-a",
+        "conflict-12-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-13",
+      "query": "What is the agreed decision for the release-readiness checklist?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-13-a",
+        "conflict-13-b",
+        "learning-08",
+        "learning-02",
+        "learning-06"
+      ],
+      "relevant_note_ids": [
+        "conflict-13-a",
+        "conflict-13-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-14",
+      "query": "What is the agreed decision for the prompt-log retention policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-14-a",
+        "conflict-14-b",
+        "conflict-02-a",
+        "learning-03",
+        "multi-04-scope"
+      ],
+      "relevant_note_ids": [
+        "conflict-14-a",
+        "conflict-14-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "ambiguous-conflict-15",
+      "query": "What is the agreed decision for the partner contract review date?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-15-a",
+        "conflict-15-b",
+        "learning-08",
+        "conflict-13-a",
+        "progress-02-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-15-a",
+        "conflict-15-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "isolation-item-01",
+      "query": "What is my approved recovery window for ITEM-8101?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-01",
+        "isolation-primary-09",
+        "isolation-primary-02",
+        "isolation-primary-10"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-01"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-02",
+      "query": "What is my approved recovery window for ITEM-8102?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-02",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06",
+        "isolation-primary-03"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-02"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-03",
+      "query": "What is my approved recovery window for ITEM-8103?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-03",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-03"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-04",
+      "query": "What is my approved recovery window for ITEM-8104?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-04",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-04"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-05",
+      "query": "What is my approved recovery window for ITEM-8105?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-05",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-02",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-05"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-06",
+      "query": "What is my approved recovery window for ITEM-8106?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-06",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-02",
+        "isolation-primary-08"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-06"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-07",
+      "query": "What is my approved recovery window for ITEM-8107?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-07",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06",
+        "isolation-primary-02"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-07"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-08",
+      "query": "What is my approved recovery window for ITEM-8108?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-08",
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-06",
+        "isolation-primary-02"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-08"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-09",
+      "query": "What is my approved recovery window for ITEM-8109?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-09",
+        "isolation-primary-01",
+        "isolation-primary-10",
+        "isolation-primary-02",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-09"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "isolation-item-10",
+      "query": "What is my approved recovery window for ITEM-8110?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-10",
+        "isolation-primary-01",
+        "isolation-primary-09",
+        "isolation-primary-02",
+        "isolation-primary-06"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-10"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context-01",
+      "query": "What is the office parking reimbursement policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-14-a",
+        "multi-06-scope",
+        "conflict-14-b",
+        "multi-14-scope",
+        "multi-04-scope"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context-02",
+      "query": "Which dental insurer covers contractor dependents?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-11-scope",
+        "multi-03-scope",
+        "multi-06-scope",
+        "multi-01-scope",
+        "multi-08-scope"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context-03",
+      "query": "What was the keynote speaker's travel itinerary?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-07",
+        "conflict-05-a",
+        "context-primary-006",
+        "context-primary-086",
+        "context-primary-111"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context-04",
+      "query": "When does the company cafeteria close on Fridays?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "context-primary-001",
+        "learning-08",
+        "context-primary-002",
+        "multi-05-scope",
+        "context-primary-003"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "no-context-05",
+      "query": "What is the corporate holiday gift budget?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "item-item-4103",
+        "item-item-4108",
+        "item-item-4118",
+        "multi-03-scope",
+        "multi-08-scope"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    }
+  ]
+}

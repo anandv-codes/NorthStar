@@ -5,6 +5,11 @@ import json
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+import sys
+import os
+import contextlib
+from datetime import datetime
+from io import StringIO
 
 from evals.retrieval import evaluate_retriever
 import time
@@ -16,6 +21,11 @@ from evals.scripts.run_retrieval_eval import (
     load_jsonl,
 )
 
+try:
+    import numpy as np
+except ImportError:  # pragma: no cover - optional local eval dependency
+    np = None
+
 
 DEFAULT_CASES_PATH = WORKSPACE_ROOT / "evals" / "datasets" / "northstar_rag_v1.jsonl"
 DEFAULT_CORPUS_PATH = WORKSPACE_ROOT / "evals" / "datasets" / "northstar_rag_v1_corpus.jsonl"
@@ -24,6 +34,38 @@ DEFAULT_CHROMA_PATH = WORKSPACE_ROOT / "evals" / ".chroma"
 DEFAULT_COLLECTION = "northstar_rag_v1_dense_eval"
 PRODUCTION_CHROMA_PATH = (WORKSPACE_ROOT / "chroma_data").resolve()
 PRODUCTION_COLLECTION = "notes"
+
+# Configure numpy print options to prevent overflow when numpy is available.
+if np is not None:
+    np.set_printoptions(threshold=5, edgeitems=2, linewidth=120, suppress=True)
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles numpy types."""
+    def default(self, o):
+        if np is not None and isinstance(o, np.ndarray):
+            return o.tolist()
+        if np is not None and isinstance(o, (np.integer, np.floating)):
+            return o.item()
+        if np is not None and isinstance(o, np.bool_):
+            return bool(o)
+        return super().default(o)
+
+
+@contextlib.contextmanager
+def suppress_stdout_stderr():
+    """Suppress both Python and C-level stdout/stderr output."""
+    save_stdout = sys.stdout
+    save_stderr = sys.stderr
+    sys.stdout = open(os.devnull, 'w')
+    sys.stderr = open(os.devnull, 'w')
+    try:
+        yield
+    finally:
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdout = save_stdout
+        sys.stderr = save_stderr
 
 
 class DenseEvaluationPrerequisiteError(RuntimeError):
@@ -116,21 +158,38 @@ def run_dense_evaluation(
             existing_count = 0
 
     if existing_count == 0:
+        print("Generating embeddings...", flush=True)
         docs = [str(note["raw_text"]) for note in corpus]
-        embeddings_list = _retry_call(embeddings.embed_documents, docs)
-        collection.add(
-            ids=[f"{note['user_id']}:{note['note_id']}" for note in corpus],
-            embeddings=embeddings_list,
-            metadatas=[
-                {
-                    "user_id": str(note["user_id"]),
-                    "note_id": str(note["note_id"]),
-                    "created_at": str(note["created_at"]),
-                }
-                for note in corpus
-            ],
-            documents=docs,
-        )
+
+        with suppress_stdout_stderr():
+            embeddings_list = _retry_call(embeddings.embed_documents, docs)
+            if np is not None and isinstance(embeddings_list, np.ndarray):
+                embeddings_list = embeddings_list.tolist()
+            else:
+                embeddings_list = [
+                    emb.tolist() if np is not None and isinstance(emb, np.ndarray) else list(emb)
+                    for emb in embeddings_list
+                ]
+
+        print(f"Adding {len(embeddings_list)} embeddings to collection...", flush=True)
+
+        with suppress_stdout_stderr():
+            _retry_call(
+                collection.add,
+                ids=[f"{note['user_id']}:{note['note_id']}" for note in corpus],
+                embeddings=embeddings_list,
+                metadatas=[
+                    {
+                        "user_id": str(note["user_id"]),
+                        "note_id": str(note["note_id"]),
+                        "created_at": str(note["created_at"]),
+                    }
+                    for note in corpus
+                ],
+                documents=docs,
+            )
+
+        print("Done.", flush=True)
     else:
         print(f"Reusing existing collection '{collection_name}' with {existing_count} embeddings; skipping re-embed.")
 
@@ -192,15 +251,24 @@ def main() -> None:
     parser.add_argument("--collection", default=DEFAULT_COLLECTION)
     parser.add_argument("--recreate", action="store_true", help="Delete and recreate the chroma collection (force re-embed).")
     parser.add_argument("--k", type=int, default=5)
+    parser.add_argument("--sample", type=int, default=None, help="Sample N items from corpus and cases for testing.")
     args = parser.parse_args()
 
     if args.k <= 0:
         parser.error("--k must be greater than zero")
 
+    cases = load_jsonl(args.cases)
+    corpus = load_jsonl(args.corpus)
+
+    if args.sample:
+        cases = cases[:args.sample]
+        corpus = corpus[:args.sample]
+        print(f"Running with sample size: {args.sample} (corpus: {len(corpus)}, cases: {len(cases)})", flush=True)
+
     try:
         report = run_dense_evaluation(
-            cases=load_jsonl(args.cases),
-            corpus=load_jsonl(args.corpus),
+            cases=cases,
+            corpus=corpus,
             k=args.k,
             chroma_path=args.chroma_path,
             collection_name=args.collection,
@@ -210,13 +278,34 @@ def main() -> None:
         parser.error(str(error))
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(json.dumps(report, indent=2, cls=NumpyEncoder) + "\n", encoding="utf-8")
     markdown_output = args.markdown_output or args.output.with_suffix(".md")
     markdown_output.parent.mkdir(parents=True, exist_ok=True)
     markdown_output.write_text(format_markdown_report(report), encoding="utf-8")
-    print(json.dumps(report["summary"], indent=2))
-    print(f"Wrote report: {args.output}")
-    print(f"Wrote Markdown report: {markdown_output}")
+
+    # Create log file with complete output
+    log_file = args.output.parent / f"dense_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    with open(log_file, 'w', encoding='utf-8') as f:
+        f.write("=" * 80 + "\n")
+        f.write(f"Dense Retrieval Evaluation Report\n")
+        f.write("=" * 80 + "\n\n")
+        f.write(json.dumps(report, indent=2, cls=NumpyEncoder) + "\n")
+
+    # Print clean summary to console
+    print("\n" + "=" * 80)
+    print("EVALUATION SUMMARY")
+    print("=" * 80)
+    summary = report.get("summary", {})
+    for key, value in summary.items():
+        if isinstance(value, float):
+            print(f"  {key}: {value:.4f}")
+        else:
+            print(f"  {key}: {value}")
+    print("=" * 80)
+
+    print(f"\n✓ Wrote report: {args.output}")
+    print(f"✓ Wrote Markdown report: {markdown_output}")
+    print(f"✓ Wrote complete log: {log_file}")
 
 
 if __name__ == "__main__":

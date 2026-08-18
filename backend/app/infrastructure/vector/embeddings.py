@@ -25,11 +25,11 @@ class LocalSentenceTransformerWrapper:
     def embed_documents(self, docs: list[str]) -> list[list[float]]:
         vecs = self._model.encode(docs, show_progress_bar=False)
         # Ensure list[list[float]]
-        return [list(v) for v in vecs]
+        return [[float(x) for x in v] for v in vecs]
 
     def embed_query(self, query: str) -> list[float]:
         vec = self._model.encode([query], show_progress_bar=False)
-        return list(vec[0])
+        return [float(x) for x in vec[0]]
 
 
 def get_embeddings() -> Any:

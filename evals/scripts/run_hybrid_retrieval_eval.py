@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ from evals.scripts.run_retrieval_eval import (
 
 DEFAULT_CASES_PATH = WORKSPACE_ROOT / "evals" / "datasets" / "northstar_rag_v1.jsonl"
 DEFAULT_CORPUS_PATH = WORKSPACE_ROOT / "evals" / "datasets" / "northstar_rag_v1_corpus.jsonl"
+DEFAULT_REWRITE_CACHE_PATH = WORKSPACE_ROOT / "evals" / "cache" / "northstar_rag_v1_rewrites.json"
 
 
 def _default_output_path(mode: str) -> Path:
@@ -32,6 +34,73 @@ def _default_output_path(mode: str) -> Path:
 
 def _collection_name(mode: str) -> str:
     return f"northstar_rag_v1_{mode}_eval"
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(WORKSPACE_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _load_rewrite_cache(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        return {}
+
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    entries = raw.get("entries", raw) if isinstance(raw, dict) else {}
+    if not isinstance(entries, dict):
+        return {}
+
+    return {
+        str(query): value
+        for query, value in entries.items()
+        if isinstance(value, dict)
+    }
+
+
+def _write_rewrite_cache(path: Path, entries: dict[str, dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "description": "Cached raw Gemini query rewrite results for hybrid retrieval evals.",
+        "entries": entries,
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _build_cached_rewriter(
+    rewrite_query_with_llm: Any,
+    cache_path: Path,
+    latency_seconds: float = 0.0,
+    refresh_cache: bool = False,
+) -> tuple[Any, dict[str, int]]:
+    cache = _load_rewrite_cache(cache_path)
+    stats = {"hits": 0, "misses": 0, "refreshes": 0}
+    last_request_at: float | None = None
+
+    def cached_rewrite_query_with_llm(user_query: str, recent_memory: dict[str, Any] | None = None) -> dict[str, Any]:
+        nonlocal last_request_at
+        cache_key = str(user_query)
+        if cache_key in cache and not refresh_cache:
+            stats["hits"] += 1
+            return dict(cache[cache_key])
+
+        stats["misses"] += 1
+        if cache_key in cache and refresh_cache:
+            stats["refreshes"] += 1
+        if latency_seconds > 0 and last_request_at is not None:
+            elapsed = time.monotonic() - last_request_at
+            if elapsed < latency_seconds:
+                time.sleep(latency_seconds - elapsed)
+
+        last_request_at = time.monotonic()
+        rewrite_result = rewrite_query_with_llm(user_query=user_query, recent_memory=recent_memory)
+        cache[cache_key] = dict(rewrite_result)
+        _write_rewrite_cache(cache_path, cache)
+        return rewrite_result
+
+    return cached_rewrite_query_with_llm, stats
 
 
 def _guarded_rewrite_query(query: str, rewrite_query_with_llm: Any, rewrite_tools: dict[str, Any]) -> tuple[str, dict[str, Any]]:
@@ -109,6 +178,9 @@ def run_hybrid_evaluation(
     mode: str,
     k: int,
     chroma_path: Path,
+    rewrite_cache_path: Path | None = None,
+    rewrite_latency_seconds: float = 0.0,
+    refresh_rewrite_cache: bool = False,
 ) -> dict[str, Any]:
     _validate_isolated_target(chroma_path, _collection_name(mode))
     chromadb, embeddings, embedding_model = _load_dense_dependencies()
@@ -126,8 +198,17 @@ def run_hybrid_evaluation(
     rewrite_query_with_llm = None
     rewrite_tools: dict[str, Any] | None = None
     rewrite_audits: dict[str, dict[str, Any]] = {}
+    rewrite_cache_stats: dict[str, int] | None = None
     if mode == "rewrite":
         from backend.app.infrastructure.llm.query_rewriter import rewrite_query_with_llm
+
+        if rewrite_cache_path is not None:
+            rewrite_query_with_llm, rewrite_cache_stats = _build_cached_rewriter(
+                rewrite_query_with_llm,
+                rewrite_cache_path,
+                latency_seconds=rewrite_latency_seconds,
+                refresh_cache=refresh_rewrite_cache,
+            )
 
         rewrite_tools = {
             "score_query_quality": score_query_quality,
@@ -141,7 +222,7 @@ def run_hybrid_evaluation(
     collection_name = _collection_name(mode)
     try:
         client.delete_collection(collection_name)
-    except ValueError:
+    except (ValueError, chromadb.errors.NotFoundError):
         pass
     collection = client.get_or_create_collection(collection_name)
     collection.add(
@@ -205,6 +286,10 @@ def run_hybrid_evaluation(
             audit["rewrite_used"] for audit in rewrite_audits.values()
         )
         summary["rewrite_case_count"] = len(rewrite_audits)
+        if rewrite_cache_stats is not None:
+            summary["rewrite_cache_hit_count"] = rewrite_cache_stats["hits"]
+            summary["rewrite_cache_miss_count"] = rewrite_cache_stats["misses"]
+            summary["rewrite_cache_refresh_count"] = rewrite_cache_stats["refreshes"]
     return {
         "runner": f"hybrid_{mode}_eval",
         "code_revision": git_revision(),
@@ -217,6 +302,9 @@ def run_hybrid_evaluation(
             "fusion": "production_rrf",
             "reranker": "production_token_overlap" if reranker is not None else "off",
             "rewrite": "production_guarded_rewrite_with_empty_synthetic_memory" if mode == "rewrite" else "off",
+            "rewrite_cache": _display_path(rewrite_cache_path) if rewrite_cache_path else "off",
+            "rewrite_latency_seconds": rewrite_latency_seconds if mode == "rewrite" else 0.0,
+            "refresh_rewrite_cache": bool(refresh_rewrite_cache) if mode == "rewrite" else False,
         },
         "case_count": len(case_results),
         "summary": summary,
@@ -234,11 +322,51 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--markdown-output", type=Path)
     parser.add_argument("--chroma-path", type=Path, default=DEFAULT_CHROMA_PATH)
+    parser.add_argument(
+        "--rewrite-cache",
+        type=Path,
+        default=DEFAULT_REWRITE_CACHE_PATH,
+        help="Cache file for raw LLM rewrite results when --mode rewrite. Use 'off' to disable.",
+    )
+    parser.add_argument(
+        "--latency",
+        "--rewrite-latency",
+        dest="rewrite_latency",
+        type=float,
+        default=None,
+        help="Minimum seconds between live rewrite requests. Applies only to cache misses.",
+    )
+    parser.add_argument(
+        "--rewrite-requests-per-minute",
+        type=float,
+        default=10.0,
+        help="Live rewrite request cap used when --rewrite-latency is omitted. Default: 10.",
+    )
+    parser.add_argument(
+        "--refresh-rewrite-cache",
+        action="store_true",
+        help="Ignore cached rewrite entries, call Gemini again, and overwrite cache entries.",
+    )
     parser.add_argument("--k", type=int, default=5)
     args = parser.parse_args()
 
     if args.k <= 0:
         parser.error("--k must be greater than zero")
+    if args.rewrite_latency is not None and args.rewrite_latency < 0:
+        parser.error("--rewrite-latency must be greater than or equal to zero")
+    if args.rewrite_requests_per_minute <= 0:
+        parser.error("--rewrite-requests-per-minute must be greater than zero")
+
+    rewrite_cache_path = None
+    if args.mode == "rewrite" and str(args.rewrite_cache).strip().lower() not in {"", "off", "none", "false"}:
+        rewrite_cache_path = args.rewrite_cache
+    rewrite_latency_seconds = 0.0
+    if args.mode == "rewrite":
+        rewrite_latency_seconds = (
+            args.rewrite_latency
+            if args.rewrite_latency is not None
+            else 60.0 / args.rewrite_requests_per_minute
+        )
 
     try:
         report = run_hybrid_evaluation(
@@ -247,6 +375,9 @@ def main() -> None:
             mode=args.mode,
             k=args.k,
             chroma_path=args.chroma_path,
+            rewrite_cache_path=rewrite_cache_path,
+            rewrite_latency_seconds=rewrite_latency_seconds,
+            refresh_rewrite_cache=args.refresh_rewrite_cache,
         )
     except (DenseEvaluationPrerequisiteError, ValueError) as error:
         parser.error(str(error))
