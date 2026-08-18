@@ -41,21 +41,61 @@ python -m evals.scripts.run_retrieval_eval --cases evals/datasets/northstar_rag_
 
 The builder fixes the corpus at 250 primary-user notes and 100 secondary-user notes. The validator requires all expected note references, claims, category counts, and the 15-case `always_surface_ambiguity` policy to remain intact.
 
+## Expanded V2 Merged Dataset
+
+V2 is an enhanced composite dataset merging semantic reasoning from V1 with personal learning contexts: 200 synthetic questions over 548 synthetic notes. It combines the updated 100 V1 work-memory queries (item synthesis, datafix synthesis, dependency semantic, progress tracking, conflict detection) with the original 100 V2 learning-focused queries (DSA revision, project status, topic history, quiz scheduling, life status tracking).
+
+Run BM25 retrieval evaluation from the workspace root:
+
+```powershell
+python -m evals.scripts.run_retrieval_eval --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl --output evals/results/northstar_rag_v2_bm25.json
+```
+
+This writes both a machine-readable JSON artifact and a scenario-by-scenario Markdown report:
+
+`evals/results/northstar_rag_v2_bm25.json`
+
+`evals/results/northstar_rag_v2_bm25.md`
+
+V2 enables cross-domain evaluation: testing whether the retrieval and ranking strategies generalize from work-memory lookups to personal learning tracking, and vice versa. The corpus contains 548 notes split across domain-specific categories (work items, datafixes, progress updates, learning notes, quiz records, project artifacts).
+
 ## Dense Chroma Baseline
 
-The dense runner evaluates the immutable v1 fixtures using the existing Gemini embedding provider and a dedicated Chroma path and collection. It never uses the production `chroma_data` path or `notes` collection, and it recreates only its own evaluation collection before each run.
+The dense runner evaluates fixtures using the existing Gemini embedding provider and a dedicated Chroma path and collection. It never uses the production `chroma_data` path or `notes` collection, and it recreates only its own evaluation collection before each run.
 
 Prerequisites: install `backend/requirements.txt` in the active Python environment and set `GEMINI_API_KEY`. The runner uses `EMBEDDING_MODEL_ID` when configured, otherwise `gemini-embedding-001`.
+
+Run against V1 fixtures:
 
 ```powershell
 python -m evals.scripts.run_dense_retrieval_eval
 ```
 
-It writes `evals/results/northstar_rag_v1_dense.json` and a matching scenario-by-scenario Markdown report. It measures retrieval only; it does not modify or evaluate generated answer wording.
+Or run against V2 merged dataset:
+
+```powershell
+python -m evals.scripts.run_dense_retrieval_eval --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl
+```
+
+For V1, output is written to:
+
+`evals/results/northstar_rag_v1_dense.json`
+
+`evals/results/northstar_rag_v1_dense.md`
+
+For V2, specify output paths:
+
+```powershell
+python -m evals.scripts.run_dense_retrieval_eval --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl --output evals/results/northstar_rag_v2_dense.json
+```
+
+Both measure retrieval only; they do not modify or evaluate generated answer wording.
 
 ## RRF and Reranker Baselines
 
 The hybrid runner compares the existing production RRF fusion with the same fusion followed by the existing token-overlap reranker. It also evaluates the current guarded production query rewrite against a controlled empty synthetic recent-memory input. It uses an isolated evaluation Chroma collection, an in-memory production `BM25Index`, and the shared scorecard. It does not call the production retrieval orchestrator, Supabase, or application vector collection.
+
+Run against V1 fixtures:
 
 ```powershell
 python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf
@@ -63,7 +103,21 @@ python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank
 python -m evals.scripts.run_hybrid_retrieval_eval --mode rewrite
 ```
 
-All three commands have the same dependency and `GEMINI_API_KEY` requirements as the dense baseline. They write `evals/results/northstar_rag_v1_rrf.*`, `evals/results/northstar_rag_v1_rerank.*`, and `evals/results/northstar_rag_v1_rewrite.*`. Rewrite reports also retain each case's query quality, confidence, risk flags, and guard decision in JSON. Because the rewrite run makes one model call for each eligible case, CI runs it only through opted-in manual dispatch.
+Or run against V2 merged dataset:
+
+```powershell
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rewrite --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl
+```
+
+All commands have the same dependency and `GEMINI_API_KEY` requirements as the dense baseline. For V1, they write `evals/results/northstar_rag_v1_rrf.*`, `evals/results/northstar_rag_v1_rerank.*`, and `evals/results/northstar_rag_v1_rewrite.*`. For V2, explicitly specify output paths:
+
+```powershell
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl --output evals/results/northstar_rag_v2_rrf.json
+```
+
+Rewrite reports also retain each case's query quality, confidence, risk flags, and guard decision in JSON. Because the rewrite run makes one model call for each eligible case, CI runs it only through opted-in manual dispatch.
 
 ## Fixture Rules
 
