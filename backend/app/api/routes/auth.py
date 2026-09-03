@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from ..deps import get_current_user_id
 from ...domain.auth.services import (
     create_user,
     get_refresh_token_by_jti,
@@ -33,7 +33,6 @@ from ...schemas.models import (
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def _normalize_email(email: str) -> str:
@@ -174,17 +173,7 @@ def logout(payload: RefreshRequest):
 
 
 @router.get("/me", response_model=UserProfileResponse)
-def me(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)):
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-    try:
-        decoded = decode_token(credentials.credentials, expected_type="access")
-    except (jwt.PyJWTError, ValueError) as exc:
-        raise HTTPException(status_code=401, detail="Invalid access token") from exc
-
-    user_id = str(decoded.get("sub") or "")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid access token")
+def me(user_id: str = Depends(get_current_user_id)):
     user = get_user_by_id(user_id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

@@ -4,7 +4,6 @@ const REFRESH_TOKEN_KEY = "northstar_refresh_token";
 const USER_ID_KEY = "northstar_user_id";
 
 export interface CreateNotePayload {
-  user_id: string;
   text: string;
 }
 
@@ -174,7 +173,6 @@ export interface QueryRetrievalResponse {
 }
 
 export interface ChatMessageRequest {
-  user_id: string;
   message: string;
   thread_id?: string | null;
 }
@@ -387,7 +385,7 @@ export async function fetchCurrentUser() {
 }
 
 export async function createNote(payload: CreateNotePayload) {
-  console.debug("[API] Submitting note for user:", payload.user_id);
+  console.debug("[API] Submitting note:", payload.text);
   const result = requestJson<{ note_id: string; status: string }>(
     `${BASE_URL}/notes`,
     {
@@ -400,56 +398,44 @@ export async function createNote(payload: CreateNotePayload) {
   return result;
 }
 
-export async function getNoteStatus(user_id: string, note_id: string) {
+export async function getNoteStatus(note_id: string) {
   console.debug("[API] Polling note status:", note_id);
-  return requestJson<NoteStatus>(
-    `${BASE_URL}/notes/${note_id}?user_id=${encodeURIComponent(user_id)}`,
-  );
+  return requestJson<NoteStatus>(`${BASE_URL}/notes/${note_id}`);
 }
 
-export async function getNoteMemory(user_id: string, note_id: string) {
+export async function getNoteMemory(note_id: string) {
   console.debug("[API] Loading note memory:", note_id);
   return requestJson<NoteMemoryResponse>(
-    `${BASE_URL}/notes/${note_id}/memory?user_id=${encodeURIComponent(user_id)}`,
+    `${BASE_URL}/notes/${note_id}/memory`,
   );
 }
 
-export async function fetchTasks(userId: string, status?: string) {
-  const query = status ? `&status=${encodeURIComponent(status)}` : "";
-  return requestJson<MemoryTask[]>(
-    `${BASE_URL}/tasks?user_id=${encodeURIComponent(userId)}${query}`,
-  );
+export async function fetchTasks(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return requestJson<MemoryTask[]>(`${BASE_URL}/tasks${query}`);
 }
 
-export async function fetchQuestions(userId: string, status?: string) {
-  const query = status ? `&status=${encodeURIComponent(status)}` : "";
-  return requestJson<MemoryQuestion[]>(
-    `${BASE_URL}/questions?user_id=${encodeURIComponent(userId)}${query}`,
-  );
+export async function fetchQuestions(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return requestJson<MemoryQuestion[]>(`${BASE_URL}/questions${query}`);
 }
 
-export async function fetchRisks(userId: string, status?: string) {
-  const query = status ? `&status=${encodeURIComponent(status)}` : "";
-  return requestJson<MemoryRisk[]>(
-    `${BASE_URL}/risks?user_id=${encodeURIComponent(userId)}${query}`,
-  );
+export async function fetchRisks(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return requestJson<MemoryRisk[]>(`${BASE_URL}/risks${query}`);
 }
 
-export async function fetchRecentMemory(userId: string, limit = 10) {
+export async function fetchRecentMemory(limit = 10) {
   return requestJson<RecentMemoryResponse>(
-    `${BASE_URL}/memory/recent?user_id=${encodeURIComponent(userId)}&limit=${limit}`,
+    `${BASE_URL}/memory/recent?limit=${limit}`,
   );
 }
 
-export async function retrieveQueryContext(
-  userId: string,
-  query: string,
-  limit = 5,
-) {
+export async function retrieveQueryContext(query: string, limit = 5) {
   return requestJson<QueryRetrievalResponse>(`${BASE_URL}/retrieval/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, query, limit }),
+    body: JSON.stringify({ query, limit }),
   });
 }
 
@@ -461,53 +447,41 @@ export async function sendChatMessage(payload: ChatMessageRequest) {
   });
 }
 
-export async function getChatThread(userId: string, threadId: string) {
+export async function getChatThread(threadId: string) {
   return requestJson<ChatThread>(
-    `${BASE_URL}/chat/threads/${encodeURIComponent(threadId)}?user_id=${encodeURIComponent(userId)}`,
+    `${BASE_URL}/chat/threads/${encodeURIComponent(threadId)}`,
   );
 }
 
 export async function patchTaskStatus(
-  userId: string,
   taskId: string,
   status: MemoryTask["status"],
 ) {
-  return requestJson<MemoryTask>(
-    `${BASE_URL}/tasks/${taskId}?user_id=${encodeURIComponent(userId)}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    },
-  );
+  return requestJson<MemoryTask>(`${BASE_URL}/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function patchQuestionStatus(
-  userId: string,
   questionId: string,
   status: MemoryQuestion["status"],
 ) {
-  return requestJson<MemoryQuestion>(
-    `${BASE_URL}/questions/${questionId}?user_id=${encodeURIComponent(userId)}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    },
-  );
+  return requestJson<MemoryQuestion>(`${BASE_URL}/questions/${questionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function patchRiskStatus(
-  userId: string,
   riskId: string,
   status: MemoryRisk["status"],
 ) {
-  return requestJson<MemoryRisk>(
-    `${BASE_URL}/risks/${riskId}?user_id=${encodeURIComponent(userId)}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    },
-  );
+  return requestJson<MemoryRisk>(`${BASE_URL}/risks/${riskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
 }

@@ -3,7 +3,6 @@ from typing import Any, Dict, Literal, Optional, List
 from pydantic import BaseModel, Field
 
 class NoteCreateRequest(BaseModel):
-    user_id: str = Field(..., description="User ID for the note")
     text: str = Field(..., min_length=1, description="Raw note text")
     metadata: Optional[dict] = Field(default_factory=dict)
 
@@ -195,7 +194,6 @@ class RecentMemoryResponse(BaseModel):
 
 
 class QueryRetrievalRequest(BaseModel):
-    user_id: str = Field(..., min_length=1)
     query: str = Field(..., min_length=1)
     limit: int = Field(default=5, ge=1, le=20)
 
@@ -235,7 +233,6 @@ class QueryRetrievalResponse(BaseModel):
 
 
 class ChatMessageRequest(BaseModel):
-    user_id: str = Field(..., min_length=1)
     message: str = Field(..., min_length=1)
     thread_id: Optional[str] = None
 

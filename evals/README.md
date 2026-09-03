@@ -59,6 +59,26 @@ This writes both a machine-readable JSON artifact and a scenario-by-scenario Mar
 
 V2 enables cross-domain evaluation: testing whether the retrieval and ranking strategies generalize from work-memory lookups to personal learning tracking, and vice versa. The corpus contains 548 notes split across domain-specific categories (work items, datafixes, progress updates, learning notes, quiz records, project artifacts).
 
+## Semantic-Bias V3 Dataset
+
+V1/V2 skew heavily toward exact-identifier lookups (`ITEM-*`, `DFX-*`), which BM25 solves trivially and which drown out any signal that hybrid or dense retrieval adds. V3 corrects for this: 228 cases built from 70 newly authored cases with weak-to-no lexical overlap between query and evidence (true paraphrase, colloquial-vs-jargon vocabulary mismatch, lexical near-miss traps where a high-overlap distractor should NOT win, multi-note synthesis with no shared identifier, and corrected cross-account synthesis), plus the 158 non-ID-anchored cases reused from V2 (the 31 exact/item-id-tagged cases, 6 legacy `seed` prototype duplicates, and 5 broken `isolation-synthesis-*` cases with dangling note references are excluded). The full V2 corpus (548 notes) is carried over unmodified, plus 95 new notes for the newly authored cases, for 643 notes total.
+
+Rebuild and validate the checked-in fixture from the workspace root:
+
+```powershell
+python -m evals.scripts.build_rag_v3_semantic_bias_dataset
+python -m evals.scripts.validate_rag_v3_dataset
+```
+
+Run any retrieval baseline against V3 by pointing `--cases`/`--corpus` at the V3 files, e.g.:
+
+```powershell
+python -m evals.scripts.run_retrieval_eval --cases evals/datasets/northstar_rag_v3.jsonl --corpus evals/datasets/northstar_rag_v3_corpus.jsonl --output evals/results/northstar_rag_v3_bm25.json
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf --cases evals/datasets/northstar_rag_v3.jsonl --corpus evals/datasets/northstar_rag_v3_corpus.jsonl --output evals/results/northstar_rag_v3_rrf.json
+```
+
+Cases carry a `v3` tag when newly authored (vs. reused from V2), plus a category tag (`paraphrase`, `vocabulary-mismatch`, `lexical-trap`, `synthesis`, `cross-account-synthesis`) so results can be broken down per category, not just as one flat average.
+
 ## Dense Chroma Baseline
 
 The dense runner evaluates fixtures using the existing Gemini embedding provider and a dedicated Chroma path and collection. It never uses the production `chroma_data` path or `notes` collection, and it recreates only its own evaluation collection before each run.

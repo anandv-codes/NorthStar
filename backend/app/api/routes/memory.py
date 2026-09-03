@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ..deps import get_current_user_id
 from ...schemas.models import (
     QuestionUpdateRequest,
     QuestionResponse,
@@ -28,12 +29,12 @@ router = APIRouter()
 
 
 @router.get("/tasks", response_model=list[TaskResponse])
-def get_tasks(user_id: str, status: str | None = None):
+def get_tasks(status: str | None = None, user_id: str = Depends(get_current_user_id)):
     return query_tasks_for_user(user_id=user_id, status=status)
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskResponse)
-def patch_task(task_id: str, user_id: str, payload: TaskUpdateRequest):
+def patch_task(task_id: str, payload: TaskUpdateRequest, user_id: str = Depends(get_current_user_id)):
     updates = payload.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="At least one field is required")
@@ -45,12 +46,12 @@ def patch_task(task_id: str, user_id: str, payload: TaskUpdateRequest):
 
 
 @router.get("/questions", response_model=list[QuestionResponse])
-def get_questions(user_id: str, status: str | None = "open"):
+def get_questions(status: str | None = "open", user_id: str = Depends(get_current_user_id)):
     return query_questions_for_user(user_id=user_id, status=status)
 
 
 @router.patch("/questions/{question_id}", response_model=QuestionResponse)
-def patch_question(question_id: str, user_id: str, payload: QuestionUpdateRequest):
+def patch_question(question_id: str, payload: QuestionUpdateRequest, user_id: str = Depends(get_current_user_id)):
     updates = payload.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="At least one field is required")
@@ -70,12 +71,12 @@ def patch_question(question_id: str, user_id: str, payload: QuestionUpdateReques
 
 
 @router.get("/risks", response_model=list[RiskResponse])
-def get_risks(user_id: str, status: str | None = "open"):
+def get_risks(status: str | None = "open", user_id: str = Depends(get_current_user_id)):
     return query_risks_for_user(user_id=user_id, status=status)
 
 
 @router.patch("/risks/{risk_id}", response_model=RiskResponse)
-def patch_risk(risk_id: str, user_id: str, payload: RiskUpdateRequest):
+def patch_risk(risk_id: str, payload: RiskUpdateRequest, user_id: str = Depends(get_current_user_id)):
     updates = payload.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="At least one field is required")
@@ -94,11 +95,11 @@ def patch_risk(risk_id: str, user_id: str, payload: RiskUpdateRequest):
     return updated
 
 @router.get("/concepts", response_model=list[ConceptResponse])
-def get_concepts(user_id: str, status: str | None = "open"):
+def get_concepts(status: str | None = "open", user_id: str = Depends(get_current_user_id)):
     return query_concepts_for_user(user_id=user_id, status=status)
 
 @router.patch("/concepts/{concept_id}", response_model=ConceptResponse)
-def patch_concept(concept_id: str, user_id: str, payload: ConceptUpdateRequest):
+def patch_concept(concept_id: str, payload: ConceptUpdateRequest, user_id: str = Depends(get_current_user_id)):
     updates = payload.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="At least one field is required")
@@ -108,5 +109,5 @@ def patch_concept(concept_id: str, user_id: str, payload: ConceptUpdateRequest):
     return updated
 
 @router.get("/memory/recent", response_model=RecentMemoryResponse)
-def get_recent_memory(user_id: str, limit: int = Query(default=10, ge=1, le=50)):
+def get_recent_memory(limit: int = Query(default=10, ge=1, le=50), user_id: str = Depends(get_current_user_id)):
     return query_recent_memory_for_user(user_id=user_id, limit=limit)

@@ -10,7 +10,7 @@ from ..memory.services import query_recent_memory_for_user
 from ..ports import EmbeddingProvider, QueryRewriter, VectorStore
 from ...infrastructure.llm.prompt_logger import append_pipeline_log
 from ...infrastructure.llm.query_rewriter import get_query_rewriter
-from .reranker.heuristic import TokenOverlapReranker
+from .reranker.semantic import SentenceTransformerReranker
 from .strategies.sparse import SparseBM25Retriever
 from .utils import tokenize
 from ...infrastructure.vector.embeddings import get_embedding_provider
@@ -22,9 +22,9 @@ MIN_QUERY_QUALITY_TO_REWRITE = float(os.getenv("QUERY_REWRITE_MIN_QUERY_QUALITY"
 MIN_REWRITE_CONFIDENCE = float(os.getenv("QUERY_REWRITE_MIN_CONFIDENCE", "0.55"))
 DEFAULT_QUERY_LIMIT = int(os.getenv("QUERY_RETRIEVAL_TOP_K", "5"))
 RRF_K = int(os.getenv("QUERY_RETRIEVAL_RRF_K", "60"))
-RERANKER_MODE = os.getenv("QUERY_RETRIEVAL_RERANKER", "off").strip().lower()
+RERANKER_MODE = os.getenv("QUERY_RETRIEVAL_RERANKER", "semantic").strip().lower()
 SPARSE_RETRIEVER = SparseBM25Retriever()
-RERANKER = TokenOverlapReranker() if RERANKER_MODE in {"token_overlap", "heuristic", "local", "true", "1", "yes", "on"} else None
+RERANKER = SentenceTransformerReranker() if RERANKER_MODE in {"semantic", "sentence", "cross", "local", "true", "1", "yes", "on"} else None
 
 
 def retrieve_query_context(

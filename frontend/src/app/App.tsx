@@ -85,7 +85,7 @@ function ChatPage({ userId, onOpenDashboard }: ChatPageProps) {
     let cancelled = false;
     const loadThread = async () => {
       try {
-        const thread = await getChatThread(userId, storedThreadId);
+        const thread = await getChatThread(storedThreadId);
         if (cancelled) {
           return;
         }
@@ -149,7 +149,6 @@ function ChatPage({ userId, onOpenDashboard }: ChatPageProps) {
 
     try {
       const response = await sendChatMessage({
-        user_id: userId,
         message: content,
         thread_id: threadId,
       });
@@ -341,7 +340,7 @@ function AddNotePage({ userId, onDone }: AddNotePageProps) {
 
     const interval = window.setInterval(async () => {
       try {
-        const result: NoteStatus = await getNoteStatus(userId, noteId);
+        const result: NoteStatus = await getNoteStatus(noteId);
         setStatus(result.status);
         if (result.status === "completed") {
           window.clearInterval(interval);
@@ -369,7 +368,7 @@ function AddNotePage({ userId, onDone }: AddNotePageProps) {
     setError(null);
     setStatus("processing");
     try {
-      const result = await createNote({ user_id: userId, text: text.trim() });
+      const result = await createNote({ text: text.trim() });
       setNoteId(result.note_id);
     } catch {
       setError("Failed to submit note.");
@@ -582,10 +581,10 @@ function App() {
     setError(null);
     try {
       const [taskData, questionData, riskData, recentData] = await Promise.all([
-        fetchTasks(userId),
-        fetchQuestions(userId),
-        fetchRisks(userId),
-        fetchRecentMemory(userId, 10),
+        fetchTasks(),
+        fetchQuestions(),
+        fetchRisks(),
+        fetchRecentMemory(10),
       ]);
       setTasks(taskData);
       setQuestions(questionData);
@@ -618,7 +617,7 @@ function App() {
     setActiveTaskId(taskId);
     setError(null);
     try {
-      await patchTaskStatus(userId, taskId, "completed");
+      await patchTaskStatus(taskId, "completed");
       await loadDashboard();
     } catch {
       setError("Failed to update task status.");
@@ -635,7 +634,7 @@ function App() {
     setError(null);
     const nextStatus = question.status === "open" ? "answered" : "open";
     try {
-      await patchQuestionStatus(userId, question.question_id, nextStatus);
+      await patchQuestionStatus(question.question_id, nextStatus);
       await loadDashboard();
     } catch {
       setError("Failed to update question status.");
@@ -652,7 +651,7 @@ function App() {
     setError(null);
     const nextStatus = risk.status === "resolved" ? "open" : "resolved";
     try {
-      await patchRiskStatus(userId, risk.risk_id, nextStatus);
+      await patchRiskStatus(risk.risk_id, nextStatus);
       await loadDashboard();
     } catch {
       setError("Failed to update risk status.");

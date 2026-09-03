@@ -2,7 +2,8 @@ import uuid
 import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from ..deps import get_current_user_id
 from ...schemas.models import NoteCreateRequest, NoteStatusResponse, NoteMemoryResponse
 from ...infrastructure.db.supabase_client import put_note_item, get_note_item
 from ...domain.memory.services import (
@@ -26,14 +27,14 @@ router = APIRouter()
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
-def create_note(payload: NoteCreateRequest):
+def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_user_id)):
     note_id = str(uuid.uuid4())
     created_at = datetime.now(timezone.utc).isoformat()
-    print(f"[HANDLER] create_note: user_id={payload.user_id}, note_id={note_id}")
+    print(f"[HANDLER] create_note: user_id={user_id}, note_id={note_id}")
 
     item = {
         "note_id": note_id,
-        "user_id": payload.user_id,
+        "user_id": user_id,
         "status": "processing",
         "created_at": created_at,
         "raw_text": payload.text,
@@ -47,7 +48,7 @@ def create_note(payload: NoteCreateRequest):
     print(f"[HANDLER] Sending SQS job")
     send_note_job(                          #Create SQS job for note processing lambda
         {
-            "user_id": payload.user_id,
+            "user_id": user_id,
             "note_id": note_id,
             "created_at": created_at,
             "raw_text": payload.text,
@@ -58,7 +59,7 @@ def create_note(payload: NoteCreateRequest):
         # Local debug helper: process in-process so breakpoints in note_processor hit reliably.
         process_sqs_message(
             {
-                "user_id": payload.user_id,
+                "user_id": user_id,
                 "note_id": note_id,
                 "created_at": created_at,
                 "raw_text": payload.text,
@@ -69,7 +70,7 @@ def create_note(payload: NoteCreateRequest):
 
 
 @router.get("/{note_id}", response_model=NoteStatusResponse)
-def get_note_status(note_id: str, user_id: str):
+def get_note_status(note_id: str, user_id: str = Depends(get_current_user_id)):
     print(f"[HANDLER] get_note_status: note_id={note_id}, user_id={user_id}")
     item = get_note_item(user_id=user_id, note_id=note_id)
     if not item:
@@ -79,7 +80,7 @@ def get_note_status(note_id: str, user_id: str):
 
 
 @router.get("/{note_id}/memory", response_model=NoteMemoryResponse)
-def get_note_memory(note_id: str, user_id: str):
+def get_note_memory(note_id: str, user_id: str = Depends(get_current_user_id)):
     print(f"[HANDLER] get_note_memory: note_id={note_id}, user_id={user_id}")
     note = get_note_item(user_id=user_id, note_id=note_id)
     if not note:
@@ -110,7 +111,7 @@ def get_note_memory(note_id: str, user_id: str):
 
 
 @router.post("/poll/process-jobs")
-def poll_and_process_jobs():
+def poll_and_process_jobs(_: str = Depends(get_current_user_id)):
     """Poll SQS queue for pending note jobs and process them synchronously."""
     logger.info("[HANDLER] Starting SQS polling")
     messages = poll_sqs_messages(max_messages=10, wait_time_seconds=1)
