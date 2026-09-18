@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import re
 from typing import Any
 from langchain_core.messages import HumanMessage
@@ -9,13 +10,15 @@ from ...schemas.models import WorkMemoryExtraction
 from .prompt_logger import log_gemini_interaction
 from .prompt_loader import load_prompt
 
+logger = logging.getLogger(__name__)
+
 def call_gemini_api(note_text: str, related_notes: list[dict[str, Any]] | None = None) -> dict:
 
 
     parse_result = parse_note_text(note_text)
     prompt = generate_gemini_prompt(parse_result, related_notes=related_notes or [])
     output_text = invoke_gemini(prompt)
-    print(f"Gemini raw output: {output_text[:500]}")
+    logger.info(f"Gemini raw output: {output_text[:500]}")
     parsed_response = None
     parse_error = None
     try:
@@ -41,7 +44,7 @@ def invoke_gemini(prompt_text: str) -> str:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
     model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
-    print(f"prompt_text={prompt_text}")
+    logger.debug(f"prompt_text={prompt_text}")
     model = ChatGoogleGenerativeAI(
         google_api_key=api_key,
         model=model_id,
@@ -51,7 +54,7 @@ def invoke_gemini(prompt_text: str) -> str:
     )
 
     response = model.invoke([HumanMessage(content=prompt_text)])
-    print(f"Gemini response object: {response}")
+    logger.debug(f"Gemini response object: {response}")
     return extract_text_from_response(response)
 
 

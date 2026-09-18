@@ -626,6 +626,161 @@ class SupabaseMemoryRepository:
                 entities.append(entity)
         return entities
 
+    # Phase A: Entity-linked context retrieval (deterministic reverse lookup via shared entity references)
+
+    def query_entity_names_for_user(self, user_id: str) -> list[str]:
+        """Fetch all distinct entity names for a user (cache for substring matching)."""
+        try:
+            response = (
+                supabase.table(ENTITIES_TABLE)
+                .select("name")
+                .eq("user_id", user_id)
+                .order("name", desc=False)
+                .execute()
+            )
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        rows = response.data if isinstance(response.data, list) else []
+        return [str(row.get("name", "")).strip() for row in rows if row.get("name")]
+
+    def query_source_notes_by_entity_names(
+        self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """
+        Find all OTHER notes linked to matched entity names via memory_item_entities.
+        
+        Returns: List of dicts with note_id, raw_text, enriched_summary, created_at (most recent first).
+        """
+        if not entity_names:
+            return []
+
+        try:
+            query = (
+                supabase.table(NOTES_TABLE)
+                .select("note_id, raw_text, enriched_summary, created_at")
+                .eq("user_id", user_id)
+                .in_("note_id", self._get_note_ids_by_entity_names(user_id, entity_names))
+            )
+            if exclude_note_id:
+                query = query.neq("note_id", exclude_note_id)
+            
+            response = query.order("created_at", desc=True).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return response.data if isinstance(response.data, list) else []
+
+    def query_memory_items_by_entity_names(
+        self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """
+        Find all structured items (tasks/facts/questions/decisions/risks/concepts) linked to entity names.
+        
+        Returns: List of dicts with item_type, item_id, status (if applicable), content, confidence, created_at.
+        Grouped conceptually by item_type and status (client-side or via post-processing).
+        """
+        if not entity_names:
+            return []
+        
+        # Normalized entity names for matching
+        normalized_names = [str(name).strip().lower() for name in entity_names if name]
+        if not normalized_names:
+            return []
+
+        items = []
+        # Fetch each item type separately and merge
+        for item_type_config in [
+            ("tasks", TASKS_TABLE, ["task_id", "status", "description", "confidence", "created_at"]),
+            ("facts", FACTS_TABLE, ["fact_id", "content", "confidence", "created_at"]),
+            ("questions", QUESTIONS_TABLE, ["question_id", "status", "question", "confidence", "created_at"]),
+            ("decisions", DECISIONS_TABLE, ["decision_id", "decision", "confidence", "created_at"]),
+            ("risks", RISKS_TABLE, ["risk_id", "status", "risk", "confidence", "created_at"]),
+            ("concepts", CONCEPTS_TABLE, ["concept_id", "status", "label", "confidence", "created_at"]),
+        ]:
+            item_type, table, fields = item_type_config
+            try:
+                # Get all items of this type linked to the matched entities
+                response = (
+                    supabase.table(table)
+                    .select(", ".join(fields))
+                    .eq("user_id", user_id)
+                    .execute()
+                )
+                type_items = response.data if isinstance(response.data, list) else []
+                
+                # Filter by entity names and exclude source note
+                for item in type_items:
+                    if exclude_note_id and item.get("source_note_id") == exclude_note_id:
+                        continue
+                    # Get entities linked to this item
+                    try:
+                        entity_response = (
+                            supabase.table(MEMORY_ITEM_ENTITIES_TABLE)
+                            .select("entity:entities(name)")
+                            .eq("item_type", item_type.rstrip("s"))  # "tasks" -> "task"
+                            .eq(f"{item_type.rstrip('s')}_id", list(item.values())[0])  # First field is the ID
+                            .execute()
+                        )
+                        entity_links = entity_response.data if isinstance(entity_response.data, list) else []
+                        item_entities = [str(link.get("entity", {}).get("name", "")).strip().lower() 
+                                        for link in entity_links if link.get("entity")]
+                        
+                        # Check if any matched entity is linked to this item
+                        if any(e in normalized_names for e in item_entities):
+                            items.append({
+                                "item_type": item_type.rstrip("s"),  # Singular form
+                                "item_id": list(item.values())[0],
+                                "content": item.get("question") or item.get("description") or 
+                                          item.get("content") or item.get("decision") or 
+                                          item.get("risk") or item.get("label", ""),
+                                "status": item.get("status"),
+                                "confidence": item.get("confidence"),
+                                "created_at": item.get("created_at"),
+                            })
+                    except APIError:
+                        # If entity lookup fails for this item, skip it
+                        continue
+            except APIError as exc:
+                # Log but continue with next item type
+                import logging
+                logging.warning(f"Failed to query {table} by entity names: {exc}")
+        
+        # Sort by created_at descending
+        items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+        return items
+
+    def _get_note_ids_by_entity_names(self, user_id: str, entity_names: list[str]) -> list[str]:
+        """Helper: find note_ids linked to entity names via memory_item_entities."""
+        if not entity_names:
+            return []
+        
+        try:
+            # First get entity IDs for these names
+            entity_response = (
+                supabase.table(ENTITIES_TABLE)
+                .select("entity_id")
+                .eq("user_id", user_id)
+                .in_("name", entity_names)
+                .execute()
+            )
+            entity_rows = entity_response.data if isinstance(entity_response.data, list) else []
+            entity_ids = [row.get("entity_id") for row in entity_rows if row.get("entity_id")]
+            
+            if not entity_ids:
+                return []
+            
+            # Then get all source_note_ids linked to these entities
+            link_response = (
+                supabase.table(MEMORY_ITEM_ENTITIES_TABLE)
+                .select("source_note_id")
+                .in_("entity_id", entity_ids)
+                .execute()
+            )
+            link_rows = link_response.data if isinstance(link_response.data, list) else []
+            note_ids = [str(row.get("source_note_id")) for row in link_rows if row.get("source_note_id")]
+            return list(set(note_ids))  # Dedupe
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+
 
 # Status transitions are enforced here (co-located with the persistence calls
 # that read/write status) to keep the read-modify-write check atomic with the

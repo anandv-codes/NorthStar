@@ -19,11 +19,11 @@ from ..domain.memory.services import (
     upsert_entities,
 )
 from ..infrastructure.llm.prompt_logger import append_deterministic_resolution_log
-from ..infrastructure.vector.vectorstore import query_related_notes, upsert_note_embedding
+from ..infrastructure.vector.vectorstore import upsert_note_embedding
+from ..domain.query_retrieval.note_context_provider import fetch_note_context
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-ENABLE_RAG = os.getenv("ENABLE_RAG", "false").strip().lower() == "true"
 
 def process_sqs_message(body:dict)-> dict:
     ##Extract data & call Gemini
@@ -37,19 +37,38 @@ def process_sqs_message(body:dict)-> dict:
             raise ValueError(f"Missing required fields")
         logger.info(f"Processing {note_id} for user {user_id}")
 
-        related_notes = []
-        note_embedding = None
-        if ENABLE_RAG:
-            try:
-                note_embedding = get_embeddings().embed_query(raw_text)
-                related_notes = query_related_notes(
-                    user_id=user_id,
-                    embedding=note_embedding,
-                    k=3,
-                    exclude_note_id=note_id,
-                )
-            except Exception as exc:
-                logger.warning(f"RAG embeddings failed; continuing without related notes: {exc}")
+        # Phase A + R: Fetch context via BOTH hybrid semantic retrieval AND entity-linked deterministic matching.
+        try:
+            context_result = fetch_note_context(
+                user_id=user_id,
+                raw_text=raw_text,
+                limit_hybrid=3,
+                exclude_note_id=note_id,
+            )
+            related_notes = context_result.get("related_notes", [])
+            matched_entity_names = context_result.get("matched_entity_names", [])
+            memory_items = context_result.get("memory_items", [])
+            retrieval_sources = context_result.get("retrieval_sources", {})
+            
+            logger.info(
+                f"Context retrieval: {retrieval_sources.get('hybrid_count', 0)} hybrid + "
+                f"{retrieval_sources.get('entity_linked_count', 0)} entity-linked = "
+                f"{retrieval_sources.get('merged_note_count', 0)} merged notes, "
+                f"{len(matched_entity_names)} entity names matched, "
+                f"{retrieval_sources.get('memory_items_count', 0)} memory items"
+            )
+        except Exception as exc:
+            logger.warning(f"Context retrieval failed; continuing without related context: {exc}")
+            related_notes = []
+            matched_entity_names = []
+            memory_items = []
+
+        # Get embedding for later upsert to vector store.
+        try:
+            note_embedding = get_embeddings().embed_query(raw_text)
+        except Exception as exc:
+            logger.warning(f"Embedding generation failed; continuing without vector upsert: {exc}")
+            note_embedding = None
 
         enrichment_res = call_gemini_api(raw_text, related_notes=related_notes)
         logger.info(f"Gemini response: {enrichment_res}")
@@ -168,7 +187,8 @@ def process_sqs_message(body:dict)-> dict:
             resolution=resolution,
         )
 
-        if ENABLE_RAG and note_embedding is not None:
+        # RAG is always enabled: upsert the embedding to the vector store for future retrieval.
+        if note_embedding is not None:
             # Upsert after the DB update so failed enrichment does not pollute
             # the local vector index.
             upsert_note_embedding(

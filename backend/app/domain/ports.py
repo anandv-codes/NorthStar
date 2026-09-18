@@ -118,6 +118,17 @@ class MemoryRepository(Protocol):
 
     def query_entities_by_source_note(self, user_id: str, note_id: str) -> list[dict[str, Any]]: ...
 
+    # Phase A: Entity-linked context retrieval (deterministic reverse lookup via shared entity references)
+    def query_entity_names_for_user(self, user_id: str) -> list[str]: ...
+
+    def query_source_notes_by_entity_names(
+        self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
+    ) -> list[dict[str, Any]]: ...
+
+    def query_memory_items_by_entity_names(
+        self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
+    ) -> list[dict[str, Any]]: ...
+
 
 class NoteRepository(Protocol):
     """Read access to raw notes, used by the sparse (BM25) retriever."""

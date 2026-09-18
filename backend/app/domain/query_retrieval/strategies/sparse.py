@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import math
-from collections import Counter
 from dataclasses import dataclass
 from typing import Any, List, Sequence
+
+from rank_bm25 import BM25Okapi
 
 from ...ports import NoteRepository
 from ..utils import combine_note_text, fingerprint_notes, tokenize
@@ -12,73 +12,32 @@ from ....infrastructure.db.supabase_client import get_note_repository
 
 
 @dataclass(slots=True)
-class IndexedDocument:
-    note: dict[str, Any]
-    term_frequencies: Counter[str]
-    length: int
-
-
-@dataclass(slots=True)
 class BM25Index:
-    documents: list[IndexedDocument]
-    document_frequency: dict[str, int]
-    average_document_length: float
+    notes: list[dict[str, Any]]
+    model: BM25Okapi | None
 
     @classmethod
     def from_notes(cls, notes: Sequence[dict[str, Any]]) -> "BM25Index":
-        documents: list[IndexedDocument] = []
-        document_frequency: dict[str, int] = {}
-        total_length = 0
-
-        for note in notes:
-            tokens = tokenize(combine_note_text(note))
-            term_frequencies = Counter(tokens)
-            documents.append(
-                IndexedDocument(
-                    note=note,
-                    term_frequencies=term_frequencies,
-                    length=len(tokens),
-                )
-            )
-            total_length += len(tokens)
-            for token in term_frequencies:
-                document_frequency[token] = document_frequency.get(token, 0) + 1
-
-        average_document_length = total_length / len(documents) if documents else 0.0
-        return cls(
-            documents=documents,
-            document_frequency=document_frequency,
-            average_document_length=average_document_length,
-        )
+        notes = list(notes)
+        tokenized_corpus = [tokenize(combine_note_text(note)) for note in notes]
+        model = BM25Okapi(tokenized_corpus) if tokenized_corpus else None
+        return cls(notes=notes, model=model)
 
     def search(self, query: str, limit: int, k1: float, b: float) -> list[dict[str, Any]]:
         query_tokens = tokenize(query)
-        if not query_tokens or not self.documents:
+        if not query_tokens or not self.notes or self.model is None:
             return []
 
-        document_count = len(self.documents)
-        scored_results: list[tuple[float, dict[str, Any]]] = []
+        # rank_bm25 defaults (k1=1.5, b=0.75) match the previous hand-rolled implementation.
+        self.model.k1 = k1
+        self.model.b = b
+        scores = self.model.get_scores(query_tokens)
 
-        for document in self.documents:
-            if document.length <= 0:
-                continue
-
-            score = 0.0
-            for token in query_tokens:
-                term_frequency = document.term_frequencies.get(token)
-                if not term_frequency:
-                    continue
-
-                document_frequency = self.document_frequency.get(token, 0)
-                idf = math.log((document_count - document_frequency + 0.5) / (document_frequency + 0.5) + 1.0)
-                denominator = term_frequency + k1 * (
-                    1.0 - b + b * (document.length / self.average_document_length if self.average_document_length > 0 else 1.0)
-                )
-                score += idf * ((term_frequency * (k1 + 1.0)) / denominator)
-
-            if score > 0.0:
-                scored_results.append((score, document.note))
-
+        scored_results = [
+            (float(score), note)
+            for score, note in zip(scores, self.notes)
+            if score > 0.0
+        ]
         scored_results.sort(
             key=lambda item: (
                 -item[0],
@@ -104,6 +63,9 @@ _INDEX_CACHE: dict[str, tuple[str, BM25Index]] = {}
 
 def _get_index_for_user(user_id: str, note_repository: NoteRepository) -> BM25Index:
     notes = note_repository.query_notes_for_user(user_id=user_id)
+    # Cheap identity check (note_id + updated_at only, no full-text hashing) to decide whether
+    # the BM25 index needs rebuilding; still requires a full fetch since NoteRepository has no
+    # lighter-weight "has anything changed" query today.
     cache_key = fingerprint_notes(notes)
     cached = _INDEX_CACHE.get(user_id)
     if cached and cached[0] == cache_key:

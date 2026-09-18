@@ -32,14 +32,13 @@ def combine_note_text(note: dict[str, Any]) -> str:
 
 
 def fingerprint_notes(notes: Sequence[dict[str, Any]]) -> str:
+    # Assumes updated_at/created_at changes whenever note content changes, so this only hashes
+    # id + timestamp per note instead of hashing every note's full text on every cache check.
     digest = hashlib.sha1()
 
     for note in sorted(notes, key=lambda item: str(item.get("note_id") or "")):
         note_id = str(note.get("note_id") or "")
         updated_at = str(note.get("updated_at") or note.get("created_at") or "")
-        text = combine_note_text(note)
-        text_digest = hashlib.sha1(text.encode("utf-8")).hexdigest()
-        payload = "|".join([note_id, updated_at, str(len(text)), text_digest])
-        digest.update(payload.encode("utf-8"))
+        digest.update(f"{note_id}|{updated_at}".encode("utf-8"))
 
     return digest.hexdigest()

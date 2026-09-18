@@ -1,8 +1,11 @@
 import os
 import tempfile
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def get_log_path() -> Path:
@@ -122,9 +125,9 @@ def log_gemini_interaction(
             f.write("END OF LOG\n")
             f.write("=" * 80 + "\n")
 
-        print(f"[PROMPT_LOGGER] Log written to: {log_path}")
+        logger.debug(f"Log written to: {log_path}")
     except Exception as exc:
-        print(f"[PROMPT_LOGGER] Failed to write log file: {exc}")
+        logger.warning(f"Failed to write log file: {exc}")
 
 
 def append_deterministic_resolution_log(
@@ -194,9 +197,9 @@ def append_deterministic_resolution_log(
             else:
                 f.write("  (none)\n")
 
-        print(f"[PROMPT_LOGGER] Deterministic resolution log appended to: {log_path}")
+        logger.debug(f"Deterministic resolution log appended to: {log_path}")
     except Exception as exc:
-        print(f"[PROMPT_LOGGER] Failed to append deterministic resolution log: {exc}")
+        logger.warning(f"Failed to append deterministic resolution log: {exc}")
 
 
 def append_pipeline_log(stage: str, lines: list[str]) -> None:
@@ -214,9 +217,9 @@ def append_pipeline_log(stage: str, lines: list[str]) -> None:
             for line in safe_lines:
                 f.write(f"- {line}\n")
 
-        print(f"[PROMPT_LOGGER] Pipeline log appended to: {log_path}")
+        logger.debug(f"Pipeline log appended to: {log_path}")
     except Exception as exc:
-        print(f"[PROMPT_LOGGER] Failed to append pipeline log: {exc}")
+        logger.warning(f"Failed to append pipeline log: {exc}")
 
 
 class FilePipelineLogger:

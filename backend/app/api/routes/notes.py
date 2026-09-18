@@ -30,7 +30,7 @@ router = APIRouter()
 def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_user_id)):
     note_id = str(uuid.uuid4())
     created_at = datetime.now(timezone.utc).isoformat()
-    print(f"[HANDLER] create_note: user_id={user_id}, note_id={note_id}")
+    logger.info(f"create_note: user_id={user_id}, note_id={note_id}")
 
     item = {
         "note_id": note_id,
@@ -41,11 +41,11 @@ def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_u
         "metadata": payload.metadata,
     }
 
-    print(f"[HANDLER] Saving note to Supabase")
+    logger.info("Saving note to Supabase")
     put_note_item(item)                         #Save initial note with status "processing"
 
 
-    print(f"[HANDLER] Sending SQS job")
+    logger.info("Sending SQS job")
     send_note_job(                          #Create SQS job for note processing lambda
         {
             "user_id": user_id,
@@ -71,17 +71,17 @@ def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_u
 
 @router.get("/{note_id}", response_model=NoteStatusResponse)
 def get_note_status(note_id: str, user_id: str = Depends(get_current_user_id)):
-    print(f"[HANDLER] get_note_status: note_id={note_id}, user_id={user_id}")
+    logger.info(f"get_note_status: note_id={note_id}, user_id={user_id}")
     item = get_note_item(user_id=user_id, note_id=note_id)
     if not item:
         raise HTTPException(status_code=404, detail="Note not found")
-    print(f"[HANDLER] Note status: {item.get('status')}")
+    logger.info(f"Note status: {item.get('status')}")
     return item
 
 
 @router.get("/{note_id}/memory", response_model=NoteMemoryResponse)
 def get_note_memory(note_id: str, user_id: str = Depends(get_current_user_id)):
-    print(f"[HANDLER] get_note_memory: note_id={note_id}, user_id={user_id}")
+    logger.info(f"get_note_memory: note_id={note_id}, user_id={user_id}")
     note = get_note_item(user_id=user_id, note_id=note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -106,7 +106,7 @@ def get_note_memory(note_id: str, user_id: str = Depends(get_current_user_id)):
         "concepts": concepts,
         "entities": entities,
     }
-    print(f"[HANDLER] memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, risks={len(risks)}, concepts={len(concepts)}, entities={len(entities)}")
+    logger.info(f"memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, risks={len(risks)}, concepts={len(concepts)}, entities={len(entities)}")
     return payload
 
 

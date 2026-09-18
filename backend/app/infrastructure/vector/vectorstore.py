@@ -5,12 +5,19 @@ from typing import Any
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_data")
 CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "notes")
 
+_CHROMA_CLIENT = None
+_CHROMA_COLLECTION_CACHE = None
+
 
 def _collection():
-    import chromadb
+    # Reuse a single persistent client/collection instead of reopening the on-disk DB every call.
+    global _CHROMA_CLIENT, _CHROMA_COLLECTION_CACHE
+    if _CHROMA_COLLECTION_CACHE is None:
+        import chromadb
 
-    client = chromadb.PersistentClient(path=CHROMA_PATH)
-    return client.get_or_create_collection(CHROMA_COLLECTION)
+        _CHROMA_CLIENT = chromadb.PersistentClient(path=CHROMA_PATH)
+        _CHROMA_COLLECTION_CACHE = _CHROMA_CLIENT.get_or_create_collection(CHROMA_COLLECTION)
+    return _CHROMA_COLLECTION_CACHE
 
 
 def upsert_note_embedding(

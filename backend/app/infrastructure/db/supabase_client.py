@@ -1,10 +1,13 @@
 import os
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from postgrest import APIError
 from supabase import create_client, Client
+
+logger = logging.getLogger(__name__)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -19,17 +22,17 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 #Insert new note
 def put_note_item(item: Dict[str, Any]) -> Any:
-    print(f"[SUPABASE] Inserting note: {item.get('note_id')}")
+    logger.info(f"Inserting note: {item.get('note_id')}")
     try:
         response = supabase.table(SUPABASE_NOTES_TABLE).insert(item).execute()
     except APIError as e:
         raise RuntimeError(str(e))
-    print(f"[SUPABASE] Note inserted successfully")
+    logger.info("Note inserted successfully")
     return response.data
 
 #Update existing note 
 def update_note_item(user_id: str, note_id: str, updates: Dict[str, Any]) -> Any:
-    print(f"[SUPABASE] Updating note: {note_id} user:{user_id} with status={updates.get('status')}")
+    logger.info(f"Updating note: {note_id} user:{user_id} with status={updates.get('status')}")
     try:
         response = (
             supabase.table(SUPABASE_NOTES_TABLE)
@@ -40,12 +43,12 @@ def update_note_item(user_id: str, note_id: str, updates: Dict[str, Any]) -> Any
         )
     except APIError as e:
         raise RuntimeError(str(e))
-    print(f"[SUPABASE] Note updated successfully")
+    logger.info("Note updated successfully")
     return response.data
 
 #Fetch single note by user_id and note_id
 def get_note_item(user_id: str, note_id: str) -> Dict[str, Any]:
-    print(f"[SUPABASE] Fetching note: {note_id}")
+    logger.info(f"Fetching note: {note_id}")
     try:
         response = (
             supabase.table(SUPABASE_NOTES_TABLE)
@@ -56,18 +59,18 @@ def get_note_item(user_id: str, note_id: str) -> Dict[str, Any]:
             .execute()
         )
     except APIError as e:
-        print(f"[SUPABASE] Fetch error: {e}")
+        logger.warning(f"Fetch error: {e}")
         return {}
     if response is None:
-        print("[SUPABASE] No note found")
+        logger.info("No note found")
         return {}
     result = response.data if isinstance(response.data, dict) else {}
-    print(f"[SUPABASE] Note found, status: {result.get('status')}")
+    logger.info(f"Note found, status: {result.get('status')}")
     return result
 
 #Query notes for a user, optionally filtering by status
 def query_notes_for_user(user_id: str, status: str | None = None) -> List[Dict[str, Any]]:
-    print(f"[SUPABASE] Querying notes for user: {user_id}, status={status}")
+    logger.info(f"Querying notes for user: {user_id}, status={status}")
     query = supabase.table(SUPABASE_NOTES_TABLE).select("*").eq("user_id", user_id)
     if status:
         query = query.eq("status", status)
@@ -76,7 +79,7 @@ def query_notes_for_user(user_id: str, status: str | None = None) -> List[Dict[s
     except APIError as e:
         raise RuntimeError(str(e))
     result = response.data if isinstance(response.data, list) else []
-    print(f"[SUPABASE] Found {len(result)} notes")
+    logger.info(f"Found {len(result)} notes")
     return result
 
 

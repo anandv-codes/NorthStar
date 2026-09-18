@@ -1,0 +1,174 @@
+-- Phase A: Entity-Linked Context Retrieval
+-- SQL queries to support deterministic entity-name matching and reverse lookup
+-- Used by entity_context_retriever.py to fetch related notes and structured items
+-- via shared entity references (deterministic join, not similarity search)
+
+-- ============================================================================
+-- Query 1: Get all entity names for a user
+-- Purpose: Cache or pre-fetch the user's known entity names for substring matching
+-- Called from: entity_context_retriever.py:_get_entity_names_for_user()
+-- ============================================================================
+-- SELECT DISTINCT name
+-- FROM entities
+-- WHERE user_id = ?
+-- ORDER BY name;
+
+
+-- ============================================================================
+-- Query 2: Find source notes by entity names (reverse lookup)
+-- Purpose: Given a list of matched entity names, find all OTHER notes (exclude current note)
+--          that are linked to those entities via memory_item_entities
+-- Called from: entity_context_retriever.py:_query_source_notes_by_entity_names()
+-- Returns: note_id, raw_text, enriched_summary, created_at (ordered by recency)
+-- ============================================================================
+-- SELECT DISTINCT
+--     n.note_id,
+--     n.raw_text,
+--     n.enriched_summary,
+--     n.created_at
+-- FROM notes n
+-- INNER JOIN memory_item_entities mie ON n.note_id = mie.source_note_id
+-- INNER JOIN entities e ON mie.entity_id = e.entity_id
+-- WHERE n.user_id = ?
+--   AND e.name = ANY(?)  -- entity_names array
+--   AND n.note_id != ?  -- exclude_note_id
+-- ORDER BY n.created_at DESC;
+
+
+-- ============================================================================
+-- Query 3: Find structured items by entity names
+-- Purpose: Get all tasks/facts/questions/decisions/risks/concepts linked to matched entities
+-- Called from: entity_context_retriever.py:_query_memory_items_by_entity_names()
+-- Returns: Grouped by item_type and status
+-- Notes:
+--   - Each UNION SELECT retrieves one item type
+--   - Ordering: most recent first, same query pattern repeated for each type
+-- ============================================================================
+-- SELECT
+--     'task' AS item_type,
+--     t.task_id AS item_id,
+--     t.status,
+--     t.description AS content,
+--     t.confidence,
+--     t.created_at
+-- FROM tasks t
+-- INNER JOIN memory_item_entities mie ON t.task_id = mie.item_id
+-- INNER JOIN entities e ON mie.entity_id = e.entity_id
+-- WHERE t.user_id = ?
+--   AND e.name = ANY(?)
+--   AND t.source_note_id != ?
+--
+-- UNION ALL
+--
+-- SELECT
+--     'fact' AS item_type,
+--     f.fact_id AS item_id,
+--     NULL AS status,
+--     f.content,
+--     f.confidence,
+--     f.created_at
+-- FROM facts f
+-- INNER JOIN memory_item_entities mie ON f.fact_id = mie.item_id
+-- INNER JOIN entities e ON mie.entity_id = e.entity_id
+-- WHERE f.user_id = ?
+--   AND e.name = ANY(?)
+--   AND f.source_note_id != ?
+--
+-- UNION ALL
+--
+-- SELECT
+--     'question' AS item_type,
+--     q.question_id AS item_id,
+--     q.status,
+--     q.question AS content,
+--     q.confidence,
+--     q.created_at
+-- FROM questions q
+-- INNER JOIN memory_item_entities mie ON q.question_id = mie.item_id
+-- INNER JOIN entities e ON mie.entity_id = e.entity_id
+-- WHERE q.user_id = ?
+--   AND e.name = ANY(?)
+--   AND q.source_note_id != ?
+--
+-- UNION ALL
+--
+-- SELECT
+--     'decision' AS item_type,
+--     d.decision_id AS item_id,
+--     NULL AS status,
+--     d.decision AS content,
+--     d.confidence,
+--     d.created_at
+-- FROM decisions d
+-- INNER JOIN memory_item_entities mie ON d.decision_id = mie.item_id
+-- INNER JOIN entities e ON mie.entity_id = e.entity_id
+-- WHERE d.user_id = ?
+--   AND e.name = ANY(?)
+--   AND d.source_note_id != ?
+--
+-- UNION ALL
+--
+-- SELECT
+--     'risk' AS item_type,
+--     r.risk_id AS item_id,
+--     r.status,
+--     r.risk AS content,
+--     r.confidence,
+--     r.created_at
+-- FROM risks r
+-- INNER JOIN memory_item_entities mie ON r.risk_id = mie.item_id
+-- INNER JOIN entities e ON mie.entity_id = e.entity_id
+-- WHERE r.user_id = ?
+--   AND e.name = ANY(?)
+--   AND r.source_note_id != ?
+--
+-- UNION ALL
+--
+-- SELECT
+--     'concept' AS item_type,
+--     c.concept_id AS item_id,
+--     c.status,
+--     c.label AS content,
+--     c.confidence,
+--     c.created_at
+-- FROM concepts c
+-- INNER JOIN memory_item_entities mie ON c.concept_id = mie.item_id
+-- INNER JOIN entities e ON mie.entity_id = e.entity_id
+-- WHERE c.user_id = ?
+--   AND e.name = ANY(?)
+--   AND c.source_note_id != ?
+--
+-- ORDER BY created_at DESC;
+
+
+-- ============================================================================
+-- INDEXES (recommended for Phase A performance)
+-- These should be applied as a migration if not already present
+-- ============================================================================
+-- CREATE INDEX IF NOT EXISTS idx_entities_user_name 
+--   ON entities(user_id, name)
+--   WHERE user_id IS NOT NULL;
+--
+-- CREATE INDEX IF NOT EXISTS idx_memory_item_entities_entity_id
+--   ON memory_item_entities(entity_id);
+--
+-- CREATE INDEX IF NOT EXISTS idx_memory_item_entities_item_type
+--   ON memory_item_entities(item_type);
+--
+-- CREATE INDEX IF NOT EXISTS idx_tasks_user_source_note
+--   ON tasks(user_id, source_note_id);
+--
+-- CREATE INDEX IF NOT EXISTS idx_facts_user_source_note
+--   ON facts(user_id, source_note_id);
+--
+-- CREATE INDEX IF NOT EXISTS idx_questions_user_source_note
+--   ON questions(user_id, source_note_id);
+--
+-- CREATE INDEX IF NOT EXISTS idx_decisions_user_source_note
+--   ON decisions(user_id, source_note_id);
+--
+-- CREATE INDEX IF NOT EXISTS idx_risks_user_source_note
+--   ON risks(user_id, source_note_id);
+--
+-- CREATE INDEX IF NOT EXISTS idx_concepts_user_source_note
+--   ON concepts(user_id, source_note_id);
