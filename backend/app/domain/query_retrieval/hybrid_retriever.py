@@ -1,7 +1,22 @@
 """Consolidated hybrid retrieval pipeline for both chat and note-ingestion.
 
 Combines BM25 (sparse) + dense embeddings + RRF fusion + optional reranking.
-Used by:
+
+EVAL COMPOSITION:
+  Individual retrieval functions are exposed as public building blocks for eval pipelines:
+  - fetch_dense_embeddings(user_id, query, embedding_provider, vector_store, k)
+  - fetch_sparse_results(user_id, query, sparse_retriever, k)
+  - apply_reranking(query, candidates, reranker, limit)
+  - fuse_candidates(candidate_lists, limit, rrf_k) [utility for combining results]
+  - summarize_top_sources(candidates, limit) [diagnostic summary]
+  
+  Eval pipeline example:
+    dense_results = fetch_dense_embeddings(user_id, query, emb_provider, vs, k=5)
+    sparse_results = fetch_sparse_results(user_id, query, bm25, k=5)
+    fused = fuse_candidates([("dense", dense_results), ("sparse", sparse_results)], limit=5)
+    final = apply_reranking(query, fused, reranker, limit=5)  # optional
+
+PRODUCTION USAGE:
   - retrieve_query_context (chat's similarity search wrapper)
   - fetch_related_context (note-ingestion's context-gathering wrapper)
 """
@@ -119,6 +134,97 @@ def _summarize_top_sources(candidates: list[dict[str, Any]], limit: int) -> str:
     return f"Top sources: {', '.join(parts)}" if parts else "Top sources: none"
 
 
+# Alias for eval composition (public API).
+summarize_top_sources = _summarize_top_sources
+
+
+# ============================================================================
+# CORE RETRIEVAL FUNCTIONS (for eval composition)
+# ============================================================================
+
+
+def fetch_dense_embeddings(
+    user_id: str,
+    query: str,
+    embedding_provider: EmbeddingProvider,
+    vector_store: VectorStore,
+    k: int = 5,
+) -> list[dict[str, Any]]:
+    """
+    Fetch results via dense (embedding-based) semantic search.
+    
+    Args:
+        user_id: User identifier for scoped search.
+        query: Query text to embed and search.
+        embedding_provider: Provider for query embedding (e.g., SentenceTransformers).
+        vector_store: Vector store for similarity search (e.g., Chroma).
+        k: Number of results to return.
+    
+    Returns:
+        List of result dicts with note_id, text, summary, distance, etc.
+    """
+    normalized_query = str(query or "").strip()
+    if not normalized_query:
+        return []
+    
+    clamped_k = max(1, min(k, 20))
+    embedding = embedding_provider.embed_query(normalized_query)
+    results = vector_store.query_related_notes(user_id=user_id, embedding=embedding, k=clamped_k)
+    return results
+
+
+def fetch_sparse_results(
+    user_id: str,
+    query: str,
+    sparse_retriever: BaseRetrieval,
+    k: int = 5,
+) -> list[dict[str, Any]]:
+    """
+    Fetch results via sparse (BM25) retrieval.
+    
+    Args:
+        user_id: User identifier for scoped search.
+        query: Query text for BM25 matching.
+        sparse_retriever: Sparse retriever implementation (e.g., SparseBM25Retriever).
+        k: Number of results to return.
+    
+    Returns:
+        List of result dicts with note_id, text, summary, distance, etc.
+    """
+    normalized_query = str(query or "").strip()
+    if not normalized_query:
+        return []
+    
+    clamped_k = max(1, min(k, 20))
+    results = sparse_retriever.retrieve(query=normalized_query, user_id=user_id, limit=clamped_k)
+    return results
+
+
+def apply_reranking(
+    query: str,
+    candidates: list[dict[str, Any]],
+    reranker: BaseReranker | None,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    """
+    Optional reranking step (if reranker is provided).
+    
+    Args:
+        query: Query text for reranking context.
+        candidates: List of candidate dicts to rerank.
+        reranker: Reranker implementation (None = skip reranking).
+        limit: Maximum results to return after reranking.
+    
+    Returns:
+        List of reranked results (or input candidates if reranker is None).
+    """
+    if reranker is None or not candidates:
+        return candidates
+    
+    clamped_limit = max(1, min(limit, 20))
+    return reranker.rerank(query, candidates, limit=clamped_limit)
+
+
 class HybridRetriever:
     """
     Core hybrid retrieval pipeline: BM25 + dense + optional rewrite + RRF + optional rerank.
@@ -153,6 +259,8 @@ class HybridRetriever:
         """
         Fetch ranked results via hybrid retrieval.
         
+        Internally composes: fetch_dense_embeddings + fetch_sparse_results + fuse_candidates + apply_reranking.
+        
         Args:
             user_id: User identifier for scoped search.
             query_text: Original query text (always searched).
@@ -169,10 +277,11 @@ class HybridRetriever:
         clamped_limit = max(1, min(limit, 20))
         
         # Dense search on original query.
-        original_embedding = self.embedding_provider.embed_query(normalized_query)
-        dense_original_results = self.vector_store.query_related_notes(
+        dense_original_results = fetch_dense_embeddings(
             user_id=user_id,
-            embedding=original_embedding,
+            query=normalized_query,
+            embedding_provider=self.embedding_provider,
+            vector_store=self.vector_store,
             k=clamped_limit,
         )
         append_pipeline_log(
@@ -183,10 +292,11 @@ class HybridRetriever:
         )
 
         # Sparse (BM25) search.
-        sparse_results = self.sparse_retriever.retrieve(
-            query=normalized_query,
+        sparse_results = fetch_sparse_results(
             user_id=user_id,
-            limit=clamped_limit,
+            query=normalized_query,
+            sparse_retriever=self.sparse_retriever,
+            k=clamped_limit,
         )
         append_pipeline_log(
             "hybrid retrieval",
@@ -200,10 +310,11 @@ class HybridRetriever:
         if alternate_query_text:
             expanded_query = str(alternate_query_text).strip()
             if expanded_query:
-                rewritten_embedding = self.embedding_provider.embed_query(expanded_query)
-                rewritten_results = self.vector_store.query_related_notes(
+                rewritten_results = fetch_dense_embeddings(
                     user_id=user_id,
-                    embedding=rewritten_embedding,
+                    query=expanded_query,
+                    embedding_provider=self.embedding_provider,
+                    vector_store=self.vector_store,
                     k=clamped_limit,
                 )
                 append_pipeline_log(
@@ -231,8 +342,13 @@ class HybridRetriever:
         )
 
         # Optional reranking.
-        if self.reranker is not None and candidates:
-            candidates = self.reranker.rerank(normalized_query, candidates, limit=clamped_limit)
+        candidates = apply_reranking(
+            query=normalized_query,
+            candidates=candidates,
+            reranker=self.reranker,
+            limit=clamped_limit,
+        )
+        if self.reranker is not None:
             append_pipeline_log(
                 "hybrid retrieval",
                 [
