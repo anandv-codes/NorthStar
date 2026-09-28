@@ -1,4 +1,5 @@
 import hmac
+import logging
 import re
 from datetime import datetime, timezone
 
@@ -32,6 +33,7 @@ from ...schemas.models import (
 )
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
@@ -88,9 +90,11 @@ def register(payload: RegisterRequest, request: Request):
 
     existing_user = get_user_by_email(email)
     if existing_user:
+        logger.info(f"Register failed: email already registered ({email})")
         raise HTTPException(status_code=409, detail="Email already registered")
 
     user = create_user(email=email, password_hash=hash_password(payload.password))
+    logger.info(f"Registered new user: {user['user_id']}")
     return _issue_auth_tokens(
         user_id=str(user["user_id"]),
         email=email,
@@ -104,15 +108,19 @@ def login(payload: LoginRequest, request: Request):
     email = _normalize_email(payload.email)
     user = get_user_by_email(email)
     if not user:
+        logger.info(f"Login failed: no account for {email}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     password_hash = str(user.get("password_hash") or "")
     if not password_hash or not verify_password(payload.password, password_hash):
+        logger.info(f"Login failed: wrong password for {email}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if user.get("is_active") is False:
+        logger.info(f"Login failed: inactive account {email}")
         raise HTTPException(status_code=403, detail="User is inactive")
 
+    logger.info(f"Login succeeded: {user['user_id']}")
     return _issue_auth_tokens(
         user_id=str(user["user_id"]),
         email=email,

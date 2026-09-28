@@ -76,9 +76,8 @@ def process_sqs_message(body:dict)-> dict:
             matched_entity_names=matched_entity_names,
             memory_items=memory_items,
         )
-        logger.info(f"Gemini response: {enrichment_res}")
+        # Full prompt/response already persisted to file via log_gemini_interaction in gemini_client.
         enriched_text= enrichment_res.get("summary","")
-        logger.info(f"Bedrock returned : {enriched_text[:100]}")
         extraction_run = create_extraction_run(
             user_id=user_id,
             note_id=note_id,
@@ -186,6 +185,7 @@ def process_sqs_message(body:dict)-> dict:
                 source_note_id=note_id,
                 links=links,
             )
+        logger.info(f"Entity links created: {len(links)}")
 
         resolution = apply_deterministic_task_resolution(
             user_id=user_id,
@@ -220,7 +220,7 @@ def process_sqs_message(body:dict)-> dict:
             "note_id": note_id,
         }
     except Exception as e:
-        logger.error(f"Error!!! {str(e)}")
+        logger.exception(f"Note processing failed for note_id={body.get('note_id')} user_id={body.get('user_id')}: {e}")
         raise #Re-raise so AWS knows to retry
 
 

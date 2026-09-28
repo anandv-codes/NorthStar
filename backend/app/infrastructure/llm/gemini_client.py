@@ -1,6 +1,9 @@
 """Gemini API client for work memory extraction."""
+import logging
 import os
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -129,15 +132,24 @@ def call_gemini_api(
         memory_items=memory_items,
     )
     output_text = invoke_gemini(prompt)
-    print(f"Gemini raw output: {output_text[:500]}")
-    
+
     parsed_response = None
     parse_error = None
     try:
         parsed_response = parse_gemini_response(output_text)
+        logger.info(
+            "Gemini extraction parsed: tasks=%d facts=%d questions=%d decisions=%d risks=%d concepts=%d",
+            len(parsed_response.get("tasks", [])),
+            len(parsed_response.get("facts", [])),
+            len(parsed_response.get("questions", [])),
+            len(parsed_response.get("decisions", [])),
+            len(parsed_response.get("risks", [])),
+            len(parsed_response.get("concepts", [])),
+        )
         return parsed_response
     except Exception as exc:
         parse_error = str(exc)
+        logger.error(f"Gemini response parsing failed: {exc} (see gemini_prompt_response.txt for full output)")
         raise
     finally:
         # Persist the interaction even if parsing fails so debugging always has artifacts.
@@ -158,7 +170,6 @@ def invoke_gemini(prompt_text: str) -> str:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
     model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
-    print(f"prompt_text={prompt_text}")
     model = ChatGoogleGenerativeAI(
         google_api_key=api_key,
         model=model_id,
@@ -167,8 +178,8 @@ def invoke_gemini(prompt_text: str) -> str:
         timeout=WORK_MEMORY_EXTRACTION_TIMEOUT_SECONDS,
     )
 
+    logger.info(f"Calling Gemini ({model_id}), prompt_chars={len(prompt_text)}")
     response = model.invoke([HumanMessage(content=prompt_text)])
-    print(f"Gemini response object: {response}")
     return extract_text_from_response(response)
 
 
