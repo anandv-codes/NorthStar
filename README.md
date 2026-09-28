@@ -2,25 +2,42 @@
 
 NorthStar is a personal work-memory application with a FastAPI backend, a React/Vite frontend, and an offline retrieval-evaluation harness. The evaluation suite uses only synthetic fixtures and measures sparse, dense, hybrid, reranked, and guarded-rewrite retrieval without writing to the production vector store.
 
-## Prerequisites
+## Quickstart (after cloning)
+
+Follow these steps in order to get the app running locally.
+
+### 1. Prerequisites
 
 - Python 3.11 or later
 - Node.js 18 or later with npm
-- A Supabase project for the running application
-- A Gemini API key for application generation and dense, hybrid, or rewrite evaluation
+- A Supabase project ([supabase.com](https://supabase.com), free tier is enough)
+- A Gemini API key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 
-## Configuration
+### 2. Set up the database
 
-Create `backend/.env`. Do not commit it.
+In your Supabase project's SQL editor, run these 3 files **in order** (they are idempotent, safe to re-run):
+
+1. [backend/sql/auth_jwt.sql](backend/sql/auth_jwt.sql) — user accounts + refresh tokens
+2. [backend/sql/chat_conversations.sql](backend/sql/chat_conversations.sql) — chat threads + messages
+3. [backend/sql/phase3_work_memory.sql](backend/sql/phase3_work_memory.sql) — notes + all extracted memory tables (tasks, facts, questions, decisions, risks, concepts, entities)
+
+That's all 3 files needed for a brand-new database — no other migrations required.
+
+### 3. Configure the backend
+
+Create `backend/.env` (do not commit it):
 
 ```dotenv
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-supabase-key
 JWT_SECRET_KEY=replace-with-a-long-random-secret
 GEMINI_API_KEY=your-gemini-api-key
+PROCESS_NOTES_INLINE=true
 ```
 
-The backend loads this file at startup. `SUPABASE_URL`, `SUPABASE_KEY`, and `JWT_SECRET_KEY` are required for the normal application flows. `GEMINI_API_KEY` is required for chat, dense retrieval, hybrid retrieval, and guarded-rewrite evaluations.
+`SUPABASE_URL`, `SUPABASE_KEY`, and `JWT_SECRET_KEY` are required for the normal application flows. `GEMINI_API_KEY` is required for note enrichment, chat, dense retrieval, hybrid retrieval, and guarded-rewrite evaluations.
+
+`PROCESS_NOTES_INLINE=true` is **required for local runs** — it processes each note synchronously in-process instead of routing it through the real AWS SQS queue + Lambda consumer used in the deployed environment. Without it, note creation fails locally (no AWS queue exists to receive the job).
 
 Useful optional settings:
 
@@ -32,7 +49,7 @@ QUERY_RETRIEVAL_RRF_K=60
 QUERY_RETRIEVAL_RERANKER=off
 ```
 
-## Run The Backend
+### 4. Install and run the backend
 
 From the workspace root, create and activate a virtual environment, then install backend dependencies:
 
@@ -51,7 +68,7 @@ python -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 
 The API runs at `http://localhost:8000`; interactive OpenAPI documentation is at `http://localhost:8000/docs`.
 
-## Run The Frontend
+### 5. Install and run the frontend
 
 Open a second terminal from the workspace root:
 
@@ -68,6 +85,16 @@ Create a production frontend build with:
 ```powershell
 npm run build
 ```
+
+### 6. Try it out
+
+1. Open the frontend URL, register a new account, then log in.
+2. Go to "Add Note" and submit a note — with `PROCESS_NOTES_INLINE=true` it is enriched synchronously, so refreshing the dashboard shortly after shows the extracted summary, tasks, questions, decisions, risks, and concepts.
+3. Try the chat page to ask about your notes.
+
+## Deploying beyond local testing
+
+For real (non-local) usage, set `PROCESS_NOTES_INLINE=false` and provision the real AWS pieces the deployed environment relies on: an SQS queue and the Lambda consumer in [backend/lambda_function.py](backend/lambda_function.py) (deployed via [backend/deploy_lambda.ps1](backend/deploy_lambda.ps1)). Also scope [CORS](backend/app/main.py) to your real frontend origin instead of `*`.
 
 ## Run Retrieval Evaluations
 

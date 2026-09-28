@@ -2,8 +2,18 @@
 -- Run this in the Supabase SQL editor.
 -- Supabase remains the source of truth; Chroma remains a derived semantic index.
 
+-- Base notes table (Phase 1). Created here too so this file works standalone on a new database.
+create table if not exists notes (
+  note_id text not null,
+  user_id text not null,
+  status text not null default 'processing',
+  created_at timestamptz not null,
+  raw_text text not null
+);
+
 alter table notes
   add column if not exists enriched_summary text,
+  add column if not exists context_note_ids jsonb default '[]'::jsonb,
   add column if not exists action_items jsonb,
   add column if not exists questions jsonb,
   add column if not exists insights jsonb,
@@ -110,6 +120,19 @@ create table if not exists memory_item_entities (
   primary key (user_id, entity_id, item_type, item_id)
 );
 
+create table if not exists concepts (
+  concept_id uuid primary key,
+  user_id text not null,
+  source_note_id text not null references notes(note_id),
+  extraction_run_id uuid references extraction_runs(extraction_run_id),
+  concept text not null,
+  status text not null default 'open',
+  created_by text not null default 'llm',
+  confidence numeric,
+  created_at timestamptz not null,
+  resolved_at timestamptz
+);
+
 create index if not exists idx_extraction_runs_note_id
   on extraction_runs(note_id);
 
@@ -148,3 +171,9 @@ create index if not exists idx_entities_user_name
 
 create index if not exists idx_memory_item_entities_item
   on memory_item_entities(user_id, item_type, item_id);
+
+create index if not exists idx_concepts_user_status
+  on concepts(user_id, status);
+
+create index if not exists idx_concepts_source_note_id
+  on concepts(source_note_id);

@@ -13,6 +13,7 @@ class NoteStatusResponse(BaseModel):
     created_at: datetime
     raw_text: str
     enriched_summary: Optional[str] = None
+    context_note_ids: List[str] = Field(default_factory=list, description="Note IDs used to enrich this summary")
     action_items: Optional[List[str]] = None
     questions: Optional[List[str]] = None
     insights: Optional[List[str]] = None
@@ -142,6 +143,7 @@ class RecentNoteResponse(BaseModel):
     created_at: datetime
     raw_text: str
     enriched_summary: Optional[str] = None
+    context_note_ids: List[str] = Field(default_factory=list, description="Note IDs used to enrich this summary")
 
 
 class RiskResponse(SourceRef):

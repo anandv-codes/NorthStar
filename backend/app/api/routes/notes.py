@@ -44,18 +44,18 @@ def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_u
     logger.info("Saving note to Supabase")
     put_note_item(item)                         #Save initial note with status "processing"
 
-
-    logger.info("Sending SQS job")
-    send_note_job(                          #Create SQS job for note processing lambda
-        {
-            "user_id": user_id,
-            "note_id": note_id,
-            "created_at": created_at,
-            "raw_text": payload.text,
-        }
-    )
-
-    if PROCESS_NOTES_INLINE:
+    if not PROCESS_NOTES_INLINE:
+        # Real SQS + Lambda consumer only exists in the deployed environment.
+        logger.info("Sending SQS job")
+        send_note_job(
+            {
+                "user_id": user_id,
+                "note_id": note_id,
+                "created_at": created_at,
+                "raw_text": payload.text,
+            }
+        )
+    else:
         # Local debug helper: process in-process so breakpoints in note_processor hit reliably.
         process_sqs_message(
             {

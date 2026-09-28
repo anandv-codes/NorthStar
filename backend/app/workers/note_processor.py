@@ -70,7 +70,12 @@ def process_sqs_message(body:dict)-> dict:
             logger.warning(f"Embedding generation failed; continuing without vector upsert: {exc}")
             note_embedding = None
 
-        enrichment_res = call_gemini_api(raw_text, related_notes=related_notes)
+        enrichment_res = call_gemini_api(
+            raw_text,
+            related_notes=related_notes,
+            matched_entity_names=matched_entity_names,
+            memory_items=memory_items,
+        )
         logger.info(f"Gemini response: {enrichment_res}")
         enriched_text= enrichment_res.get("summary","")
         logger.info(f"Bedrock returned : {enriched_text[:100]}")
@@ -82,9 +87,20 @@ def process_sqs_message(body:dict)-> dict:
             status="completed",
         )
 
+        # Extract context note IDs from both hybrid and entity-linked retrieval.
+        context_note_ids = [note.get("note_id") for note in related_notes if note.get("note_id")]
+        # Deduplicate while preserving order.
+        seen = set()
+        context_note_ids_dedup = []
+        for nid in context_note_ids:
+            if nid not in seen:
+                context_note_ids_dedup.append(nid)
+                seen.add(nid)
+
         updates = {
             "status": "completed",
             "enriched_summary": enrichment_res.get("summary", ""),
+            "context_note_ids": context_note_ids_dedup,
             "action_items": [item["description"] for item in enrichment_res.get("tasks", [])],
             "questions": [item["question"] for item in enrichment_res.get("questions", [])],
             "insights": [],

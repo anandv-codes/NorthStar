@@ -1,8 +1,34 @@
 # Notes + Retrieval Contextual Summary — Plan
 
-Status: **Phase R ✅ COMPLETE | Phase A 🚀 IN-PROGRESS | Phase B→D pending**
+Status: **Phase R ✅ COMPLETE | Phase A ✅ COMPLETE | Phase B ✅ COMPLETE | Phase C ✅ COMPLETE | Phase D pending**
 
-## Implementation Progress
+## 🎯 Session Summary (Latest Work)
+
+**What was completed this session (Phase C):**
+- ✅ Added `context_note_ids` schema field to both note response types
+- ✅ Created database migration: added `notes.context_note_ids jsonb` column with default empty array
+- ✅ Implemented context extraction in `note_processor.py`: deduplicates note IDs from hybrid + entity-linked retrieval
+- ✅ Updated frontend TypeScript interface: `NoteStatus.context_note_ids?: string[]`
+- ✅ Redesigned `RecentMemorySection` component with three-tier display:
+  - **Raw capture**: Original user input (ground truth)
+  - **Enriched understanding**: LLM synthesis (with context applied)
+  - **Sourced from**: Abbreviated note IDs (truncated to 8 chars) with hover tooltip showing full IDs
+  - Shows top 3 sources inline, ellipsis for additional sources
+  - Clean styling with light background and status metadata
+
+**Data flow (end-to-end):**
+```
+User note → fetch_note_context() extracts note_ids from retrieval results
+          → LLM enriches summary using context
+          → note_processor extracts context_note_ids, deduplicates
+          → UPDATE notes SET context_note_ids = '["id1", "id2", ...]'
+          → API returns NoteStatusResponse with context_note_ids
+          → Frontend displays raw + summary + sourcing trail
+```
+
+**Phase C unlocks transparency:** Users now see evidence for why summaries incorporate specific information—critical for trust in an AI work memory system.
+
+
 
 ### ✅ Phase R — Consolidate hybrid retrieval (COMPLETE)
 - [x] Created `HybridRetriever` class in `backend/app/domain/query_retrieval/hybrid_retriever.py`
@@ -14,7 +40,7 @@ Status: **Phase R ✅ COMPLETE | Phase A 🚀 IN-PROGRESS | Phase B→D pending*
 - [x] Removed redundant `query_related_notes` direct call from `note_processor.py`
 - [x] Verified: all modified files pass `get_errors` validation
 
-### 🚀 Phase A — Entity-linked context lookup (IN-PROGRESS)
+### ✅ Phase A — Entity-linked context lookup (COMPLETE)
 - [x] Created `backend/sql/phase3_phase_a_entity_queries.sql` with 3 deterministic join patterns
 - [x] Added `MemoryRepository` protocol methods:
   - `query_entity_names_for_user(user_id) -> list[str]`
@@ -27,23 +53,41 @@ Status: **Phase R ✅ COMPLETE | Phase A 🚀 IN-PROGRESS | Phase B→D pending*
   - Singleton factory: `get_entity_context_retriever()`
 - [x] Created `note_context_provider.py` to merge hybrid + entity-linked results
 - [x] Updated `note_processor.py` to call `fetch_note_context()` (combines both retrievers)
-- [ ] Prompt tuning in `gemini_client.py` (Phase B)
-- [ ] Persistence: add `notes.context_note_ids` column (Phase C)
-- [ ] Dashboard redesign (Phase C)
+- [x] Verified: all modified files pass `get_errors` validation
 
-### ⏳ Phase B — Prompt tuning (PENDING)
-- [ ] Update extraction prompt to synthesize status (not restate) when related context exists
-- [ ] Add grouped structured-items context block (tasks/questions/risks/concepts by status)
-- [ ] Instruction: "never answer/resolve open questions — awareness only"
+### ✅ Phase B — Prompt tuning & cost-controlled structured items (COMPLETE)
+- [x] Created `llm_config.py` with centralized configuration constants
+- [x] Implemented `filter_open_items()` in `gemini_client.py` — groups by type, filters to open status, truncates descriptions
+- [x] Implemented `generate_structured_items_context()` — formats filtered items as readable text block (~600 tokens vs 1000-5000)
+- [x] Updated `call_gemini_api()` signature to accept `matched_entity_names` and `memory_items` parameters
+- [x] Updated extraction prompt with synthesis instruction: "synthesize status progression instead of restating new note"
+- [x] Added question handling guardrail: "surface open questions for awareness, but NEVER mark as answered"
+- [x] Refactored `parse_gemini_response()` to use `JsonOutputParser(WorkMemoryExtraction)` — replaces 20+ lines of manual parsing
+- [x] Refactored `parse_query_rewrite_response()` to use `JsonOutputParser(QueryRewriteResponse)` — replaces validation/normalization
+- [x] Consolidated duplicate `extract_text_from_response()` into shared `llm_response_utils.py`
+- [x] Deprecated `clean_markdown_json()` — now handled by `JsonOutputParser`
+- [x] Updated `note_processor.py` to pass structured items to LLM
+- [x] Verified: all modified files pass `get_errors` validation
 
-### ⏳ Phase C — Persistence + dashboard (PENDING)
-- [ ] Add `notes.context_note_ids jsonb` migration
-- [ ] Update `NoteStatusResponse` schemas
-- [ ] Frontend: redesign card to show raw_text primary, summary secondary
-- [ ] Add "Sourced from: [ids]" trail when `context_note_ids` non-empty
+### ✅ Phase C — Persistence + dashboard (COMPLETE)
+**Outcome:** Context lineage now persists and displays to users with sourcing trail.
 
-### ⏳ Phase D — Pause chat work (PENDING)
-- [ ] Update `chat_retrieval_optimization_plan.md` header status
+Tasks:
+- [x] Database: added `notes.context_note_ids jsonb` column (default `'[]'::jsonb`) in `phase3_work_memory.sql`
+- [x] Schemas: added `context_note_ids: List[str]` field to `NoteStatusResponse` and `RecentNoteResponse` in `schemas/models.py`
+- [x] Backend: updated `note_processor.py` to extract unique context note IDs from both hybrid and entity-linked retrieval, deduplicate, and include in DB update
+- [x] Frontend types: updated `NoteStatus` interface in `src/shared/api/httpClient.ts` with `context_note_ids?: string[]`
+- [x] Frontend UI: redesigned `RecentMemorySection.tsx`:
+  - Primary: raw_text (what was captured)
+  - Secondary: enriched_summary (LLM synthesis)
+  - Trail: "Sourced from: [note-id], [note-id]..." shown with hover tooltip displaying full IDs
+  - Max 3 IDs displayed inline + "+N more" if additional sources exist
+  - Styled with light background, hover-enabled note ID expansion
+
+### ⏳ Phase D — Mark chat work paused (PENDING)
+Tasks:
+- [ ] Update `chat_retrieval_optimization_plan.md` header to **PAUSED** status
+- [ ] Keep content in place for future reference when chat work resumes
 
 ## Product direction & scope
 

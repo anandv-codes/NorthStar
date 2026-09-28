@@ -1,16 +1,24 @@
-import json
+"""Query rewriting using Gemini and recent memory context."""
 import os
 from typing import Any
 
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.output_parsers import JsonOutputParser
 
 from .prompt_logger import append_pipeline_log
 from .prompt_loader import load_prompt
+from .llm_response_utils import extract_text_from_response
+from .llm_config import (
+    QUERY_REWRITE_TEMPERATURE,
+    QUERY_REWRITE_MAX_RETRIES,
+    QUERY_REWRITE_TIMEOUT_SECONDS,
+    QUERY_REWRITE_MIN_CONFIDENCE,
+)
 from ...schemas.models import QueryRewriteResponse
 
 
-MIN_QUERY_REWRITE_CONFIDENCE = float(os.getenv("QUERY_REWRITE_MIN_CONFIDENCE", "0.55"))
+MIN_QUERY_REWRITE_CONFIDENCE = QUERY_REWRITE_MIN_CONFIDENCE
 
 
 def build_recent_memory_context(recent_memory: dict[str, list[dict[str, Any]]] | None) -> str:
@@ -74,9 +82,9 @@ def rewrite_query_with_llm(
     model = ChatGoogleGenerativeAI(
         google_api_key=api_key,
         model=model_id,
-        temperature=0.1,
-        max_retries=2,
-        timeout=60,
+        temperature=QUERY_REWRITE_TEMPERATURE,
+        max_retries=QUERY_REWRITE_MAX_RETRIES,
+        timeout=QUERY_REWRITE_TIMEOUT_SECONDS,
     )
 
     prompt = generate_rewrite_prompt(user_query=user_query, recent_memory=recent_memory)
@@ -111,8 +119,7 @@ def generate_rewrite_prompt(
 ) -> str:
     memory_context = build_recent_memory_context(recent_memory)
     version = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
-    default = """
-You rewrite retrieval queries for a note/memory search system.
+    default = """You rewrite retrieval queries for a note/memory search system.
 
 Original user query:
 {user_query}
@@ -121,12 +128,12 @@ Recent memory context:
 {memory_context}
 
 Return JSON only with this exact structure:
-{
+{{
     "rewritten_query": "A concise search-friendly query",
     "likely_answer": "A short plausible answer or resolution the user is probably referring to",
     "confidence": 0.0,
     "risk_flags": ["missing_number", "negation_lost", "entity_conflict", "too_broad", "low_context"]
-}
+}}
 
 Rules:
 - Preserve exact numbers, IDs, names, dates, and negations.
@@ -143,29 +150,12 @@ Rules:
 
 
 def parse_query_rewrite_response(output_text: str) -> dict[str, Any]:
+    """Parse Gemini JSON output into structured QueryRewriteResponse."""
     if not output_text or not output_text.strip():
         raise RuntimeError("Query rewrite model returned empty output")
 
-    cleaned = clean_markdown_json(output_text)
-    try:
-        raw = json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            "Query rewrite model output was not valid JSON. Response:\n"
-            + cleaned[:1024]
-        ) from exc
-
-    if not isinstance(raw, dict):
-        raise RuntimeError(f"Query rewrite response must be a JSON object, got {type(raw)}")
-
-    normalized = {
-        "rewritten_query": str(raw.get("rewritten_query") or "").strip(),
-        "likely_answer": str(raw.get("likely_answer") or "").strip(),
-        "confidence": raw.get("confidence", 0.0),
-        "risk_flags": raw.get("risk_flags") or [],
-    }
-
-    parsed = QueryRewriteResponse.model_validate(normalized)
+    parser = JsonOutputParser(pydantic_object=QueryRewriteResponse)
+    parsed = parser.invoke(output_text)
     return parsed.model_dump(mode="json")
 
 
@@ -192,48 +182,10 @@ def get_query_rewriter() -> GeminiQueryRewriter:
 
 
 
-
-def extract_text_from_response(response: Any) -> str:
-    if isinstance(response, str):
-        return response
-
-    if hasattr(response, "content"):
-        content = response.content
-        if isinstance(content, str):
-            return content
-        if isinstance(content, list) and content:
-            first = content[0]
-            if isinstance(first, dict):
-                text = first.get("text")
-                if isinstance(text, str):
-                    return text
-            if isinstance(first, str):
-                return first
-
-    if isinstance(response, dict):
-        if "content" in response:
-            return extract_text_from_response(response["content"])
-        if "text" in response and isinstance(response["text"], str):
-            return response["text"]
-        if "candidates" in response and response["candidates"]:
-            return extract_text_from_response(response["candidates"][0])
-
-    raise RuntimeError(f"Unexpected query rewrite response type: {type(response)}")
-
-
-def clean_markdown_json(text: str) -> str:
-    text = text.strip()
-    if text.startswith("```") and text.endswith("```"):
-        text = text[3:-3].strip()
-    if text.startswith("json"):
-        text = text[len("json"):].strip()
-    if text.startswith("```json") and text.endswith("```"):
-        text = text[len("```json"):-3].strip()
-    return text
-
-
 def shorten_text(text: str, limit: int = 96) -> str:
+    """Shorten text to fit in output logging."""
     cleaned = " ".join(str(text or "").split())
     if len(cleaned) <= limit:
         return cleaned
     return f"{cleaned[: limit - 3].rstrip()}..."
+

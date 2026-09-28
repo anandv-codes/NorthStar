@@ -14,6 +14,7 @@ export interface NoteStatus {
   created_at: string;
   raw_text: string;
   enriched_summary?: string;
+  context_note_ids?: string[];
   action_items?: string[];
   questions?: string[];
   insights?: string[];
@@ -134,6 +135,7 @@ export interface RecentNote {
   created_at: string;
   raw_text: string;
   enriched_summary?: string | null;
+  context_note_ids?: string[];
 }
 
 export interface RecentMemoryResponse {
