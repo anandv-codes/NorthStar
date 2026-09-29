@@ -26,7 +26,9 @@ import os
 from collections import defaultdict
 from typing import Any, Sequence
 
-from ..ports import BaseReranker, BaseRetrieval, EmbeddingProvider, VectorStore
+from ..ports import EmbeddingProvider, VectorStore
+from .strategies.base import BaseRetrieval
+from .reranker.base import BaseReranker
 from .reranker.semantic import SentenceTransformerReranker
 from .strategies.sparse import SparseBM25Retriever
 from ...infrastructure.llm.prompt_logger import append_pipeline_log

@@ -10,8 +10,8 @@ from ...infrastructure.llm.prompt_loader import load_prompt
 from ..ports import ChatModel
 from ..query_retrieval.services import retrieve_query_context
 from ..routing.classifier import build_default_intent_classifier
-from ..routing.contracts import GroundingSnapshot, RoutingContext, RoutingDecision, RoutingOutcome, RoutingPlanStep
 from ..routing.orchestrator import RoutingOrchestrator, build_routing_orchestrator
+from .routing_contracts import GroundingSnapshot, RoutingContext, RoutingDecision, RoutingOutcome, RoutingPlanStep
 from .guardrails import GroundingDecision, assess_grounding, format_grounding_context
 from .memory import build_short_term_context
 from .planner import build_chat_plan
