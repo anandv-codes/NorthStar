@@ -7,7 +7,7 @@ from typing import Any
 from ...infrastructure.db.chat_repository import get_chat_repository
 from ...infrastructure.llm.prompt_logger import append_pipeline_log
 from ..ports import ChatRepository
-from ..routing.contracts import RoutingContext
+from .routing_contracts import RoutingContext
 from .memory import (
     SHORT_TERM_WINDOW,
     ensure_chat_thread,

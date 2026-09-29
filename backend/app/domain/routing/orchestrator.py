@@ -5,11 +5,9 @@ from typing import Any, Callable, Sequence
 
 from ...infrastructure.llm.prompt_logger import append_pipeline_log
 from .base import BaseIntentClassifier
-from .contracts import (
+from .contracts import IntentContext, IntentDecision, RouteKind
+from ..chat.routing_contracts import (
     GroundingSnapshot,
-    IntentContext,
-    IntentDecision,
-    RouteKind,
     RoutingContext,
     RoutingDecision,
     RoutingOutcome,

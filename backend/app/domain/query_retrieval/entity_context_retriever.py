@@ -13,7 +13,7 @@ import logging
 from typing import Any
 
 from ..ports import MemoryRepository
-from ...infrastructure.db.supabase_client import get_memory_repository
+from ...infrastructure.db.memory_repository import get_memory_repository
 
 logger = logging.getLogger(__name__)
 
