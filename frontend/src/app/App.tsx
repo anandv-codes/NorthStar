@@ -159,8 +159,8 @@ function ChatPage({ userId, onOpenDashboard }: ChatPageProps) {
       setSummary(response.thread.summary || null);
       setIntent(response.intent.kind);
       setMessages(response.thread.messages.length > 0 ? response.thread.messages : [response.user_message, response.assistant_message]);
-    } catch {
-      setError("Failed to send message.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message.");
       setMessages((current) =>
         current.filter(
           (message) => message.message_id !== optimisticUserMessage.message_id,
@@ -338,7 +338,11 @@ function AddNotePage({ userId, onDone }: AddNotePageProps) {
       return;
     }
 
+    const maxAttempts = 40; // ~1 minute at 1.5s intervals before giving up
+    let attempts = 0;
+
     const interval = window.setInterval(async () => {
+      attempts += 1;
       try {
         const result: NoteStatus = await getNoteStatus(noteId);
         setStatus(result.status);
@@ -349,9 +353,13 @@ function AddNotePage({ userId, onDone }: AddNotePageProps) {
           setError("Note processing failed.");
           setSubmitting(false);
           window.clearInterval(interval);
+        } else if (attempts >= maxAttempts) {
+          setError("Note is taking longer than expected. Check back on the dashboard later.");
+          setSubmitting(false);
+          window.clearInterval(interval);
         }
-      } catch {
-        setError("Failed to poll note status.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to poll note status.");
         setSubmitting(false);
         window.clearInterval(interval);
       }
@@ -370,8 +378,8 @@ function AddNotePage({ userId, onDone }: AddNotePageProps) {
     try {
       const result = await createNote({ text: text.trim() });
       setNoteId(result.note_id);
-    } catch {
-      setError("Failed to submit note.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit note.");
       setStatus(null);
       setSubmitting(false);
     }
@@ -420,8 +428,8 @@ function LoginPage({ onSuccess }: AuthPageProps) {
     setSubmitting(true);
     try {
       await onSuccess(email.trim(), password);
-    } catch {
-      setError("Invalid email or password.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid email or password.");
     } finally {
       setSubmitting(false);
     }
@@ -469,9 +477,11 @@ function RegisterPage({ onSuccess }: AuthPageProps) {
     setSubmitting(true);
     try {
       await onSuccess(email.trim(), password);
-    } catch {
+    } catch (err) {
       setError(
-        "Unable to register. Check email uniqueness and password policy.",
+        err instanceof Error
+          ? err.message
+          : "Unable to register. Check email uniqueness and password policy.",
       );
     } finally {
       setSubmitting(false);
@@ -590,8 +600,8 @@ function App() {
       setQuestions(questionData);
       setRisks(riskData);
       setRecentMemory(recentData);
-    } catch {
-      setError("Failed to load dashboard data.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard data.");
     } finally {
       setLoading(false);
     }
@@ -619,8 +629,8 @@ function App() {
     try {
       await patchTaskStatus(taskId, "completed");
       await loadDashboard();
-    } catch {
-      setError("Failed to update task status.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update task status.");
     } finally {
       setActiveTaskId(null);
     }
@@ -636,8 +646,8 @@ function App() {
     try {
       await patchQuestionStatus(question.question_id, nextStatus);
       await loadDashboard();
-    } catch {
-      setError("Failed to update question status.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update question status.");
     } finally {
       setActiveQuestionId(null);
     }
@@ -653,8 +663,8 @@ function App() {
     try {
       await patchRiskStatus(risk.risk_id, nextStatus);
       await loadDashboard();
-    } catch {
-      setError("Failed to update risk status.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update risk status.");
     } finally {
       setActiveRiskId(null);
     }

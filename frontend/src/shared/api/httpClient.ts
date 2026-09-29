@@ -299,6 +299,18 @@ export function clearAuthTokens() {
   localStorage.removeItem(USER_ID_KEY);
 }
 
+async function readErrorMessage(response: Response): Promise<string> {
+  try {
+    const body = await response.json();
+    if (typeof body?.detail === "string") {
+      return body.detail;
+    }
+  } catch {
+    // Response body wasn't JSON; fall through to the generic message.
+  }
+  return `Request failed: ${response.status}`;
+}
+
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers ?? {});
   const accessToken = getStoredAccessToken();
@@ -320,7 +332,7 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    throw new Error(await readErrorMessage(response));
   }
   if (response.status === 204) {
     return undefined as T;
@@ -334,7 +346,7 @@ async function requestJsonWithoutAuth<T>(
 ): Promise<T> {
   const response = await fetch(url, init);
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    throw new Error(await readErrorMessage(response));
   }
   if (response.status === 204) {
     return undefined as T;
@@ -388,7 +400,7 @@ export async function fetchCurrentUser() {
 
 export async function createNote(payload: CreateNotePayload) {
   console.debug("[API] Submitting note:", payload.text);
-  const result = requestJson<{ note_id: string; status: string }>(
+  const result = await requestJson<{ note_id: string; status: string }>(
     `${BASE_URL}/notes`,
     {
       method: "POST",
