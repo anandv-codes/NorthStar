@@ -25,6 +25,7 @@ from __future__ import annotations
 import os
 import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Sequence
 
 from ..ports import EmbeddingProvider, VectorStore
@@ -278,60 +279,78 @@ class HybridRetriever:
             return []
 
         clamped_limit = max(1, min(limit, 20))
-        
-        # Dense search on original query.
-        stage_start = time.perf_counter()
-        dense_original_results = fetch_dense_embeddings(
-            user_id=user_id,
-            query=normalized_query,
-            embedding_provider=self.embedding_provider,
-            vector_store=self.vector_store,
-            k=clamped_limit,
-        )
-        append_pipeline_log(
-            "hybrid retrieval",
-            [
-                f"semantic search returned {len(dense_original_results)} result(s)",
-                f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
-            ],
-        )
+        expanded_query = str(alternate_query_text or "").strip()
 
-        # Sparse (BM25) search.
-        stage_start = time.perf_counter()
-        sparse_results = fetch_sparse_results(
-            user_id=user_id,
-            query=normalized_query,
-            sparse_retriever=self.sparse_retriever,
-            k=clamped_limit,
-        )
-        append_pipeline_log(
-            "hybrid retrieval",
-            [
-                f"bm25 returned {len(sparse_results)} result(s)",
-                f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
-            ],
-        )
+        def _fetch_dense_original() -> list[dict[str, Any]]:
+            stage_start = time.perf_counter()
+            results = fetch_dense_embeddings(
+                user_id=user_id,
+                query=normalized_query,
+                embedding_provider=self.embedding_provider,
+                vector_store=self.vector_store,
+                k=clamped_limit,
+            )
+            append_pipeline_log(
+                "hybrid retrieval",
+                [
+                    f"semantic search returned {len(results)} result(s)",
+                    f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
+                ],
+            )
+            return results
 
-        # Dense search on alternate query, if provided.
-        rewritten_results: list[dict[str, Any]] = []
-        if alternate_query_text:
-            expanded_query = str(alternate_query_text).strip()
+        def _fetch_sparse() -> list[dict[str, Any]]:
+            stage_start = time.perf_counter()
+            results = fetch_sparse_results(
+                user_id=user_id,
+                query=normalized_query,
+                sparse_retriever=self.sparse_retriever,
+                k=clamped_limit,
+            )
+            append_pipeline_log(
+                "hybrid retrieval",
+                [
+                    f"bm25 returned {len(results)} result(s)",
+                    f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
+                ],
+            )
+            return results
+
+        def _fetch_dense_rewritten() -> list[dict[str, Any]]:
+            stage_start = time.perf_counter()
+            results = fetch_dense_embeddings(
+                user_id=user_id,
+                query=expanded_query,
+                embedding_provider=self.embedding_provider,
+                vector_store=self.vector_store,
+                k=clamped_limit,
+            )
+            append_pipeline_log(
+                "hybrid retrieval",
+                [
+                    f"alternate query search returned {len(results)} result(s)",
+                    f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
+                ],
+            )
+            return results
+
+        # Dense-original, sparse (BM25), and dense-rewritten searches are
+        # mutually independent — run them concurrently instead of one after
+        # another. Exceptions still propagate via .result() below, same as
+        # the prior sequential calls would have raised.
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = {
+                "dense_original": executor.submit(_fetch_dense_original),
+                "sparse": executor.submit(_fetch_sparse),
+            }
             if expanded_query:
-                stage_start = time.perf_counter()
-                rewritten_results = fetch_dense_embeddings(
-                    user_id=user_id,
-                    query=expanded_query,
-                    embedding_provider=self.embedding_provider,
-                    vector_store=self.vector_store,
-                    k=clamped_limit,
-                )
-                append_pipeline_log(
-                    "hybrid retrieval",
-                    [
-                        f"alternate query search returned {len(rewritten_results)} result(s)",
-                        f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
-                    ],
-                )
+                futures["rewritten"] = executor.submit(_fetch_dense_rewritten)
+
+            dense_original_results = futures["dense_original"].result()
+            sparse_results = futures["sparse"].result()
+            rewritten_results: list[dict[str, Any]] = (
+                futures["rewritten"].result() if "rewritten" in futures else []
+            )
 
         # RRF fusion.
         stage_start = time.perf_counter()
