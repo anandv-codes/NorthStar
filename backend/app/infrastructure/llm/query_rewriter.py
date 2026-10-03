@@ -1,5 +1,6 @@
 """Query rewriting using Gemini and recent memory context."""
 import os
+from functools import lru_cache
 from typing import Any
 
 from langchain_core.messages import HumanMessage
@@ -19,6 +20,21 @@ from ...schemas.models import QueryRewriteResponse
 
 
 MIN_QUERY_REWRITE_CONFIDENCE = QUERY_REWRITE_MIN_CONFIDENCE
+
+
+@lru_cache(maxsize=4)
+def _get_rewrite_llm(model_id: str, api_key: str) -> ChatGoogleGenerativeAI:
+    """Process-wide singleton per model id, mirroring gemini_client._get_chat_llm.
+    Note: a cached client keeps using the api_key it was built with if
+    GEMINI_API_KEY is rotated at runtime; restart the process after rotating keys.
+    """
+    return ChatGoogleGenerativeAI(
+        google_api_key=api_key,
+        model=model_id,
+        temperature=QUERY_REWRITE_TEMPERATURE,
+        max_retries=QUERY_REWRITE_MAX_RETRIES,
+        timeout=QUERY_REWRITE_TIMEOUT_SECONDS,
+    )
 
 
 def build_recent_memory_context(recent_memory: dict[str, list[dict[str, Any]]] | None) -> str:
@@ -79,13 +95,7 @@ def rewrite_query_with_llm(
             f"query: {shorten_text(user_query)}",
         ],
     )
-    model = ChatGoogleGenerativeAI(
-        google_api_key=api_key,
-        model=model_id,
-        temperature=QUERY_REWRITE_TEMPERATURE,
-        max_retries=QUERY_REWRITE_MAX_RETRIES,
-        timeout=QUERY_REWRITE_TIMEOUT_SECONDS,
-    )
+    model = _get_rewrite_llm(model_id, api_key)
 
     prompt = generate_rewrite_prompt(user_query=user_query, recent_memory=recent_memory)
     try:

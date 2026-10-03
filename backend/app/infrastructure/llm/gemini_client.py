@@ -5,6 +5,8 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+from functools import lru_cache
+
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.output_parsers import JsonOutputParser
@@ -302,6 +304,22 @@ def generate_related_notes_context(related_notes: list[dict[str, Any]]) -> str:
     return "\n".join(lines) if lines else "No related past notes."
 
 
+@lru_cache(maxsize=4)
+def _get_chat_llm(model_id: str, api_key: str) -> ChatGoogleGenerativeAI:
+    """Process-wide singleton per model id — client construction has fixed
+    overhead that shouldn't be paid on every chat request. Note: a cached
+    client keeps using the api_key it was built with if GEMINI_API_KEY is
+    rotated at runtime; restart the process after rotating keys.
+    """
+    return ChatGoogleGenerativeAI(
+        google_api_key=api_key,
+        model=model_id,
+        temperature=CHAT_ANSWER_GENERATION_TEMPERATURE,
+        max_retries=CHAT_ANSWER_GENERATION_MAX_RETRIES,
+        timeout=CHAT_ANSWER_GENERATION_TIMEOUT_SECONDS,
+    )
+
+
 def generate_chat_answer(prompt: str) -> str:
     """Generate the final chat answer text for a fully-built prompt."""
     api_key = os.getenv("GEMINI_API_KEY")
@@ -309,13 +327,7 @@ def generate_chat_answer(prompt: str) -> str:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
     model_id = os.getenv("CHAT_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash"))
-    model = ChatGoogleGenerativeAI(
-        google_api_key=api_key,
-        model=model_id,
-        temperature=CHAT_ANSWER_GENERATION_TEMPERATURE,
-        max_retries=CHAT_ANSWER_GENERATION_MAX_RETRIES,
-        timeout=CHAT_ANSWER_GENERATION_TIMEOUT_SECONDS,
-    )
+    model = _get_chat_llm(model_id, api_key)
 
     response = model.invoke([HumanMessage(content=prompt)])
     content = getattr(response, "content", response)
