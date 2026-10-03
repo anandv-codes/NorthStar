@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..deps import get_current_user_id
@@ -11,9 +13,13 @@ router = APIRouter()
 
 
 @router.post("/message", response_model=ChatMessageResponse)
-def send_chat_message(payload: ChatMessageRequest, user_id: str = Depends(get_current_user_id)):
+async def send_chat_message(payload: ChatMessageRequest, user_id: str = Depends(get_current_user_id)):
     try:
-        return handle_chat_message(
+        # handle_chat_message is synchronous (blocking Gemini/Supabase calls);
+        # run it off the event loop thread so concurrent requests don't queue
+        # behind each other's I/O.
+        return await asyncio.to_thread(
+            handle_chat_message,
             user_id=user_id,
             message=payload.message,
             thread_id=payload.thread_id,
@@ -23,12 +29,14 @@ def send_chat_message(payload: ChatMessageRequest, user_id: str = Depends(get_cu
 
 
 @router.get("/threads/{thread_id}", response_model=ChatThreadResponse)
-def get_chat_thread(thread_id: str, user_id: str = Depends(get_current_user_id)):
-    thread = get_chat_thread_item(user_id=user_id, thread_id=thread_id)
+async def get_chat_thread(thread_id: str, user_id: str = Depends(get_current_user_id)):
+    thread = await asyncio.to_thread(get_chat_thread_item, user_id=user_id, thread_id=thread_id)
     if not thread:
         raise HTTPException(status_code=404, detail="Chat thread not found")
 
-    messages = load_recent_chat_messages(user_id=user_id, thread_id=thread_id, limit=100)
+    messages = await asyncio.to_thread(
+        load_recent_chat_messages, user_id=user_id, thread_id=thread_id, limit=100
+    )
     return {
         "thread_id": thread.get("thread_id"),
         "user_id": thread.get("user_id"),
