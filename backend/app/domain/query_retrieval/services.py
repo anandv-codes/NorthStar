@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from typing import Any
 
 from ..constants import GENERIC_QUERY_TERMS, NEGATION_TERMS
 from ..memory.services import query_recent_memory_for_user
 from ..ports import QueryRewriter
-from ...infrastructure.llm.prompt_logger import append_pipeline_log
+from ...infrastructure.llm.prompt_logger import append_pipeline_log, elapsed_ms
 from ...infrastructure.llm.query_rewriter import get_query_rewriter
 from .utils import tokenize
 from .hybrid_retriever import get_hybrid_retriever
@@ -58,10 +59,12 @@ def retrieve_query_context(
 
     if query_quality >= MIN_QUERY_QUALITY_TO_REWRITE:
         try:
+            stage_start = time.perf_counter()
             rewrite_result = query_rewriter.rewrite(
                 user_query=normalized_query,
                 recent_memory=recent_memory,
             )
+            rewrite_elapsed_ms = elapsed_ms(stage_start)
             rewritten_query = rewrite_result.get("rewritten_query") or normalized_query
             likely_answer = rewrite_result.get("likely_answer") or ""
             rewrite_confidence = float(rewrite_result.get("confidence") or 0.0)
@@ -84,6 +87,10 @@ def retrieve_query_context(
                         f"rewrite skipped: {fallback_reason}",
                     ],
                 )
+            append_pipeline_log(
+                "query rewrite",
+                [f"elapsed_ms: {rewrite_elapsed_ms:.1f}"],
+            )
         except RuntimeError as exc:
             fallback_reason = str(exc)
             append_pipeline_log(
@@ -103,11 +110,19 @@ def retrieve_query_context(
 
     # Delegate the actual hybrid fetch to HybridRetriever.
     hybrid_retriever = get_hybrid_retriever()
+    stage_start = time.perf_counter()
     candidates = hybrid_retriever.fetch(
         user_id=user_id,
         query_text=normalized_query,
         limit=clamped_limit,
         alternate_query_text=alternate_query_text if rewrite_used else None,
+    )
+    append_pipeline_log(
+        "hybrid retrieval",
+        [
+            f"fetch completed with {len(candidates)} candidate(s)",
+            f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
+        ],
     )
 
     return {

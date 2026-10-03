@@ -23,6 +23,7 @@ PRODUCTION USAGE:
 from __future__ import annotations
 
 import os
+import time
 from collections import defaultdict
 from typing import Any, Sequence
 
@@ -31,7 +32,7 @@ from .strategies.base import BaseRetrieval
 from .reranker.base import BaseReranker
 from .reranker.semantic import SentenceTransformerReranker
 from .strategies.sparse import SparseBM25Retriever
-from ...infrastructure.llm.prompt_logger import append_pipeline_log
+from ...infrastructure.llm.prompt_logger import append_pipeline_log, elapsed_ms
 from ...infrastructure.vector.embeddings import get_embedding_provider
 from ...infrastructure.vector.vectorstore import get_vector_store
 
@@ -279,6 +280,7 @@ class HybridRetriever:
         clamped_limit = max(1, min(limit, 20))
         
         # Dense search on original query.
+        stage_start = time.perf_counter()
         dense_original_results = fetch_dense_embeddings(
             user_id=user_id,
             query=normalized_query,
@@ -290,10 +292,12 @@ class HybridRetriever:
             "hybrid retrieval",
             [
                 f"semantic search returned {len(dense_original_results)} result(s)",
+                f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
             ],
         )
 
         # Sparse (BM25) search.
+        stage_start = time.perf_counter()
         sparse_results = fetch_sparse_results(
             user_id=user_id,
             query=normalized_query,
@@ -304,6 +308,7 @@ class HybridRetriever:
             "hybrid retrieval",
             [
                 f"bm25 returned {len(sparse_results)} result(s)",
+                f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
             ],
         )
 
@@ -312,6 +317,7 @@ class HybridRetriever:
         if alternate_query_text:
             expanded_query = str(alternate_query_text).strip()
             if expanded_query:
+                stage_start = time.perf_counter()
                 rewritten_results = fetch_dense_embeddings(
                     user_id=user_id,
                     query=expanded_query,
@@ -323,10 +329,12 @@ class HybridRetriever:
                     "hybrid retrieval",
                     [
                         f"alternate query search returned {len(rewritten_results)} result(s)",
+                        f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
                     ],
                 )
 
         # RRF fusion.
+        stage_start = time.perf_counter()
         candidates = fuse_candidates(
             candidate_lists=[
                 ("sparse", sparse_results),
@@ -340,10 +348,12 @@ class HybridRetriever:
             [
                 f"fusion returned {len(candidates)} candidate(s)",
                 _summarize_top_sources(candidates, clamped_limit),
+                f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
             ],
         )
 
         # Optional reranking.
+        stage_start = time.perf_counter()
         candidates = apply_reranking(
             query=normalized_query,
             candidates=candidates,
@@ -356,6 +366,7 @@ class HybridRetriever:
                 [
                     f"reranking returned {len(candidates)} result(s)",
                     f"rerank strategy: {RERANKER_MODE}",
+                    f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
                 ],
             )
         else:

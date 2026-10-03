@@ -1,11 +1,17 @@
 import os
 import tempfile
+import time
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+def elapsed_ms(start: float) -> float:
+    """Milliseconds elapsed since a `time.perf_counter()` start value."""
+    return (time.perf_counter() - start) * 1000
 
 
 def get_log_path() -> Path:

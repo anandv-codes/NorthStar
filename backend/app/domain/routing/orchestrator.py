@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
-from ...infrastructure.llm.prompt_logger import append_pipeline_log
+from ...infrastructure.llm.prompt_logger import append_pipeline_log, elapsed_ms
 from .base import BaseIntentClassifier
 from .contracts import IntentContext, IntentDecision, RouteKind
 from ..chat.routing_contracts import (
@@ -38,6 +39,7 @@ class RoutingOrchestrator:
     dependencies: RoutingDependencies
 
     def route(self, context: RoutingContext) -> RoutingOutcome:
+        request_start = time.perf_counter()
         append_pipeline_log(
             "routing orchestrator",
             [
@@ -46,6 +48,7 @@ class RoutingOrchestrator:
                 f"thread: {context.thread_id or 'new'}",
             ],
         )
+        stage_start = time.perf_counter()
         intent = self.dependencies.classifier.classify(
             IntentContext(
                 surface="chat",
@@ -61,12 +64,14 @@ class RoutingOrchestrator:
             [
                 f"plan built with {len(plan)} step(s)",
                 f"intent: {intent.kind}",
+                f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
             ],
         )
 
         knowledge_payload = None
         knowledge_error: str | None = None
         if intent.needs_retrieval:
+            stage_start = time.perf_counter()
             try:
                 knowledge_payload = self.dependencies.retrieve_context(context)
             except RuntimeError as exc:
@@ -75,6 +80,7 @@ class RoutingOrchestrator:
                     "routing orchestrator",
                     [
                         f"retrieval failed: {knowledge_error}",
+                        f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
                     ],
                 )
             else:
@@ -83,6 +89,7 @@ class RoutingOrchestrator:
                     "routing orchestrator",
                     [
                         f"retrieval completed with {candidate_count} candidate(s)",
+                        f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
                     ],
                 )
         else:
@@ -94,6 +101,7 @@ class RoutingOrchestrator:
             )
         context.knowledge_payload = knowledge_payload
 
+        stage_start = time.perf_counter()
         grounding = self.dependencies.build_grounding(context, knowledge_payload)
         context.grounding = grounding
         append_pipeline_log(
@@ -101,6 +109,7 @@ class RoutingOrchestrator:
             [
                 f"grounding status: {grounding.status}",
                 f"allow answer: {grounding.allow_answer}",
+                f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
             ],
         )
 
@@ -127,6 +136,7 @@ class RoutingOrchestrator:
 
         assistant_message = grounding.fallback_message
         if grounding.allow_answer:
+            stage_start = time.perf_counter()
             try:
                 assistant_message = self.dependencies.build_response(
                     context,
@@ -140,6 +150,7 @@ class RoutingOrchestrator:
                     "routing orchestrator",
                     [
                         f"response generation failed: {exc}",
+                        f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
                     ],
                 )
                 raise
@@ -148,6 +159,7 @@ class RoutingOrchestrator:
                 [
                     "response generation succeeded",
                     f"answer: {shorten_text(assistant_message)}",
+                    f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
                 ],
             )
         else:
@@ -158,6 +170,11 @@ class RoutingOrchestrator:
                     f"fallback: {shorten_text(assistant_message or '')}",
                 ],
             )
+
+        append_pipeline_log(
+            "routing orchestrator",
+            [f"total_elapsed_ms: {elapsed_ms(request_start):.1f}"],
+        )
 
         return RoutingOutcome(
             decision=decision,
