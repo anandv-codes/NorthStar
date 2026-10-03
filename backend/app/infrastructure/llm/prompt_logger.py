@@ -3,6 +3,7 @@ import tempfile
 import time
 import logging
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -14,8 +15,14 @@ def elapsed_ms(start: float) -> float:
     return (time.perf_counter() - start) * 1000
 
 
+@lru_cache(maxsize=1)
 def get_log_path() -> Path:
-    """Get the path for the prompt log file."""
+    """Get the path for the prompt log file.
+
+    Resolved once per process and cached: callers invoke this on every log
+    line, so repeating the directory probing/`mkdir` here would add
+    per-call filesystem overhead to the chat critical path.
+    """
     configured_dir = os.getenv("PROMPT_LOG_DIR")
     candidate_dirs = []
 
