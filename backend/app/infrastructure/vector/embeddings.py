@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 from typing import Any
 
 
@@ -32,6 +33,7 @@ class LocalSentenceTransformerWrapper:
         return [float(x) for x in vec[0]]
 
 
+@lru_cache(maxsize=1)
 def get_embeddings() -> Any:
     """Return an embedding provider implementation.
 
@@ -42,6 +44,11 @@ def get_embeddings() -> Any:
 
     The returned object exposes `embed_documents(list[str])` and
     `embed_query(str)` to match existing consumers.
+
+    Cached as a process-wide singleton: building this (especially the
+    `local` sentence-transformers path) is expensive — it loads model
+    weights and can hit the Hugging Face Hub over HTTP — so it must not be
+    reconstructed on every call (e.g. once per note submit).
     """
     provider = os.getenv("EMBEDDING_PROVIDER", "google").strip().lower()
     model_name = _normalized_embedding_model_id()

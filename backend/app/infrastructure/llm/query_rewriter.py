@@ -156,7 +156,7 @@ def parse_query_rewrite_response(output_text: str) -> dict[str, Any]:
 
     parser = JsonOutputParser(pydantic_object=QueryRewriteResponse)
     parsed = parser.invoke(output_text)
-    return parsed.model_dump(mode="json")
+    return parsed
 
 
 class GeminiQueryRewriter:

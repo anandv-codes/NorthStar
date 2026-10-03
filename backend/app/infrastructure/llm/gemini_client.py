@@ -190,7 +190,7 @@ def parse_gemini_response(output_text: str) -> dict:
 
     parser = JsonOutputParser(pydantic_object=WorkMemoryExtraction)
     parsed = parser.invoke(output_text)
-    return parsed.model_dump(mode="json")
+    return parsed
 
 
 def generate_gemini_prompt(
