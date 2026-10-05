@@ -129,6 +129,50 @@ class MemoryRepository(Protocol):
         self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
     ) -> list[dict[str, Any]]: ...
 
+    # Daily/weekly summary: date-range lookups (half-open [start, end) on timestamptz columns)
+    def query_notes_for_user_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+    def query_tasks_opened_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+    def query_tasks_completed_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+    def query_questions_opened_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+    def query_questions_answered_in_range(
+        self, user_id: str, start_iso: str, end_iso: str
+    ) -> list[dict[str, Any]]: ...
+
+    def query_risks_opened_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+    def query_risks_resolved_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+    def query_decisions_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+    def query_facts_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+
+class PeriodSummaryRepository(Protocol):
+    """Persistence for generated daily/weekly rollup summaries."""
+
+    def get_period_summary(
+        self, user_id: str, period_type: str, period_start: str
+    ) -> dict[str, Any] | None: ...
+
+    def list_period_summaries_in_range(
+        self, user_id: str, period_type: str, start_date: str, end_date: str
+    ) -> list[dict[str, Any]]: ...
+
+    def upsert_period_summary(
+        self,
+        user_id: str,
+        period_type: str,
+        period_start: str,
+        period_end: str,
+        narrative: str,
+        stats: dict[str, Any],
+        source_note_count: int,
+    ) -> dict[str, Any]: ...
+
 
 class NoteRepository(Protocol):
     """Read access to raw notes, used by the sparse (BM25) retriever."""
@@ -158,6 +202,25 @@ class ChatRepository(Protocol):
     ) -> dict[str, Any]: ...
 
     def query_chat_messages_for_thread(self, user_id: str, thread_id: str, limit: int = 20) -> list[dict[str, Any]]: ...
+
+
+class PendingChatActionRepository(Protocol):
+    """Persistence for tool actions awaiting explicit user confirmation."""
+
+    def create_pending_action(
+        self,
+        user_id: str,
+        thread_id: str,
+        tool_name: str,
+        tool_args: dict[str, Any],
+        description: str,
+        confirmed_message: str,
+        expires_at: str,
+    ) -> dict[str, Any]: ...
+
+    def get_latest_pending_action(self, user_id: str, thread_id: str) -> dict[str, Any] | None: ...
+
+    def resolve_pending_action(self, user_id: str, pending_action_id: str, status: str) -> dict[str, Any]: ...
 
 
 class EmbeddingProvider(Protocol):

@@ -177,3 +177,20 @@ create index if not exists idx_concepts_user_status
 
 create index if not exists idx_concepts_source_note_id
   on concepts(source_note_id);
+
+-- Daily/weekly rollup summaries. One row per user/period_type/period_start;
+-- regenerating a period overwrites its row (see unique constraint below).
+create table if not exists period_summaries (
+  summary_id uuid primary key,
+  user_id text not null,
+  period_type text not null,
+  period_start date not null,
+  period_end date not null,
+  narrative text not null,
+  stats jsonb not null default '{}'::jsonb,
+  source_note_count int not null default 0,
+  generated_at timestamptz not null
+);
+
+create unique index if not exists idx_period_summaries_user_period
+  on period_summaries(user_id, period_type, period_start);

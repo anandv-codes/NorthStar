@@ -1,23 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChatMessageRecord,
+  MemoryConcept,
   MemoryQuestion,
   MemoryRisk,
   MemoryTask,
   NoteStatus,
+  PeriodSummaryStatus,
   RecentMemoryResponse,
   createNote,
+  fetchConcepts,
+  fetchDailySummary,
   fetchQuestions,
   fetchRecentMemory,
   fetchRisks,
   fetchTasks,
+  fetchWeeklySummary,
+  generateDailySummary,
+  generateWeeklySummary,
   getChatThread,
   getNoteStatus,
+  patchConceptStatus,
   patchQuestionStatus,
   patchRiskStatus,
   patchTaskStatus,
   sendChatMessage,
 } from "../shared/api/httpClient";
+import { ConceptsSection } from "../features/dashboard/components/ConceptsSection";
+import { DailyWeeklySummarySection } from "../features/dashboard/components/DailyWeeklySummarySection";
 import { QuestionsSection } from "../features/dashboard/components/QuestionsSection";
 import { RecentMemorySection } from "../features/dashboard/components/RecentMemorySection";
 import { RisksSection } from "../features/dashboard/components/RisksSection";
@@ -533,14 +543,19 @@ function App() {
   const [tasks, setTasks] = useState<MemoryTask[]>([]);
   const [questions, setQuestions] = useState<MemoryQuestion[]>([]);
   const [risks, setRisks] = useState<MemoryRisk[]>([]);
+  const [concepts, setConcepts] = useState<MemoryConcept[]>([]);
   const [recentMemory, setRecentMemory] = useState<RecentMemoryResponse | null>(
     null,
   );
+  const [dailySummary, setDailySummary] = useState<PeriodSummaryStatus | null>(null);
+  const [weeklySummary, setWeeklySummary] = useState<PeriodSummaryStatus | null>(null);
+  const [summaryBusy, setSummaryBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [activeRiskId, setActiveRiskId] = useState<string | null>(null);
+  const [activeConceptId, setActiveConceptId] = useState<string | null>(null);
 
   const handleLogin = useCallback(
     async (email: string, password: string) => {
@@ -590,16 +605,23 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const [taskData, questionData, riskData, recentData] = await Promise.all([
-        fetchTasks(),
-        fetchQuestions(),
-        fetchRisks(),
-        fetchRecentMemory(10),
-      ]);
+      const [taskData, questionData, riskData, conceptData, recentData, dailyData, weeklyData] =
+        await Promise.all([
+          fetchTasks(),
+          fetchQuestions(),
+          fetchRisks(),
+          fetchConcepts(),
+          fetchRecentMemory(10),
+          fetchDailySummary(),
+          fetchWeeklySummary(),
+        ]);
       setTasks(taskData);
       setQuestions(questionData);
       setRisks(riskData);
+      setConcepts(conceptData);
       setRecentMemory(recentData);
+      setDailySummary(dailyData);
+      setWeeklySummary(weeklyData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard data.");
     } finally {
@@ -670,6 +692,41 @@ function App() {
     }
   };
 
+  const withSummaryBusy = async (action: () => Promise<unknown>) => {
+    setSummaryBusy(true);
+    setError(null);
+    try {
+      await action();
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update summary.");
+    } finally {
+      setSummaryBusy(false);
+    }
+  };
+
+  const handleGenerateDaily = () => withSummaryBusy(() => generateDailySummary(false));
+  const handleRegenerateDaily = () => withSummaryBusy(() => generateDailySummary(true));
+  const handleGenerateWeekly = () => withSummaryBusy(() => generateWeeklySummary(false));
+  const handleRegenerateWeekly = () => withSummaryBusy(() => generateWeeklySummary(true));
+
+  const handleToggleConcept = async (concept: MemoryConcept) => {
+    if (!userId) {
+      return;
+    }
+    setActiveConceptId(concept.concept_id);
+    setError(null);
+    const nextStatus = concept.status === "learned" ? "open" : "learned";
+    try {
+      await patchConceptStatus(concept.concept_id, nextStatus);
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update concept status.");
+    } finally {
+      setActiveConceptId(null);
+    }
+  };
+
   if (isBootstrapping && (route === "dashboard" || route === "add-note" || route === "chat")) {
     return (
       <div style={{ padding: 16, maxWidth: 420, margin: "0 auto" }}>
@@ -734,7 +791,21 @@ function App() {
         onToggleResolved={handleToggleRisk}
         activeRiskId={activeRiskId}
       />
+      <ConceptsSection
+        concepts={concepts}
+        onToggleLearned={handleToggleConcept}
+        activeConceptId={activeConceptId}
+      />
       <RecentMemorySection recentMemory={recentMemory} />
+      <DailyWeeklySummarySection
+        dailySummary={dailySummary}
+        weeklySummary={weeklySummary}
+        onGenerateDaily={handleGenerateDaily}
+        onRegenerateDaily={handleRegenerateDaily}
+        onGenerateWeekly={handleGenerateWeekly}
+        onRegenerateWeekly={handleRegenerateWeekly}
+        busy={summaryBusy}
+      />
     </div>
   );
 }

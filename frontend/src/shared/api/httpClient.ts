@@ -147,6 +147,27 @@ export interface RecentMemoryResponse {
   concepts: MemoryConcept[];
 }
 
+export type PeriodType = "daily" | "weekly";
+
+export interface PeriodSummary {
+  summary_id: string;
+  user_id: string;
+  period_type: PeriodType;
+  period_start: string;
+  period_end: string;
+  narrative: string;
+  stats: Record<string, number>;
+  source_note_count: number;
+  generated_at: string;
+}
+
+export interface PeriodSummaryStatus {
+  status: "ready" | "insufficient_data" | "not_generated";
+  summary?: PeriodSummary | null;
+  notes_count: number;
+  min_notes_required: number;
+}
+
 export interface QueryRetrievalCandidate {
   note_id: string;
   text: string;
@@ -259,6 +280,7 @@ export interface ChatMessageResponse {
   plan: ChatPlanAction[];
   knowledge_error?: string | null;
   grounding?: GroundingResponse | null;
+  pending_action?: { pending_action_id: string; tool_name: string; description: string } | null;
 }
 
 export interface AuthTokens {
@@ -439,10 +461,41 @@ export async function fetchRisks(status?: string) {
   return requestJson<MemoryRisk[]>(`${BASE_URL}/risks${query}`);
 }
 
+export async function fetchConcepts(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return requestJson<MemoryConcept[]>(`${BASE_URL}/concepts${query}`);
+}
+
 export async function fetchRecentMemory(limit = 10) {
   return requestJson<RecentMemoryResponse>(
     `${BASE_URL}/memory/recent?limit=${limit}`,
   );
+}
+
+export async function fetchDailySummary(date?: string) {
+  const query = date ? `?date=${encodeURIComponent(date)}` : "";
+  return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/daily${query}`);
+}
+
+export async function generateDailySummary(regenerate = false, date?: string) {
+  return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/daily/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ period_start: date ?? null, regenerate }),
+  });
+}
+
+export async function fetchWeeklySummary(date?: string) {
+  const query = date ? `?date=${encodeURIComponent(date)}` : "";
+  return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/weekly${query}`);
+}
+
+export async function generateWeeklySummary(regenerate = false, date?: string) {
+  return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/weekly/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ period_start: date ?? null, regenerate }),
+  });
 }
 
 export async function retrieveQueryContext(query: string, limit = 5) {
@@ -494,6 +547,17 @@ export async function patchRiskStatus(
   status: MemoryRisk["status"],
 ) {
   return requestJson<MemoryRisk>(`${BASE_URL}/risks/${riskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function patchConceptStatus(
+  conceptId: string,
+  status: MemoryConcept["status"],
+) {
+  return requestJson<MemoryConcept>(`${BASE_URL}/concepts/${conceptId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),

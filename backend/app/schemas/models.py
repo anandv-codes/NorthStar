@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, Literal, Optional, List
 from pydantic import BaseModel, Field
 
@@ -195,6 +195,36 @@ class RecentMemoryResponse(BaseModel):
     concepts: List[ConceptResponse] = Field(default_factory=list)
 
 
+PeriodType = Literal["daily", "weekly"]
+PeriodSummaryStatus = Literal["ready", "insufficient_data", "not_generated"]
+
+
+class PeriodSummaryResponse(BaseModel):
+    summary_id: str
+    user_id: str
+    period_type: PeriodType
+    period_start: date
+    period_end: date
+    narrative: str
+    stats: Dict[str, Any] = Field(default_factory=dict)
+    source_note_count: int
+    generated_at: datetime
+
+
+class PeriodSummaryStatusResponse(BaseModel):
+    status: PeriodSummaryStatus
+    summary: Optional[PeriodSummaryResponse] = None
+    notes_count: int = 0
+    min_notes_required: int = 2
+
+
+class GenerateSummaryRequest(BaseModel):
+    period_start: Optional[date] = Field(
+        default=None, description="Day (daily) or any day within the week (weekly). Defaults to today/this week."
+    )
+    regenerate: bool = False
+
+
 class QueryRetrievalRequest(BaseModel):
     query: str = Field(..., min_length=1)
     limit: int = Field(default=5, ge=1, le=20)
@@ -316,6 +346,12 @@ class ChatThreadResponse(BaseModel):
     messages: List[ChatMessageRecordResponse] = Field(default_factory=list)
 
 
+class PendingToolActionResponse(BaseModel):
+    pending_action_id: str
+    tool_name: str
+    description: str
+
+
 class ChatMessageResponse(BaseModel):
     thread: ChatThreadResponse
     user_message: ChatMessageRecordResponse
@@ -325,6 +361,7 @@ class ChatMessageResponse(BaseModel):
     plan: List[ChatPlanActionResponse] = Field(default_factory=list)
     knowledge_error: Optional[str] = None
     grounding: Optional[GroundingResponse] = None
+    pending_action: Optional[PendingToolActionResponse] = None
 
 
 class RegisterRequest(BaseModel):

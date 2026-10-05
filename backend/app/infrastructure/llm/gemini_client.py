@@ -28,6 +28,9 @@ from .llm_config import (
     MAX_MATCHED_ENTITIES_TO_DISPLAY,
     MAX_RELATED_NOTES_IN_CONTEXT,
     MAX_RELATED_NOTE_SUMMARY_LENGTH,
+    PERIOD_SUMMARY_TEMPERATURE,
+    PERIOD_SUMMARY_MAX_RETRIES,
+    PERIOD_SUMMARY_TIMEOUT_SECONDS,
 )
 
 
@@ -347,6 +350,31 @@ class GeminiChatModel:
 
     def generate(self, prompt: str) -> str:
         return generate_chat_answer(prompt)
+
+
+@lru_cache(maxsize=4)
+def _get_period_summary_llm(model_id: str, api_key: str) -> ChatGoogleGenerativeAI:
+    """Process-wide singleton per model id, mirroring ``_get_chat_llm``."""
+    return ChatGoogleGenerativeAI(
+        google_api_key=api_key,
+        model=model_id,
+        temperature=PERIOD_SUMMARY_TEMPERATURE,
+        max_retries=PERIOD_SUMMARY_MAX_RETRIES,
+        timeout=PERIOD_SUMMARY_TIMEOUT_SECONDS,
+    )
+
+
+def generate_period_summary_narrative(prompt: str) -> str:
+    """Generate a daily/weekly rollup narrative for a fully-built prompt."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY must be set")
+
+    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
+    model = _get_period_summary_llm(model_id, api_key)
+
+    response = model.invoke([HumanMessage(content=prompt)])
+    return extract_text_from_response(response).strip()
 
 
 _DEFAULT_CHAT_MODEL: GeminiChatModel | None = None

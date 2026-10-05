@@ -748,6 +748,71 @@ class SupabaseMemoryRepository:
         items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
         return items
 
+    def _query_in_range(
+        self,
+        table: str,
+        user_id: str,
+        start_iso: str,
+        end_iso: str,
+        date_column: str,
+        status: str | None = None,
+    ) -> list[dict[str, Any]]:
+        query = (
+            supabase.table(table)
+            .select("*")
+            .eq("user_id", user_id)
+            .gte(date_column, start_iso)
+            .lt(date_column, end_iso)
+        )
+        if status:
+            query = query.eq("status", status)
+        try:
+            response = query.order(date_column, desc=True).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return response.data if isinstance(response.data, list) else []
+
+    def query_notes_for_user_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        return self._query_in_range(NOTES_TABLE, user_id, start_iso, end_iso, "created_at")
+
+    def query_tasks_opened_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        return self._query_in_range(TASKS_TABLE, user_id, start_iso, end_iso, "created_at")
+
+    def query_tasks_completed_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        return self._query_in_range(TASKS_TABLE, user_id, start_iso, end_iso, "completed_at", status="completed")
+
+    def query_questions_opened_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        return self._query_in_range(QUESTIONS_TABLE, user_id, start_iso, end_iso, "created_at")
+
+    def query_questions_answered_in_range(
+        self, user_id: str, start_iso: str, end_iso: str
+    ) -> list[dict[str, Any]]:
+        return self._query_in_range(QUESTIONS_TABLE, user_id, start_iso, end_iso, "resolved_at", status="answered")
+
+    def query_risks_opened_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        return self._query_in_range(RISKS_TABLE, user_id, start_iso, end_iso, "created_at")
+
+    def query_risks_resolved_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        query = (
+            supabase.table(RISKS_TABLE)
+            .select("*")
+            .eq("user_id", user_id)
+            .gte("resolved_at", start_iso)
+            .lt("resolved_at", end_iso)
+            .in_("status", ["mitigated", "resolved"])
+        )
+        try:
+            response = query.order("resolved_at", desc=True).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return response.data if isinstance(response.data, list) else []
+
+    def query_decisions_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        return self._query_in_range(DECISIONS_TABLE, user_id, start_iso, end_iso, "created_at")
+
+    def query_facts_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
+        return self._query_in_range(FACTS_TABLE, user_id, start_iso, end_iso, "created_at")
+
     def _get_note_ids_by_entity_names(self, user_id: str, entity_names: list[str]) -> list[str]:
         """Helper: find note_ids linked to entity names via memory_item_entities."""
         if not entity_names:

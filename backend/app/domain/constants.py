@@ -145,6 +145,39 @@ INTENT_TOOL_HINTS = {
     "tool",
 }
 
+# Used to classify a reply to a pending tool-action confirmation prompt.
+CONFIRMATION_AFFIRM_HINTS = {
+    "yes",
+    "yep",
+    "yeah",
+    "yup",
+    "sure",
+    "ok",
+    "okay",
+    "confirm",
+    "confirmed",
+    "do it",
+    "go ahead",
+    "please do",
+    "sounds good",
+    "correct",
+    "affirmative",
+}
+
+CONFIRMATION_DENY_HINTS = {
+    "no",
+    "nope",
+    "nah",
+    "cancel",
+    "don't",
+    "do not",
+    "stop",
+    "never mind",
+    "nevermind",
+    "negative",
+    "skip",
+}
+
 SHORT_TERM_WINDOW = 8
 SUMMARY_TRIGGER_MESSAGES = 12
 SUMMARY_MAX_CHARS = 900
