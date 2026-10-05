@@ -22,7 +22,7 @@ from ...infrastructure.llm.llm_config import (
     TOOL_CALL_TEMPERATURE,
     TOOL_CALL_TIMEOUT_SECONDS,
 )
-from .tools import TOOL_REGISTRY, build_tool_context
+from .tools import ENABLED_TOOL_NAMES, TOOL_REGISTRY, build_tool_context
 
 SYSTEM_PROMPT_TEMPLATE = """You decide whether the user's latest message is an explicit, unambiguous \
 request to create or update one work-memory item (a task, question, risk, or concept).
@@ -64,7 +64,10 @@ def resolve_tool_call(user_id: str, message: str) -> ToolCallProposal | None:
 
     model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
     llm = _get_tool_calling_llm(model_id, api_key)
-    bound_llm = llm.bind_tools([definition.args_schema for definition in TOOL_REGISTRY.values()])
+    enabled_schemas = [
+        definition.args_schema for name, definition in TOOL_REGISTRY.items() if name in ENABLED_TOOL_NAMES
+    ]
+    bound_llm = llm.bind_tools(enabled_schemas)
 
     tool_context, item_lookup = build_tool_context(user_id)
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(tool_context=tool_context)
@@ -77,6 +80,8 @@ def resolve_tool_call(user_id: str, message: str) -> ToolCallProposal | None:
     call = tool_calls[0]
     tool_name = str(call.get("name") or "")
     raw_args = call.get("args") or {}
+    if tool_name not in ENABLED_TOOL_NAMES:
+        return None
     definition = TOOL_REGISTRY.get(tool_name)
     if not definition:
         return None
@@ -96,6 +101,8 @@ def resolve_tool_call(user_id: str, message: str) -> ToolCallProposal | None:
 
 def execute_tool_call(user_id: str, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
     """Execute a previously-confirmed tool call. Re-validates args before running."""
+    if tool_name not in ENABLED_TOOL_NAMES:
+        raise ValueError(f"Tool is disabled: {tool_name}")
     definition = TOOL_REGISTRY.get(tool_name)
     if not definition:
         raise ValueError(f"Unknown tool: {tool_name}")

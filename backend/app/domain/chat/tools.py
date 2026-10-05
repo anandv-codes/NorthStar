@@ -132,6 +132,11 @@ class ToolDefinition:
     confirmed_message: Callable[[BaseModel, dict[str, str]], str]
 
 
+# Scoped down to tasks for now — question/risk/concept tools stay defined below
+# (and in TOOL_REGISTRY) so re-enabling them later is a one-line change here.
+ENABLED_TOOL_NAMES = {"create_task", "complete_task"}
+
+
 def _exec_create_task(user_id: str, args: CreateTaskArgs) -> dict[str, Any]:
     note_id = _create_synthetic_anchor_note(user_id, "create_task", args.description)
     rows = insert_tasks(
@@ -273,10 +278,13 @@ def build_tool_context(user_id: str) -> tuple[str, dict[str, str]]:
     item_lookup: dict[str, str] = {}
     sections = [
         ("Open tasks", query_tasks_for_user(user_id, status="open"), "task_id", "description"),
-        ("Open questions", query_questions_for_user(user_id, status="open"), "question_id", "question"),
-        ("Open risks", query_risks_for_user(user_id, status="open"), "risk_id", "risk"),
-        ("Open concepts", query_concepts_for_user(user_id, status="open"), "concept_id", "concept"),
     ]
+    if "create_question" in ENABLED_TOOL_NAMES or "answer_question" in ENABLED_TOOL_NAMES:
+        sections.append(("Open questions", query_questions_for_user(user_id, status="open"), "question_id", "question"))
+    if "create_risk" in ENABLED_TOOL_NAMES or "resolve_risk" in ENABLED_TOOL_NAMES:
+        sections.append(("Open risks", query_risks_for_user(user_id, status="open"), "risk_id", "risk"))
+    if "create_concept" in ENABLED_TOOL_NAMES or "mark_concept_learned" in ENABLED_TOOL_NAMES:
+        sections.append(("Open concepts", query_concepts_for_user(user_id, status="open"), "concept_id", "concept"))
 
     lines: list[str] = []
     for label, items, id_key, text_key in sections:

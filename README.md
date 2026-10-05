@@ -18,10 +18,32 @@ Follow these steps in order to get the app running locally.
 In your Supabase project's SQL editor, run these 3 files **in order** (they are idempotent, safe to re-run):
 
 1. [backend/sql/auth_jwt.sql](backend/sql/auth_jwt.sql) — user accounts + refresh tokens
-2. [backend/sql/chat_conversations.sql](backend/sql/chat_conversations.sql) — chat threads + messages
-3. [backend/sql/phase3_work_memory.sql](backend/sql/phase3_work_memory.sql) — notes + all extracted memory tables (tasks, facts, questions, decisions, risks, concepts, entities)
+2. [backend/sql/chat_conversations.sql](backend/sql/chat_conversations.sql) — chat threads + messages + pending tool-call confirmations (`pending_chat_actions`)
+3. [backend/sql/phase3_work_memory.sql](backend/sql/phase3_work_memory.sql) — notes + all extracted memory tables (tasks, facts, questions, decisions, risks, concepts, entities) + daily/weekly rollup summaries (`period_summaries`)
 
 That's all 3 files needed for a brand-new database — no other migrations required.
+
+**Updating an existing database:** if you set up NorthStar before the daily/weekly summary or chat tool-calling features existed, re-run files 2 and 3 above — every statement in them uses `create table if not exists` / `create index if not exists`, so re-running is safe and only adds the tables/columns/indexes that are missing:
+
+- `chat_conversations.sql` adds `pending_chat_actions` (tool actions the assistant proposed in chat and is waiting on explicit yes/no confirmation for).
+- `phase3_work_memory.sql` adds `period_summaries` (generated daily/weekly recaps) and the `notes.context_note_ids` column.
+
+To confirm all tables exist, run in the SQL editor:
+
+```sql
+select table_name from information_schema.tables
+where table_schema = 'public'
+  and table_name in (
+    'users', 'refresh_tokens',
+    'chat_threads', 'chat_messages', 'pending_chat_actions',
+    'notes', 'extraction_runs', 'tasks', 'facts', 'questions',
+    'decisions', 'risks', 'concepts', 'entities', 'memory_item_entities',
+    'period_summaries'
+  )
+order by table_name;
+```
+
+This should return all 16 names; any missing from the result means the corresponding `.sql` file above still needs to be run.
 
 ### 3. Configure the backend
 
