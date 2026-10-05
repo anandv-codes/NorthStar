@@ -5,7 +5,7 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 
 from .prompt_logger import append_pipeline_log
 from .prompt_loader import load_prompt

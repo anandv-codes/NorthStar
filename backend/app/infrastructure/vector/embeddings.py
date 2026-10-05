@@ -84,7 +84,7 @@ def get_embeddings() -> Any:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set to use Gemini embeddings")
     # If user explicitly set EMBEDDING_MODEL_ID it will be used; otherwise keep default
-    return GoogleGenerativeAIEmbeddings(model=model_name, google_api_key=api_key)
+    return GoogleGenerativeAIEmbeddings(model=model_name)
 
 
 def get_embedding_model_id() -> str:
