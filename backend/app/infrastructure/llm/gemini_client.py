@@ -9,7 +9,7 @@ from functools import lru_cache
 
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.output_parsers import JsonOutputParser
+from langchain.output_parsers import JsonOutputParser
 
 from ...schemas.models import WorkMemoryExtraction
 from .prompt_logger import log_gemini_interaction
