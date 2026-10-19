@@ -22,6 +22,8 @@ MEMORY_ITEM_ENTITIES_TABLE = os.getenv(
     "SUPABASE_MEMORY_ITEM_ENTITIES_TABLE",
     "memory_item_entities",
 )
+NOTE_ENTITIES_TABLE = os.getenv("SUPABASE_NOTE_ENTITIES_TABLE", "note_entities")
+COMMITMENTS_TABLE = os.getenv("SUPABASE_COMMITMENTS_TABLE", "commitments")
 NOTES_TABLE = os.getenv("SUPABASE_NOTES_TABLE", "notes")
 
 
@@ -97,6 +99,9 @@ class SupabaseMemoryRepository:
                 "status": task.get("status", "open"),
                 "created_by": task.get("created_by", "llm"),
                 "confidence": task.get("confidence"),
+                "due_date": task.get("due_date"),
+                "importance": task.get("importance"),
+                "durability": task.get("durability"),
                 "created_at": now,
                 "updated_at": now,
                 "completed_at": task.get("completed_at"),
@@ -274,6 +279,88 @@ class SupabaseMemoryRepository:
             if rows
             else []
         )
+
+    def upsert_note_entity_links(
+        self,
+        user_id: str,
+        note_id: str,
+        links: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        now = _utc_now()
+        rows = [
+            {
+                "user_id": user_id,
+                "note_id": note_id,
+                "entity_id": link["entity_id"],
+                "snippet": link.get("snippet"),
+                "created_at": now,
+            }
+            for link in links
+            if link.get("entity_id")
+        ]
+        return (
+            _execute_upsert(NOTE_ENTITIES_TABLE, rows, on_conflict="note_id,entity_id")
+            if rows
+            else []
+        )
+
+    def query_note_entities_by_source_note(self, user_id: str, note_id: str) -> list[dict[str, Any]]:
+        try:
+            response = (
+                supabase.table(NOTE_ENTITIES_TABLE)
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("note_id", note_id)
+                .execute()
+            )
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return response.data if isinstance(response.data, list) else []
+
+    def insert_commitments(
+        self,
+        user_id: str,
+        source_note_id: str,
+        commitments: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        now = _utc_now()
+        rows = [
+            {
+                "commitment_id": commitment.get("commitment_id") or _new_id(),
+                "user_id": user_id,
+                "source_note_id": source_note_id,
+                "task_id": commitment.get("task_id"),
+                "title": commitment["title"],
+                "due_date": commitment.get("due_date"),
+                "status": commitment.get("status", "pending"),
+                "confidence": commitment.get("confidence"),
+                "created_at": now,
+                "updated_at": now,
+            }
+            for commitment in commitments
+        ]
+        return _execute_insert(COMMITMENTS_TABLE, rows) if rows else []
+
+    def bump_entity_mentions(
+        self,
+        user_id: str,
+        names: list[str],
+        importance_delta: float = 0.1,
+    ) -> None:
+        """Increment mention_count/importance for existing entities (RPC)."""
+        if not names:
+            return
+        try:
+            supabase.rpc(
+                "bump_entity_mentions",
+                {
+                    "match_user_id": user_id,
+                    "entity_names": names,
+                    "importance_delta": importance_delta,
+                },
+            ).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
 
     def query_tasks_for_user(self, user_id: str, status: str | None = None) -> list[dict[str, Any]]:
         query = supabase.table(TASKS_TABLE).select("*").eq("user_id", user_id)

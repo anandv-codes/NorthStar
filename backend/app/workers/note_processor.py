@@ -3,12 +3,13 @@ import json
 import logging
 from datetime import datetime, timezone
 
-from ..infrastructure.db.supabase_client import update_note_item
-from ..infrastructure.llm.gemini_client import call_gemini_api
-from ..infrastructure.vector.embeddings import get_embeddings
+from ..infrastructure.db.supabase_client import get_note_item, update_note_item
+from ..infrastructure.llm.gemini_client import call_gemini_api, get_chat_model
 from ..domain.memory.services import (
     apply_deterministic_task_resolution,
+    bump_entity_mentions,
     create_extraction_run,
+    insert_commitments,
     insert_decisions,
     insert_facts,
     insert_memory_item_entity_links,
@@ -18,8 +19,17 @@ from ..domain.memory.services import (
     insert_concepts,
     upsert_entities,
 )
+from ..domain.memory.extraction_v2 import (
+    build_note_metadata,
+    commitment_rows,
+    entity_importance_delta,
+    task_rows_with_scoring,
+)
+from ..domain.recall.candidate_service import generate_candidates
+from ..domain.recall.question_service import build_context, generate_questions
+from ..infrastructure.db.recall_repository import get_recall_repository
 from ..infrastructure.llm.prompt_logger import append_deterministic_resolution_log
-from ..infrastructure.vector.vectorstore import upsert_note_embedding
+from ..infrastructure.vector.vectorstore import index_note
 from ..domain.query_retrieval.note_context_provider import fetch_note_context
 
 logger = logging.getLogger()
@@ -36,6 +46,18 @@ def process_sqs_message(body:dict)-> dict:
         if not note_id or not user_id or not raw_text:
             raise ValueError(f"Missing required fields")
         logger.info(f"Processing {note_id} for user {user_id}")
+
+        # Per-note opt-in: questions (the only LLM cost in the recall loop) are
+        # generated only when the user enabled recall for this note. Candidates
+        # are still scored so toggling ON later is instant.
+        try:
+            note_row = get_note_item(user_id=user_id, note_id=note_id) or {}
+        except Exception as exc:
+            logger.warning(f"Could not read note recall flag; defaulting to off: {exc}")
+            note_row = {}
+        recall_enabled = bool(note_row.get("recall_enabled", False))
+        recall_status = "off"
+        logger.info(f"Recall generation enabled: {recall_enabled} for note {note_id}")
 
         # Phase A + R: Fetch context via BOTH hybrid semantic retrieval AND entity-linked deterministic matching.
         try:
@@ -63,13 +85,6 @@ def process_sqs_message(body:dict)-> dict:
             matched_entity_names = []
             memory_items = []
 
-        # Get embedding for later upsert to vector store.
-        try:
-            note_embedding = get_embeddings().embed_query(raw_text)
-        except Exception as exc:
-            logger.warning(f"Embedding generation failed; continuing without vector upsert: {exc}")
-            note_embedding = None
-
         enrichment_res = call_gemini_api(
             raw_text,
             related_notes=related_notes,
@@ -96,13 +111,18 @@ def process_sqs_message(body:dict)-> dict:
                 context_note_ids_dedup.append(nid)
                 seen.add(nid)
 
+        metadata_projection = build_note_metadata(enrichment_res)
         updates = {
-            "status": "completed",
+            # The note stays "processing" until the end of the pipeline, so
+            # "completed" always implies recall questions are ready (when enabled).
+            "status": "processing",
+            "recall_status": "pending" if recall_enabled else "off",
             "enriched_summary": enrichment_res.get("summary", ""),
             "context_note_ids": context_note_ids_dedup,
             "action_items": [item["description"] for item in enrichment_res.get("tasks", [])],
             "questions": [item["question"] for item in enrichment_res.get("questions", [])],
             "insights": [],
+            "metadata": metadata_projection,
             "processed_at": datetime.now(timezone.utc).isoformat(),
         }
         logger.info("Updating db")
@@ -112,7 +132,7 @@ def process_sqs_message(body:dict)-> dict:
             user_id=user_id,
             source_note_id=note_id,
             extraction_run_id=extraction_run["extraction_run_id"],
-            tasks=enrichment_res.get("tasks", []),
+            tasks=task_rows_with_scoring(enrichment_res.get("tasks", [])),
         )
         facts = insert_facts(
             user_id=user_id,
@@ -148,6 +168,30 @@ def process_sqs_message(body:dict)-> dict:
             user_id=user_id,
             entities=enrichment_res.get("entities", []),
         )
+
+        # Consolidation: entities seen across notes gain weight over time.
+        entity_names = [entity.get("name") for entity in entity_rows if entity.get("name")]
+        if entity_names:
+            try:
+                bump_entity_mentions(
+                    user_id=user_id,
+                    names=entity_names,
+                    importance_delta=entity_importance_delta(entity_names),
+                )
+            except Exception as exc:
+                logger.warning(f"Entity importance update failed; continuing: {exc}")
+
+        try:
+            extracted_commitments = commitment_rows(enrichment_res, user_id, note_id)
+            if extracted_commitments:
+                inserted_commitments = insert_commitments(
+                    user_id=user_id,
+                    source_note_id=note_id,
+                    commitments=extracted_commitments,
+                )
+                logger.info(f"Commitments extracted: {len(inserted_commitments)}")
+        except Exception as exc:
+            logger.warning(f"Commitment persistence failed; continuing: {exc}")
 
         entity_name_to_id = {
             str(entity.get("name", "")).strip().lower(): entity.get("entity_id")
@@ -187,6 +231,70 @@ def process_sqs_message(body:dict)-> dict:
             )
         logger.info(f"Entity links created: {len(links)}")
 
+        # PR6: score extracted units into recall candidates. Idempotent via
+        # (user_id, dedupe_key) upsert, so re-processing a note is safe.
+        # Re-read the flag: the user may have toggled recall ON while this note
+        # was already processing (the start-of-run read would be stale).
+        try:
+            fresh_note = get_note_item(user_id=user_id, note_id=note_id) or {}
+            recall_enabled = bool(fresh_note.get("recall_enabled", recall_enabled))
+        except Exception as exc:
+            logger.warning(f"Could not re-read recall flag; keeping {recall_enabled}: {exc}")
+
+        try:
+            candidates = generate_candidates(
+                user_id=user_id,
+                note_id=note_id,
+                extraction=enrichment_res,
+                related_note_ids=context_note_ids_dedup,
+                entity_rows=entity_rows,
+                typed_rows={
+                    "task": tasks,
+                    "fact": facts,
+                    "question": questions,
+                    "decision": decisions,
+                    "risk": risks,
+                    "concept": concepts,
+                },
+            )
+            logger.info(f"Recall candidates created: {len(candidates)}")
+
+            # PR7: generate the question (answer comes after user acceptance).
+            # Only when the user enabled recall for this note.
+            if recall_enabled:
+                related_snippets = [
+                    (note.get("summary") or note.get("raw_text") or "").strip()
+                    for note in related_notes[:2]
+                ]
+                context = build_context(raw_text, related_snippets, entity_names)
+                question_results = generate_questions(
+                    candidates,
+                    context,
+                    model=get_chat_model(),
+                    repo=get_recall_repository(),
+                )
+                suggested = sum(1 for r in question_results if r["status"] == "suggested")
+                recall_status = "ready"
+                logger.info(
+                    f"Recall questions suggested: {suggested}/{len(question_results)}"
+                )
+            else:
+                recall_status = "off"
+                logger.info("Recall disabled for note; skipping question generation")
+        except Exception as exc:
+            recall_status = "failed" if recall_enabled else "off"
+            logger.warning(f"Candidate/question generation failed; continuing: {exc}")
+
+        # Finalize the note: "completed" only once question generation has
+        # finished (or failed). Always set it here rather than before inserts so
+        # a toggle racing with processing can rely on the status.
+        try:
+            update_note_item(
+                user_id, note_id, {"status": "completed", "recall_status": recall_status}
+            )
+        except Exception as exc:
+            logger.warning(f"Could not finalize note recall status: {exc}")
+
         resolution = apply_deterministic_task_resolution(
             user_id=user_id,
             raw_text=raw_text,
@@ -203,17 +311,18 @@ def process_sqs_message(body:dict)-> dict:
             resolution=resolution,
         )
 
-        # RAG is always enabled: upsert the embedding to the vector store for future retrieval.
-        if note_embedding is not None:
-            # Upsert after the DB update so failed enrichment does not pollute
-            # the local vector index.
-            upsert_note_embedding(
+        # RAG is always enabled: chunk + embed the note and index it in
+        # pgvector for future retrieval. Done last so failed enrichment does
+        # not pollute the index.
+        try:
+            chunk_count = index_note(
                 user_id=user_id,
                 note_id=note_id,
                 text=raw_text,
-                embedding=note_embedding,
-                metadata={"summary": enrichment_res.get("summary", "")},
             )
+            logger.info(f"Indexed {chunk_count} chunk(s) for note {note_id}")
+        except Exception as exc:
+            logger.warning(f"Vector indexing failed; note stored without embeddings: {exc}")
 
         return {
             "success": True,

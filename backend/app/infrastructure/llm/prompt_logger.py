@@ -10,6 +10,21 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def is_prompt_logging_enabled() -> bool:
+    """Whether raw prompt/response file logging is enabled.
+
+    Off by default: the log file contains full note text and model output, so
+    it must be explicitly opted into (set ``PROMPT_LOG_ENABLED=true``) for
+    local debugging rather than written in every environment.
+    """
+    return os.getenv("PROMPT_LOG_ENABLED", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def elapsed_ms(start: float) -> float:
     """Milliseconds elapsed since a `time.perf_counter()` start value."""
     return (time.perf_counter() - start) * 1000
@@ -56,6 +71,8 @@ def log_gemini_interaction(
     Log the complete Gemini interaction to a file.
     The file is overwritten on each call to track the latest request.
     """
+    if not is_prompt_logging_enabled():
+        return
     try:
         log_path = get_log_path()
         timestamp = datetime.now(timezone.utc).isoformat()
@@ -149,6 +166,8 @@ def append_deterministic_resolution_log(
     resolution: dict[str, Any],
 ) -> None:
     """Append deterministic task-resolution diagnostics to the prompt log."""
+    if not is_prompt_logging_enabled():
+        return
     try:
         log_path = get_log_path()
         timestamp = datetime.now(timezone.utc).isoformat()
@@ -217,6 +236,8 @@ def append_deterministic_resolution_log(
 
 def append_pipeline_log(stage: str, lines: list[str]) -> None:
     """Append a short pipeline trace to the shared Gemini log file."""
+    if not is_prompt_logging_enabled():
+        return
     try:
         log_path = get_log_path()
         timestamp = datetime.now(timezone.utc).isoformat()

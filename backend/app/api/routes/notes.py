@@ -4,8 +4,17 @@ import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..deps import get_current_user_id
-from ...schemas.models import NoteCreateRequest, NoteStatusResponse, NoteMemoryResponse
-from ...infrastructure.db.supabase_client import put_note_item, get_note_item
+from ...schemas.models import (
+    NoteCreateRequest,
+    NoteStatusResponse,
+    NoteMemoryResponse,
+    NoteRecallToggleRequest,
+    NoteRecallToggleResponse,
+)
+from ...infrastructure.db.supabase_client import put_note_item, get_note_item, update_note_item
+from ...infrastructure.db.recall_repository import get_recall_repository
+from ...infrastructure.llm.gemini_client import get_chat_model
+from ...domain.recall.question_service import build_context, generate_questions_for_note
 from ...domain.memory.services import (
     query_latest_extraction_run_for_note,
     query_tasks_by_source_note,
@@ -39,6 +48,8 @@ def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_u
         "created_at": created_at,
         "raw_text": payload.text,
         "metadata": payload.metadata,
+        "recall_enabled": payload.recall_enabled,
+        "recall_status": "pending" if payload.recall_enabled else "off",
     }
 
     logger.info("Saving note to Supabase")
@@ -108,6 +119,74 @@ def get_note_memory(note_id: str, user_id: str = Depends(get_current_user_id)):
     }
     logger.info(f"memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, risks={len(risks)}, concepts={len(concepts)}, entities={len(entities)}")
     return payload
+
+
+@router.patch("/{note_id}/recall", response_model=NoteRecallToggleResponse)
+def toggle_note_recall(
+    note_id: str,
+    payload: NoteRecallToggleRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Enable/disable recall question generation for a note.
+
+    Enabling generates questions for the note's already-scored candidates
+    synchronously (one LLM call per candidate); disabling stops future
+    generation but leaves existing suggestions/cards intact.
+    """
+    logger.info(f"toggle_note_recall: note_id={note_id}, enabled={payload.enabled}")
+    note = get_note_item(user_id=user_id, note_id=note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    questions_generated = 0
+    recall_status = "off"
+    if payload.enabled:
+        update_note_item(user_id, note_id, {"recall_enabled": True, "recall_status": "pending"})
+        recall_status = "ready"
+        try:
+            entity_rows = query_entities_by_source_note(user_id=user_id, note_id=note_id)
+            entity_names = [e.get("name") for e in entity_rows if e.get("name")]
+            context = build_context(note.get("raw_text", ""), entity_names=entity_names)
+            results = generate_questions_for_note(
+                user_id,
+                note_id,
+                context,
+                model=get_chat_model(),
+                repo=get_recall_repository(),
+            )
+            questions_generated = sum(1 for r in results if r["status"] == "suggested")
+            logger.info(f"Recall questions generated on toggle: {questions_generated}")
+        except Exception as exc:
+            recall_status = "failed"
+            logger.warning(f"Question generation on toggle failed; continuing: {exc}")
+    else:
+        update_note_item(user_id, note_id, {"recall_enabled": False, "recall_status": "off"})
+
+    suggestions_total = len(
+        get_recall_repository().query_candidates(
+            user_id, status="suggested", source_note_id=note_id
+        )
+    )
+    # Still-processing note: candidates may not exist yet. Leave it pending so
+    # the worker (which re-reads the flag) finishes generation instead of the
+    # UI claiming "ready" with zero suggestions.
+    if (
+        payload.enabled
+        and recall_status == "ready"
+        and suggestions_total == 0
+        and note.get("status") != "completed"
+    ):
+        recall_status = "pending"
+    if payload.enabled:
+        update_note_item(user_id, note_id, {"recall_status": recall_status})
+
+    return NoteRecallToggleResponse(
+        note_id=note_id,
+        enabled=payload.enabled,
+        recall_status=recall_status,
+        questions_generated=questions_generated,
+        suggestions_total=suggestions_total,
+    )
 
 
 @router.post("/poll/process-jobs")

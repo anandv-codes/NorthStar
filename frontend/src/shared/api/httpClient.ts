@@ -38,6 +38,8 @@ export interface NoteStatus {
   questions?: string[];
   insights?: string[];
   concepts?: string[];
+  recall_enabled?: boolean;
+  recall_status?: string;
 }
 
 export interface ExtractionRun {
@@ -155,6 +157,8 @@ export interface RecentNote {
   raw_text: string;
   enriched_summary?: string | null;
   context_note_ids?: string[];
+  recall_enabled?: boolean;
+  recall_status?: string;
 }
 
 export interface RecentMemoryResponse {
@@ -191,6 +195,82 @@ export interface PeriodSummaryStatus {
   summary?: PeriodSummary | null;
   notes_count: number;
   min_notes_required: number;
+}
+
+export type RecallGrade = 1 | 3 | 4 | 5;
+
+export interface RecallSuggestion {
+  candidate_id: string;
+  question: string;
+  item_type: string;
+  source_note_id?: string | null;
+  score?: number | null;
+  importance?: number | null;
+  durability?: number | null;
+  created_at?: string | null;
+}
+
+export interface RecallSuggestionList {
+  suggestions: RecallSuggestion[];
+  total: number;
+}
+
+export interface RecallCard {
+  card_id: string;
+  user_id: string;
+  candidate_id?: string | null;
+  question: string;
+  answer: string;
+  source_note_ids: string[];
+  entity_ids: string[];
+  status: string;
+  state: string;
+  learning_step: number;
+  interval: number;
+  easiness: number;
+  repetitions: number;
+  lapses: number;
+  review_count: number;
+  last_reviewed?: string | null;
+  next_due?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DueCardsResponse {
+  cards: RecallCard[];
+  total_due: number;
+}
+
+export interface RecallDecisionResponse {
+  status: string;
+  candidate_id: string;
+  card?: RecallCard | null;
+}
+
+export interface ReviewHistory {
+  review_id: string;
+  card_id: string;
+  grade: number;
+  reviewed_at: string;
+  previous_interval?: number | null;
+  new_interval?: number | null;
+  previous_easiness?: number | null;
+  new_easiness?: number | null;
+  elapsed_ms?: number | null;
+}
+
+export interface RecallReviewResult {
+  card: RecallCard;
+  history?: ReviewHistory | null;
+}
+
+export interface NoteRecallToggleResponse {
+  note_id: string;
+  enabled: boolean;
+  recall_status: string;
+  questions_generated: number;
+  suggestions_total: number;
 }
 
 export interface QueryRetrievalCandidate {
@@ -670,4 +750,62 @@ export async function patchConceptStatus(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
   });
+}
+
+export async function fetchDueCards(limit = 50) {
+  return requestJson<DueCardsResponse>(`${BASE_URL}/recall/due?limit=${limit}`);
+}
+
+export async function fetchSuggestions(limit = 50) {
+  return requestJson<RecallSuggestionList>(
+    `${BASE_URL}/recall/candidates?status=suggested&limit=${limit}`,
+  );
+}
+
+export async function acceptSuggestion(candidateId: string) {
+  return requestJson<RecallDecisionResponse>(
+    `${BASE_URL}/recall/candidates/${encodeURIComponent(candidateId)}/accept`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export async function rejectSuggestion(candidateId: string, feedback?: string) {
+  return requestJson<RecallDecisionResponse>(
+    `${BASE_URL}/recall/candidates/${encodeURIComponent(candidateId)}/reject`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback: feedback ?? null }),
+    },
+  );
+}
+
+export async function reviewCard(
+  cardId: string,
+  grade: RecallGrade,
+  elapsedMs?: number,
+) {
+  return requestJson<RecallReviewResult>(
+    `${BASE_URL}/recall/cards/${encodeURIComponent(cardId)}/review`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ grade, elapsed_ms: elapsedMs ?? null }),
+    },
+  );
+}
+
+export async function setNoteRecall(noteId: string, enabled: boolean) {
+  return requestJson<NoteRecallToggleResponse>(
+    `${BASE_URL}/notes/${encodeURIComponent(noteId)}/recall`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    },
+  );
 }

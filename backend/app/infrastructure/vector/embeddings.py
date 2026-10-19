@@ -1,6 +1,17 @@
+import logging
 import os
 from functools import lru_cache
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
+# pgvector columns are declared `vector(768)` in phase4_pgvector.sql, so the
+# embedding output must match. Change both together (and re-embed) if needed.
+DEFAULT_EMBEDDING_DIMENSIONS = 768
+
+
+def _embedding_dimensions() -> int:
+    return int(os.getenv("EMBEDDING_DIMENSIONS", str(DEFAULT_EMBEDDING_DIMENSIONS)))
 
 
 def _normalized_embedding_model_id() -> str:
@@ -83,8 +94,21 @@ def get_embeddings() -> Any:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set to use Gemini embeddings")
-    # If user explicitly set EMBEDDING_MODEL_ID it will be used; otherwise keep default
-    return GoogleGenerativeAIEmbeddings(model=model_name)
+    # Gemini defaults to a larger output; force the pgvector column dimension.
+    # If the installed langchain-google-genai lacks the parameter, fall back to
+    # the model default (and log, since it will mismatch vector(768)).
+    try:
+        return GoogleGenerativeAIEmbeddings(
+            model=model_name,
+            output_dimensionality=_embedding_dimensions(),
+        )
+    except TypeError:
+        logger.warning(
+            "Installed langchain-google-genai does not support output_dimensionality; "
+            "embeddings may not match the vector(%d) columns.",
+            _embedding_dimensions(),
+        )
+        return GoogleGenerativeAIEmbeddings(model=model_name)
 
 
 def get_embedding_model_id() -> str:

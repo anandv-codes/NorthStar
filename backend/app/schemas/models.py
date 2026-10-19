@@ -5,6 +5,10 @@ from pydantic import BaseModel, Field
 class NoteCreateRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Raw note text")
     metadata: Optional[dict] = Field(default_factory=dict)
+    recall_enabled: bool = Field(
+        default=False,
+        description="Generate recall questions for this note when it is processed",
+    )
 
 class NoteStatusResponse(BaseModel):
     note_id: str
@@ -18,6 +22,8 @@ class NoteStatusResponse(BaseModel):
     questions: Optional[List[str]] = None
     insights: Optional[List[str]] = None
     concepts: Optional[List[str]] = None
+    recall_enabled: bool = False
+    recall_status: str = "off"
 
 
 TaskStatus = Literal["open", "in_progress", "completed", "archived"]
@@ -36,12 +42,17 @@ class ExtractedEntity(BaseModel):
 class ExtractedTask(BaseModel):
     description: str = Field(..., min_length=1)
     confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    due_date: Optional[date] = None
+    importance: Optional[float] = Field(default=None, ge=0, le=1)
+    durability: Optional[float] = Field(default=None, ge=0, le=1)
     entities: List[str] = Field(default_factory=list)
 
 
 class ExtractedFact(BaseModel):
     content: str = Field(..., min_length=1)
     confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    importance: Optional[float] = Field(default=None, ge=0, le=1)
+    durability: Optional[float] = Field(default=None, ge=0, le=1)
     entities: List[str] = Field(default_factory=list)
 
 
@@ -66,7 +77,17 @@ class ExtractedRisk(BaseModel):
 class ExtractedConcept(BaseModel):
     concept:str = Field(..., min_length=1)
     confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    importance: Optional[float] = Field(default=None, ge=0, le=1)
+    durability: Optional[float] = Field(default=None, ge=0, le=1)
     entities: List[str] = Field(default_factory=list)
+
+
+class ExtractedCommitment(BaseModel):
+    title: str = Field(..., min_length=1)
+    due_date: Optional[date] = None
+    confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    entities: List[str] = Field(default_factory=list)
+
 
 class WorkMemoryExtraction(BaseModel):
     summary: str = ""
@@ -77,6 +98,7 @@ class WorkMemoryExtraction(BaseModel):
     risks: List[ExtractedRisk] = Field(default_factory=list)
     entities: List[ExtractedEntity] = Field(default_factory=list)
     concepts: List[ExtractedConcept] = Field(default_factory=list)
+    commitments: List[ExtractedCommitment] = Field(default_factory=list)
 
 
 class TaskUpdateRequest(BaseModel):
@@ -390,3 +412,171 @@ class UserProfileResponse(BaseModel):
     user_id: str
     email: str
     is_active: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Recall loop (Phase 4): candidates, cards, reviews, commitments, note links
+# ---------------------------------------------------------------------------
+
+RecallCandidateStatus = Literal[
+    "new", "candidate", "suggested", "approved", "rejected", "carded"
+]
+RecallCardStatus = Literal["active", "suspended"]
+RecallCardState = Literal["new", "learning", "review", "relearning"]
+CommitmentStatus = Literal["pending", "confirmed", "dismissed", "scheduled"]
+ReviewGrade = Literal[1, 3, 4, 5]
+
+
+class NoteEntityLink(BaseModel):
+    note_id: str
+    entity_id: str
+    user_id: Optional[str] = None
+    snippet: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class RecallCandidateCreate(BaseModel):
+    user_id: str
+    item_type: str
+    item_id: Optional[str] = None
+    source_note_id: Optional[str] = None
+    prompt: Optional[str] = None
+    answer: Optional[str] = None
+    importance: Optional[float] = Field(default=None, ge=0, le=1)
+    durability: Optional[float] = Field(default=None, ge=0, le=1)
+    mention_count: int = Field(default=1, ge=1)
+    related_note_count: int = Field(default=1, ge=1)
+    recency_score: Optional[float] = Field(default=None, ge=0, le=1)
+    user_interest_score: Optional[float] = Field(default=None, ge=0, le=1)
+    score: Optional[float] = Field(default=None, ge=0, le=1)
+    status: RecallCandidateStatus = "new"
+    dedupe_key: Optional[str] = None
+    rationale: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RecallCandidateResponse(RecallCandidateCreate):
+    candidate_id: str
+    created_at: datetime
+    updated_at: datetime
+    decided_at: Optional[datetime] = None
+
+
+class RecallCardCreate(BaseModel):
+    user_id: str
+    candidate_id: Optional[str] = None
+    question: str = Field(..., min_length=1)
+    answer: str = Field(..., min_length=1)
+    source_note_ids: List[str] = Field(default_factory=list)
+    entity_ids: List[str] = Field(default_factory=list)
+    status: RecallCardStatus = "active"
+    state: RecallCardState = "new"
+    learning_step: int = Field(default=0, ge=0)
+    interval: int = Field(default=0, ge=0)
+    easiness: float = Field(default=2.5, ge=1.3)
+    repetitions: int = Field(default=0, ge=0)
+    lapses: int = Field(default=0, ge=0)
+    review_count: int = Field(default=0, ge=0)
+    last_reviewed: Optional[datetime] = None
+    next_due: Optional[datetime] = None
+
+
+class RecallCardResponse(RecallCardCreate):
+    card_id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ReviewHistoryCreate(BaseModel):
+    user_id: str
+    card_id: str
+    grade: ReviewGrade
+    reviewed_at: Optional[datetime] = None
+    previous_interval: Optional[int] = None
+    new_interval: Optional[int] = None
+    previous_easiness: Optional[float] = None
+    new_easiness: Optional[float] = None
+    elapsed_ms: Optional[int] = None
+
+
+class ReviewHistoryResponse(ReviewHistoryCreate):
+    review_id: str
+    reviewed_at: datetime
+
+
+class CommitmentCreate(BaseModel):
+    user_id: str
+    source_note_id: str
+    task_id: Optional[str] = None
+    title: str = Field(..., min_length=1)
+    due_date: Optional[date] = None
+    status: CommitmentStatus = "pending"
+    confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    calendar_provider: Optional[str] = None
+    calendar_event_id: Optional[str] = None
+
+
+class CommitmentResponse(CommitmentCreate):
+    commitment_id: str
+    created_at: datetime
+    updated_at: datetime
+    confirmed_at: Optional[datetime] = None
+
+
+class RecallReviewRequest(BaseModel):
+    card_id: str
+    grade: ReviewGrade
+
+
+class DueCardsResponse(BaseModel):
+    cards: List[RecallCardResponse] = Field(default_factory=list)
+    total_due: int = 0
+
+
+class RecallSuggestionResponse(BaseModel):
+    """A candidate shown to the user with its question (answer hidden)."""
+
+    candidate_id: str
+    question: str
+    item_type: str
+    source_note_id: Optional[str] = None
+    score: Optional[float] = None
+    importance: Optional[float] = None
+    durability: Optional[float] = None
+    created_at: Optional[datetime] = None
+
+
+class RecallSuggestionListResponse(BaseModel):
+    suggestions: List[RecallSuggestionResponse] = Field(default_factory=list)
+    total: int = 0
+
+
+class NoteRecallToggleRequest(BaseModel):
+    enabled: bool
+
+
+class NoteRecallToggleResponse(BaseModel):
+    note_id: str
+    enabled: bool
+    recall_status: str = "off"
+    questions_generated: int = 0
+    suggestions_total: int = 0
+
+
+class RecallDecisionRequest(BaseModel):
+    feedback: Optional[str] = None
+
+
+class RecallDecisionResponse(BaseModel):
+    status: str
+    candidate_id: str
+    card: Optional[RecallCardResponse] = None
+
+
+class RecallReviewResult(BaseModel):
+    card: RecallCardResponse
+    history: Optional[ReviewHistoryResponse] = None
+
+
+class RecallGradeRequest(BaseModel):
+    grade: ReviewGrade
+    elapsed_ms: Optional[int] = Field(default=None, ge=0)

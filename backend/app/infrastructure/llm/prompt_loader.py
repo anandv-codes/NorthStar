@@ -4,8 +4,8 @@ from typing import Optional
 
 
 def _prompts_root() -> Path:
-    # backend/app/prompts
-    return Path(__file__).resolve().parent.parent / "prompts"
+    # backend/app/prompts (llm -> infrastructure -> app)
+    return Path(__file__).resolve().parents[2] / "prompts"
 
 
 def load_prompt(version: str, filename: str, default: Optional[str] = None) -> str:
