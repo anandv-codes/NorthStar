@@ -55,3 +55,6 @@ backend/*.zip
 chroma_data/
 backend/chroma_data/
 .claude/
+
+# Local-only mock data/client for frontend visual QA (see frontend/src/mock/)
+/frontend/src/mock/

@@ -3,6 +3,25 @@ const ACCESS_TOKEN_KEY = "northstar_access_token";
 const REFRESH_TOKEN_KEY = "northstar_refresh_token";
 const USER_ID_KEY = "northstar_user_id";
 
+// Local-only escape hatch for visual QA without a running backend (see frontend/src/mock/).
+// The specifier is kept out of a string literal so neither tsc nor the bundler
+// resolve it at build time when the (gitignored) mock folder doesn't exist.
+const MOCK_MODE = import.meta.env.VITE_MOCK_MODE === "true";
+const mockModuleSpecifier = ["..", "..", "mock", "mockApi"].join("/");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let mockApiPromise: Promise<any> | null = null;
+function loadMockApi() {
+  if (!mockApiPromise) {
+    mockApiPromise = import(/* @vite-ignore */ mockModuleSpecifier).catch(() => {
+      mockApiPromise = null;
+      throw new Error(
+        "VITE_MOCK_MODE is enabled but frontend/src/mock/mockApi.ts is missing. Create it or unset VITE_MOCK_MODE.",
+      );
+    });
+  }
+  return mockApiPromise;
+}
+
 export interface CreateNotePayload {
   text: string;
 }
@@ -145,6 +164,12 @@ export interface RecentMemoryResponse {
   questions: MemoryQuestion[];
   risks: MemoryRisk[];
   concepts: MemoryConcept[];
+}
+
+export interface NoteActivityDay {
+  /** ISO date, YYYY-MM-DD */
+  date: string;
+  count: number;
 }
 
 export type PeriodType = "daily" | "weekly";
@@ -377,6 +402,9 @@ async function requestJsonWithoutAuth<T>(
 }
 
 export async function registerUser(email: string, password: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).registerUser(email, password) as Promise<AuthTokens>;
+  }
   return requestJsonWithoutAuth<AuthTokens>(`${BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -385,6 +413,9 @@ export async function registerUser(email: string, password: string) {
 }
 
 export async function loginUser(email: string, password: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).loginUser(email, password) as Promise<AuthTokens>;
+  }
   return requestJsonWithoutAuth<AuthTokens>(`${BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -393,6 +424,9 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function refreshSession() {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).refreshSession() as Promise<AuthTokens>;
+  }
   const refreshToken = getStoredRefreshToken();
   if (!refreshToken) {
     throw new Error("No refresh token available");
@@ -405,6 +439,9 @@ export async function refreshSession() {
 }
 
 export async function logoutUser() {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).logoutUser() as Promise<void>;
+  }
   const refreshToken = getStoredRefreshToken();
   if (!refreshToken) {
     return;
@@ -417,10 +454,16 @@ export async function logoutUser() {
 }
 
 export async function fetchCurrentUser() {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchCurrentUser() as Promise<UserProfile>;
+  }
   return requestJson<UserProfile>(`${BASE_URL}/auth/me`);
 }
 
 export async function createNote(payload: CreateNotePayload) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).createNote(payload) as Promise<{ note_id: string; status: string }>;
+  }
   console.debug("[API] Submitting note:", payload.text);
   const result = await requestJson<{ note_id: string; status: string }>(
     `${BASE_URL}/notes`,
@@ -435,6 +478,9 @@ export async function createNote(payload: CreateNotePayload) {
 }
 
 export async function getNoteStatus(note_id: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).getNoteStatus(note_id) as Promise<NoteStatus>;
+  }
   console.debug("[API] Polling note status:", note_id);
   return requestJson<NoteStatus>(`${BASE_URL}/notes/${note_id}`);
 }
@@ -447,37 +493,78 @@ export async function getNoteMemory(note_id: string) {
 }
 
 export async function fetchTasks(status?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchTasks(status) as Promise<MemoryTask[]>;
+  }
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
   return requestJson<MemoryTask[]>(`${BASE_URL}/tasks${query}`);
 }
 
 export async function fetchQuestions(status?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchQuestions(status) as Promise<MemoryQuestion[]>;
+  }
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
   return requestJson<MemoryQuestion[]>(`${BASE_URL}/questions${query}`);
 }
 
 export async function fetchRisks(status?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchRisks(status) as Promise<MemoryRisk[]>;
+  }
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
   return requestJson<MemoryRisk[]>(`${BASE_URL}/risks${query}`);
 }
 
 export async function fetchConcepts(status?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchConcepts(status) as Promise<MemoryConcept[]>;
+  }
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
   return requestJson<MemoryConcept[]>(`${BASE_URL}/concepts${query}`);
 }
 
 export async function fetchRecentMemory(limit = 10) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchRecentMemory(limit) as Promise<RecentMemoryResponse>;
+  }
   return requestJson<RecentMemoryResponse>(
     `${BASE_URL}/memory/recent?limit=${limit}`,
   );
 }
 
+// There is no dedicated backend aggregate endpoint for this yet, so the real-mode
+// path derives current-month counts client-side from the most recent notes
+// (capped at 50 by the API) — best-effort until a proper endpoint exists.
+export async function fetchNoteActivity(): Promise<NoteActivityDay[]> {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchNoteActivity() as Promise<NoteActivityDay[]>;
+  }
+  const recent = await fetchRecentMemory(50);
+  const now = new Date();
+  const counts = new Map<string, number>();
+  for (const note of recent.notes) {
+    const created = new Date(note.created_at);
+    if (created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth()) {
+      const key = created.toISOString().slice(0, 10);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries()).map(([date, count]) => ({ date, count }));
+}
+
 export async function fetchDailySummary(date?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchDailySummary(date) as Promise<PeriodSummaryStatus>;
+  }
   const query = date ? `?date=${encodeURIComponent(date)}` : "";
   return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/daily${query}`);
 }
 
 export async function generateDailySummary(regenerate = false, date?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).generateDailySummary(regenerate, date) as Promise<PeriodSummaryStatus>;
+  }
   return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/daily/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -486,11 +573,17 @@ export async function generateDailySummary(regenerate = false, date?: string) {
 }
 
 export async function fetchWeeklySummary(date?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchWeeklySummary(date) as Promise<PeriodSummaryStatus>;
+  }
   const query = date ? `?date=${encodeURIComponent(date)}` : "";
   return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/weekly${query}`);
 }
 
 export async function generateWeeklySummary(regenerate = false, date?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).generateWeeklySummary(regenerate, date) as Promise<PeriodSummaryStatus>;
+  }
   return requestJson<PeriodSummaryStatus>(`${BASE_URL}/summaries/weekly/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -507,6 +600,9 @@ export async function retrieveQueryContext(query: string, limit = 5) {
 }
 
 export async function sendChatMessage(payload: ChatMessageRequest) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).sendChatMessage(payload) as Promise<ChatMessageResponse>;
+  }
   return requestJson<ChatMessageResponse>(`${BASE_URL}/chat/message`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -515,6 +611,9 @@ export async function sendChatMessage(payload: ChatMessageRequest) {
 }
 
 export async function getChatThread(threadId: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).getChatThread(threadId) as Promise<ChatThread>;
+  }
   return requestJson<ChatThread>(
     `${BASE_URL}/chat/threads/${encodeURIComponent(threadId)}`,
   );
@@ -524,6 +623,9 @@ export async function patchTaskStatus(
   taskId: string,
   status: MemoryTask["status"],
 ) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).patchTaskStatus(taskId, status) as Promise<MemoryTask>;
+  }
   return requestJson<MemoryTask>(`${BASE_URL}/tasks/${taskId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -535,6 +637,9 @@ export async function patchQuestionStatus(
   questionId: string,
   status: MemoryQuestion["status"],
 ) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).patchQuestionStatus(questionId, status) as Promise<MemoryQuestion>;
+  }
   return requestJson<MemoryQuestion>(`${BASE_URL}/questions/${questionId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -546,6 +651,9 @@ export async function patchRiskStatus(
   riskId: string,
   status: MemoryRisk["status"],
 ) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).patchRiskStatus(riskId, status) as Promise<MemoryRisk>;
+  }
   return requestJson<MemoryRisk>(`${BASE_URL}/risks/${riskId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
