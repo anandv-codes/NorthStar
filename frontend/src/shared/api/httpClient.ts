@@ -24,6 +24,7 @@ function loadMockApi() {
 
 export interface CreateNotePayload {
   text: string;
+  recall_enabled?: boolean;
 }
 
 export interface NoteStatus {
@@ -753,16 +754,25 @@ export async function patchConceptStatus(
 }
 
 export async function fetchDueCards(limit = 50) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchDueCards(limit) as Promise<DueCardsResponse>;
+  }
   return requestJson<DueCardsResponse>(`${BASE_URL}/recall/due?limit=${limit}`);
 }
 
 export async function fetchSuggestions(limit = 50) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchSuggestions(limit) as Promise<RecallSuggestionList>;
+  }
   return requestJson<RecallSuggestionList>(
     `${BASE_URL}/recall/candidates?status=suggested&limit=${limit}`,
   );
 }
 
 export async function acceptSuggestion(candidateId: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).acceptSuggestion(candidateId) as Promise<RecallDecisionResponse>;
+  }
   return requestJson<RecallDecisionResponse>(
     `${BASE_URL}/recall/candidates/${encodeURIComponent(candidateId)}/accept`,
     {
@@ -774,6 +784,9 @@ export async function acceptSuggestion(candidateId: string) {
 }
 
 export async function rejectSuggestion(candidateId: string, feedback?: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).rejectSuggestion(candidateId, feedback) as Promise<RecallDecisionResponse>;
+  }
   return requestJson<RecallDecisionResponse>(
     `${BASE_URL}/recall/candidates/${encodeURIComponent(candidateId)}/reject`,
     {
@@ -789,6 +802,9 @@ export async function reviewCard(
   grade: RecallGrade,
   elapsedMs?: number,
 ) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).reviewCard(cardId, grade, elapsedMs) as Promise<RecallReviewResult>;
+  }
   return requestJson<RecallReviewResult>(
     `${BASE_URL}/recall/cards/${encodeURIComponent(cardId)}/review`,
     {
@@ -800,6 +816,9 @@ export async function reviewCard(
 }
 
 export async function setNoteRecall(noteId: string, enabled: boolean) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).setNoteRecall(noteId, enabled) as Promise<NoteRecallToggleResponse>;
+  }
   return requestJson<NoteRecallToggleResponse>(
     `${BASE_URL}/notes/${encodeURIComponent(noteId)}/recall`,
     {

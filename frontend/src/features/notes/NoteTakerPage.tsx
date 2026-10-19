@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { CheckCircle, Microphone, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
+import { Brain, CheckCircle, Microphone, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
 import { createNote, getNoteStatus, type NoteStatus } from "../../shared/api/httpClient";
 import { Button } from "../../shared/ui/Button";
 
@@ -8,6 +8,7 @@ const POLL_TIMEOUT_MS = 20000;
 
 export function NoteTakerPage() {
   const [text, setText] = useState("");
+  const [recallEnabled, setRecallEnabled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [note, setNote] = useState<NoteStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export function NoteTakerPage() {
     setError(null);
     stopPolling();
     try {
-      const created = await createNote({ text: trimmed });
+      const created = await createNote({ text: trimmed, recall_enabled: recallEnabled });
       setText("");
       const status = await getNoteStatus(created.note_id);
       setNote(status);
@@ -93,10 +94,22 @@ export function NoteTakerPage() {
         </div>
         <div className="mt-4 flex items-center justify-between">
           <p className="text-xs text-neutral-400">{text.trim().length} characters</p>
-          <Button onClick={handleSubmit} disabled={submitting || !text.trim()}>
-            {submitting ? <Spinner size={16} className="animate-spin" /> : <PaperPlaneTilt size={16} weight="bold" />}
-            Save note
-          </Button>
+          <div className="flex items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-neutral-500">
+              <input
+                type="checkbox"
+                checked={recallEnabled}
+                onChange={(e) => setRecallEnabled(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950/20"
+              />
+              <Brain size={14} />
+              Add to Recall
+            </label>
+            <Button onClick={handleSubmit} disabled={submitting || !text.trim()}>
+              {submitting ? <Spinner size={16} className="animate-spin" /> : <PaperPlaneTilt size={16} weight="bold" />}
+              Save note
+            </Button>
+          </div>
         </div>
       </div>
 
