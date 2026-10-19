@@ -767,8 +767,7 @@ RECALL_INTERVAL_MODIFIER=1.0
 RECALL_LAPSE_MULTIPLIER=0.0
 RECALL_MAX_INTERVAL=36500
 
-# Vector
-VECTOR_BACKEND=pgvector          # pgvector | chroma (migration only)
+# Vector (pgvector-only runtime; Chroma is eval-only)
 EMBEDDING_DIMENSIONS=768
 EMBEDDING_PROVIDER=google
 CHUNK_MAX_TOKENS=500
@@ -796,10 +795,11 @@ Removed from the plan: `RECALL_AUTO_APPROVE_THRESHOLD`, `RECALL_MAX_CARDS_PER_NO
 
 ### 7.1 pgvector migration
 
-The `VectorStore` port already isolates Chroma. Add:
+The `VectorStore` port isolates the store. Implemented:
 
-- `backend/app/infrastructure/vector/pgvector_store.py` implementing `VectorStore`.
-- `VECTOR_BACKEND=pgvector|chroma` factory.
+- `backend/app/infrastructure/vector/pg_vector_store.py` implementing `VectorStore`.
+- `get_vector_store()` always returns `PgVectorStore`; the Chroma runtime path and
+  dual-write were removed (Chroma remains only in offline `evals/`).
 - SQL functions:
 
 ```sql

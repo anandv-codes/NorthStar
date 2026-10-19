@@ -319,7 +319,6 @@ def process_sqs_message(body:dict)-> dict:
                 user_id=user_id,
                 note_id=note_id,
                 text=raw_text,
-                summary=enrichment_res.get("summary", ""),
             )
             logger.info(f"Indexed {chunk_count} chunk(s) for note {note_id}")
         except Exception as exc:

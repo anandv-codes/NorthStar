@@ -61,7 +61,6 @@ def main() -> int:
                 user_id=note["user_id"],
                 note_id=note_id,
                 text=text,
-                summary="",
             )
             chunks += written
             logger.info("indexed note %s (%d chunks)", note_id, written)

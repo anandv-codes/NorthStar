@@ -12,15 +12,15 @@ interface DailyWeeklySummarySectionProps {
 }
 
 const STAT_LABELS: Record<string, string> = {
+  facts_recorded: "Facts",
+  decisions_made: "Decisions",
+  questions_opened: "Questions",
+  questions_answered: "Questions answered",
   notes_count: "Notes",
   tasks_opened: "Tasks opened",
   tasks_completed: "Tasks completed",
-  questions_opened: "Questions opened",
-  questions_answered: "Questions answered",
   risks_opened: "Risks opened",
   risks_resolved: "Risks resolved",
-  decisions_made: "Decisions",
-  facts_recorded: "Facts",
 };
 
 function StatChips({ stats }: { stats: Record<string, number> }) {
@@ -65,7 +65,11 @@ export function DailyWeeklySummarySection({
 
   return (
     <section>
-      <h2>Summaries</h2>
+      <h2>What to remember</h2>
+      <p style={{ marginTop: 0, color: "#666", fontSize: "0.9em" }}>
+        Daily and weekly reflection on what you captured and what still needs
+        attention.
+      </p>
       <div style={{ marginBottom: "0.75rem" }}>
         <button
           onClick={() => setPeriod("daily")}
@@ -106,16 +110,19 @@ export function DailyWeeklySummarySection({
       ) : active.status === "not_generated" ? (
         <div>
           <p>
-            {active.notes_count} note{active.notes_count === 1 ? "" : "s"} ready to summarize.
+            {active.notes_count} note{active.notes_count === 1 ? "" : "s"} ready for
+            reflection.
           </p>
           <button onClick={() => void onGenerate()} disabled={busy}>
-            Generate {period === "daily" ? "daily" : "weekly"} summary
+            Generate {period} reflection
           </button>
         </div>
       ) : (
         <p title={`Needs at least ${active.min_notes_required} notes; currently ${active.notes_count}.`}>
-          Not enough notes yet ({active.notes_count}/{active.min_notes_required}) to generate a{" "}
-          {period} summary.
+          {Math.max(0, active.min_notes_required - active.notes_count)} more note
+          {Math.max(0, active.min_notes_required - active.notes_count) === 1 ? "" : "s"}{" "}
+          needed to unlock the {period} reflection ({active.notes_count}/
+          {active.min_notes_required}).
         </p>
       )}
     </section>
