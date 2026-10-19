@@ -31,12 +31,13 @@ import { ConceptCloud } from "./components/ConceptCloud";
 import { RecentMemoryFeed } from "./components/RecentMemoryFeed";
 import { ActivityHeatmap } from "./components/ActivityHeatmap";
 import { RecallToday } from "./components/RecallToday";
+import { RecallSpotlight } from "./components/RecallSpotlight";
 import { QuickAddNote } from "./components/QuickAddNote";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-card">
-      <p className="text-sm font-semibold text-neutral-950">{title}</p>
+      <h2 className="text-sm font-semibold text-neutral-950">{title}</h2>
       <div className="mt-2">{children}</div>
     </section>
   );
@@ -143,18 +144,15 @@ export function DashboardPage() {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <SummaryCard title="Daily summary" status={dailySummary} loading={generatingDaily} onGenerate={handleGenerateDaily} />
-        <SummaryCard title="Weekly summary" status={weeklySummary} loading={generatingWeekly} onGenerate={handleGenerateWeekly} />
+      {/* What matters today */}
+      <SummaryCard title="Today" status={dailySummary} loading={generatingDaily} onGenerate={handleGenerateDaily} />
+
+      {/* What to remember — the core loop leads the dashboard per the product pivot */}
+      <div className="mt-5">
+        <RecallSpotlight />
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ActivityHeatmap key={heatmapKey} />
-        </div>
-        <RecallToday />
-      </div>
-
+      {/* What to do */}
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Panel title="Open tasks">
           <TaskBoard tasks={tasks} onToggle={handleToggleTask} />
@@ -165,6 +163,19 @@ export function DashboardPage() {
         <Panel title="Risks">
           <RiskWatch risks={risks} onResolve={handleResolveRisk} />
         </Panel>
+      </div>
+
+      {/* Supporting trends */}
+      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ActivityHeatmap key={heatmapKey} />
+        </div>
+        <RecallToday />
+      </div>
+
+      {/* Secondary / lower-frequency context */}
+      <div className="mt-5">
+        <SummaryCard title="This week" status={weeklySummary} loading={generatingWeekly} onGenerate={handleGenerateWeekly} />
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">

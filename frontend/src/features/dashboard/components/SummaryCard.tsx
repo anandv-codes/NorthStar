@@ -16,7 +16,7 @@ export function SummaryCard({ title, status, loading, onGenerate }: SummaryCardP
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-card">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-neutral-950">{title}</p>
+        <h2 className="text-sm font-semibold text-neutral-950">{title}</h2>
         {hasSummary ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-accent-50 px-2.5 py-1 text-[11px] font-semibold text-accent-700">
             <Sparkle size={12} weight="fill" /> Ready

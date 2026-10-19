@@ -15,9 +15,9 @@ import { LogoMark } from "../../shared/ui/Logo";
 
 const NAV_ITEMS = [
   { to: "/app/dashboard", label: "Dashboard", icon: SquaresFour },
-  { to: "/app/notes", label: "Note Taker", icon: NotePencil },
-  { to: "/app/chat", label: "Chat", icon: ChatCircleDots },
   { to: "/app/recall", label: "Recall", icon: ClockCounterClockwise },
+  { to: "/app/notes", label: "Note Taker", icon: NotePencil },
+  { to: "/app/chat", label: "Ask", icon: ChatCircleDots },
 ];
 
 export function AppShell() {
@@ -32,6 +32,13 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-neutral-50 lg:flex">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:bg-neutral-950 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Skip to content
+      </a>
+
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-3 lg:hidden">
         <div className="flex items-center gap-2">
@@ -42,6 +49,8 @@ export function AppShell() {
           type="button"
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-900"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          aria-controls="app-nav"
           onClick={() => setMobileOpen((v) => !v)}
         >
           {mobileOpen ? <X size={20} /> : <List size={20} />}
@@ -60,7 +69,7 @@ export function AppShell() {
           <span className="font-display text-lg font-semibold">NorthStar</span>
         </div>
 
-        <nav className="mt-2 flex flex-col gap-1 lg:mt-8">
+        <nav id="app-nav" className="mt-2 flex flex-col gap-1 lg:mt-8">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
@@ -106,7 +115,7 @@ export function AppShell() {
         </button>
       </aside>
 
-      <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+      <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 outline-none sm:px-6 lg:px-10 lg:py-10">
         <Outlet />
       </main>
     </div>

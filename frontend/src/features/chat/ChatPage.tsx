@@ -103,7 +103,7 @@ export function ChatPage() {
     <div className="mx-auto flex h-[calc(100vh-7rem)] max-w-3xl flex-col lg:h-[calc(100vh-5rem)]">
       <header className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-neutral-950">Chat</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-neutral-950">Ask</h1>
           <p className="mt-1 text-sm text-neutral-500">Ask anything grounded in your captured notes.</p>
         </div>
         <Button variant="outline" size="sm" onClick={handleNewChat}>

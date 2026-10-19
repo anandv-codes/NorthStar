@@ -69,7 +69,7 @@ export function ActivityHeatmap() {
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-card">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-neutral-950">Note activity</p>
+        <h2 className="text-sm font-semibold text-neutral-950">Note activity</h2>
         <span className="text-xs font-medium text-neutral-400">{monthLabel}</span>
       </div>
 
