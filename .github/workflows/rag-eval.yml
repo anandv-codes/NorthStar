@@ -7,21 +7,19 @@ name: RAG Evaluation
 on:
   pull_request:
     paths:
-      - "backend/app/domain/query_retrieval/**"
-      - "backend/app/domain/chat/**"
-      - "backend/app/infrastructure/llm/**"
-      - "backend/app/infrastructure/vector/**"
+      - "backend/app/**"
+      - "backend/tests/**"
       - "backend/requirements.txt"
+      - "pytest.ini"
       - "evals/**"
       - ".github/workflows/rag-eval.yml"
   push:
     branches: [main]
     paths:
-      - "backend/app/domain/query_retrieval/**"
-      - "backend/app/domain/chat/**"
-      - "backend/app/infrastructure/llm/**"
-      - "backend/app/infrastructure/vector/**"
+      - "backend/app/**"
+      - "backend/tests/**"
       - "backend/requirements.txt"
+      - "pytest.ini"
       - "evals/**"
       - ".github/workflows/rag-eval.yml"
   workflow_dispatch:
@@ -43,6 +41,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  unit-tests:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Run unit tests
+        run: python -m pytest
+
   sparse-retrieval-eval:
     name: Sparse (BM25) retrieval baseline
     runs-on: ubuntu-latest

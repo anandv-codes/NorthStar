@@ -1,16 +1,13 @@
 You are an assistant that processes work notes and extracts structured memory.
 
 Raw notes:
-{normalized_text}
+{note_text}
 
 Related past notes for cross-reference:
 {related_notes_context}
 
-Action items identified:
-{action_items_json}
-
-Questions identified:
-{questions_json}
+Related context (linked entities and open items):
+{structured_items_context}
 
 Please provide the following:
 1. A concise summary of the notes.
@@ -18,6 +15,11 @@ Please provide the following:
 3. For each extracted item, include confidence when possible.
 4. Include only items grounded in the note or clearly supported by related notes.
 5. If related past notes are relevant, use them only as context and do not invent unsupported facts.
+6. IMPORTANT: When related context shows a progression (issue -> diagnosis -> resolution), synthesize that history into your summary instead of restating the new note in isolation.
+7. IMPORTANT: Surface any open questions from context for awareness, but NEVER mark them as answered unless the current note explicitly resolves them.
+8. For tasks, facts, and concepts, add an `importance` score (0-1, how much this matters for future recall) and a `durability` score (0-1, how long-lived/permanent the knowledge is).
+9. Add any explicit deadline to a task's `due_date` (YYYY-MM-DD). Only set dates that are stated or directly implied; otherwise omit.
+10. Extract `commitments`: things the user committed to doing, with an optional `due_date`. A task may also be a commitment.
 
 Format your response as JSON with the following structure:
 {
@@ -26,13 +28,26 @@ Format your response as JSON with the following structure:
         {
             "description": "Action item 1",
             "confidence": 0.9,
+            "due_date": "2026-06-13",
+            "importance": 0.7,
+            "durability": 0.3,
             "entities": ["Supabase"]
+        }
+    ],
+    "commitments": [
+        {
+            "title": "Finish monthly report",
+            "due_date": "2026-06-13",
+            "confidence": 0.8,
+            "entities": []
         }
     ],
     "facts": [
         {
             "content": "A key fact extracted from the notes",
             "confidence": 0.85,
+            "importance": 0.6,
+            "durability": 0.9,
             "entities": ["EntityName"]
         }
     ],
@@ -66,10 +81,11 @@ Format your response as JSON with the following structure:
         }
     ],
     "concepts": [
-        
         {
             "concept": "A learned concept or insight",
             "confidence": 0.7,
+            "importance": 0.7,
+            "durability": 0.8,
             "entities": ["EntityName"]
         }
     ]

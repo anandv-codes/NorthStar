@@ -39,7 +39,7 @@ from ...infrastructure.vector.vectorstore import get_vector_store
 
 
 RRF_K = int(os.getenv("QUERY_RETRIEVAL_RRF_K", "60"))
-RERANKER_MODE = os.getenv("QUERY_RETRIEVAL_RERANKER", "semantic").strip().lower()
+RERANKER_MODE = os.getenv("QUERY_RETRIEVAL_RERANKER", "off").strip().lower()
 
 
 def fuse_candidates(

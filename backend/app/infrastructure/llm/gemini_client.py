@@ -13,7 +13,7 @@ from langchain.output_parsers import JsonOutputParser
 
 from ...schemas.models import WorkMemoryExtraction
 from .prompt_logger import log_gemini_interaction
-from .prompt_loader import load_prompt
+from .prompt_render import build_extraction_prompt
 from .llm_response_utils import extract_text_from_response
 from .llm_config import (
     WORK_MEMORY_EXTRACTION_TEMPERATURE,
@@ -207,90 +207,13 @@ def generate_gemini_prompt(
     """Generate the extraction prompt with note text, related context, and structured items."""
     related_context = generate_related_notes_context(related_notes or [])
     structured_items_context = generate_structured_items_context(matched_entity_names, memory_items)
-    
-    version = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
-    
-    default_template = """You are an assistant that processes work notes and extracts structured memory.
 
-Raw notes:
-{note_text}
-
-Related past notes for cross-reference:
-{related_notes_context}
-
-Related context (linked entities and open items):
-{structured_items_context}
-
-Please provide the following:
-1. A concise summary of the notes.
-2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.
-3. For each extracted item, include confidence when possible.
-4. Include only items grounded in the note or clearly supported by related notes.
-5. If related past notes are relevant, use them only as context and do not invent unsupported facts.
-6. IMPORTANT: When related context shows a progression (issue → diagnosis → resolution), synthesize that history into your summary instead of restating the new note in isolation.
-7. IMPORTANT: Surface any open questions from context for awareness, but NEVER mark them as answered unless the current note explicitly resolves them.
-
-Format your response as JSON with the following structure:
-{{
-    "summary": "Concise summary here",
-    "tasks": [
-        {{
-            "description": "Action item 1",
-            "confidence": 0.9,
-            "entities": ["Supabase"]
-        }}
-    ],
-    "facts": [
-        {{
-            "content": "A key fact extracted from the notes",
-            "confidence": 0.85,
-            "entities": ["EntityName"]
-        }}
-    ],
-    "questions": [
-        {{
-            "question": "Question 1?",
-            "confidence": 0.8,
-            "entities": []
-        }}
-    ],
-    "decisions": [
-        {{
-            "decision": "A decision that was made",
-            "rationale": "Why this decision was made",
-            "confidence": 0.8,
-            "entities": []
-        }}
-    ],
-    "risks": [
-        {{
-            "risk": "A potential risk identified",
-            "severity": "high",
-            "confidence": 0.75,
-            "entities": []
-        }}
-    ],
-    "entities": [
-        {{
-            "name": "Supabase",
-            "entity_type": "technology"
-        }}
-    ],
-    "concepts": [
-        {{
-            "concept": "A learned concept or insight",
-            "confidence": 0.7,
-            "entities": ["EntityName"]
-        }}
-    ]
-}}
-"""
-    
-    template = load_prompt(version, "00-gemini_extraction_prompt.txt", default=default_template)
-    prompt = template.replace("{note_text}", note_text)
-    prompt = prompt.replace("{related_notes_context}", related_context)
-    prompt = prompt.replace("{structured_items_context}", structured_items_context)
-    return prompt.strip()
+    return build_extraction_prompt(
+        note_text=note_text,
+        related_notes_context=related_context,
+        structured_items_context=structured_items_context,
+        version=os.getenv("WORK_MEMORY_PROMPT_VERSION"),
+    )
 
 
 def generate_related_notes_context(related_notes: list[dict[str, Any]]) -> str:

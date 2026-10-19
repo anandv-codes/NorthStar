@@ -124,6 +124,30 @@ def insert_memory_item_entity_links(
     return repo.insert_memory_item_entity_links(user_id=user_id, source_note_id=source_note_id, links=links)
 
 
+def insert_commitments(
+    user_id: str,
+    source_note_id: str,
+    commitments: list[dict[str, Any]],
+    repo: MemoryRepository | None = None,
+) -> list[dict[str, Any]]:
+    repo = repo or get_memory_repository()
+    return repo.insert_commitments(
+        user_id=user_id, source_note_id=source_note_id, commitments=commitments
+    )
+
+
+def bump_entity_mentions(
+    user_id: str,
+    names: list[str],
+    importance_delta: float = 0.1,
+    repo: MemoryRepository | None = None,
+) -> None:
+    repo = repo or get_memory_repository()
+    return repo.bump_entity_mentions(
+        user_id=user_id, names=names, importance_delta=importance_delta
+    )
+
+
 def query_tasks_for_user(
     user_id: str, status: str | None = None, repo: MemoryRepository | None = None
 ) -> list[dict[str, Any]]:

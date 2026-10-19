@@ -14,7 +14,8 @@ an alternative implementation.
 """
 from __future__ import annotations
 
-from typing import Any, Protocol
+from datetime import datetime
+from typing import Any, Protocol, runtime_checkable
 
 
 class UserRepository(Protocol):
@@ -41,6 +42,7 @@ class UserRepository(Protocol):
     def revoke_refresh_token(self, jti: str) -> dict[str, Any]: ...
 
 
+@runtime_checkable
 class MemoryRepository(Protocol):
     """Persistence for extraction runs and typed work-memory items."""
 
@@ -129,6 +131,22 @@ class MemoryRepository(Protocol):
         self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
     ) -> list[dict[str, Any]]: ...
 
+    # Phase 4: note <-> entity links (recall provenance + consolidation inputs)
+    def upsert_note_entity_links(
+        self, user_id: str, note_id: str, links: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]: ...
+
+    def query_note_entities_by_source_note(self, user_id: str, note_id: str) -> list[dict[str, Any]]: ...
+
+    # Phase 4/5: commitments + entity consolidation
+    def insert_commitments(
+        self, user_id: str, source_note_id: str, commitments: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]: ...
+
+    def bump_entity_mentions(
+        self, user_id: str, names: list[str], importance_delta: float = 0.1
+    ) -> None: ...
+
     # Daily/weekly summary: date-range lookups (half-open [start, end) on timestamptz columns)
     def query_notes_for_user_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
 
@@ -149,6 +167,75 @@ class MemoryRepository(Protocol):
     def query_decisions_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
 
     def query_facts_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]: ...
+
+
+@runtime_checkable
+class RecallRepository(Protocol):
+    """Persistence for the recall loop: candidates, cards, reviews, commitments.
+
+    The candidate scoring/eligibility logic lives in the domain (PR6); this
+    port only stores and retrieves the state it produces.
+    """
+
+    def insert_candidates(
+        self, user_id: str, candidates: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]: ...
+
+    def upsert_candidate(self, user_id: str, candidate: dict[str, Any]) -> dict[str, Any]: ...
+
+    def get_candidate(self, user_id: str, candidate_id: str) -> dict[str, Any] | None: ...
+
+    def query_candidates(
+        self,
+        user_id: str,
+        status: str | None = None,
+        limit: int = 100,
+        source_note_id: str | None = None,
+    ) -> list[dict[str, Any]]: ...
+
+    def update_candidate(
+        self, user_id: str, candidate_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]: ...
+
+    def create_card(self, user_id: str, card: dict[str, Any]) -> dict[str, Any]: ...
+
+    def get_card(self, user_id: str, card_id: str) -> dict[str, Any] | None: ...
+
+    def query_cards(
+        self,
+        user_id: str,
+        status: str | None = None,
+        due_before: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]: ...
+
+    def update_card(self, user_id: str, card_id: str, updates: dict[str, Any]) -> dict[str, Any]: ...
+
+    def insert_review_history(self, user_id: str, entry: dict[str, Any]) -> dict[str, Any]: ...
+
+    def query_review_history(self, user_id: str, card_id: str) -> list[dict[str, Any]]: ...
+
+    def upsert_commitment(self, user_id: str, commitment: dict[str, Any]) -> dict[str, Any]: ...
+
+    def query_commitments(self, user_id: str, status: str | None = None) -> list[dict[str, Any]]: ...
+
+    def update_commitment(
+        self, user_id: str, commitment_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]: ...
+
+
+@runtime_checkable
+class Clock(Protocol):
+    """Supplies the current time so scheduling is testable."""
+
+    def now(self) -> datetime: ...
+
+
+@runtime_checkable
+class Scheduler(Protocol):
+    """Computes the next scheduling state for a card after a review."""
+
+    def schedule(self, card: dict[str, Any], grade: int, now: datetime) -> dict[str, Any]: ...
 
 
 class PeriodSummaryRepository(Protocol):

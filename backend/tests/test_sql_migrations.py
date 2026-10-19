@@ -1,0 +1,79 @@
+"""Static guards for the idempotent SQL migrations.
+
+The README tells users to re-run these files on existing databases, so every
+DDL statement must be idempotent. These tests do not need a database.
+"""
+import re
+from pathlib import Path
+
+import pytest
+
+SQL_DIR = Path(__file__).resolve().parents[1] / "sql"
+SQL_FILES = sorted(SQL_DIR.glob("*.sql"))
+
+CREATE_RE = re.compile(r"create\s+(unique\s+)?(table|index)\s+(?!if\s+not\s+exists)", re.I)
+ADD_COLUMN_RE = re.compile(r"alter\s+table\s+\w+\s+add\s+column\s+(?!if\s+not\s+exists)", re.I)
+
+RECALL_TABLES = [
+    "note_entities",
+    "commitments",
+    "recall_candidates",
+    "recall_cards",
+    "review_history",
+]
+
+
+@pytest.mark.parametrize("sql_file", SQL_FILES, ids=lambda p: p.name)
+def test_create_statements_are_idempotent(sql_file: Path):
+    text = sql_file.read_text(encoding="utf-8")
+    assert not CREATE_RE.search(text), (
+        f"{sql_file.name} has a create table/index without `if not exists`"
+    )
+
+
+@pytest.mark.parametrize("sql_file", SQL_FILES, ids=lambda p: p.name)
+def test_add_column_statements_are_idempotent(sql_file: Path):
+    text = sql_file.read_text(encoding="utf-8")
+    assert not ADD_COLUMN_RE.search(text), (
+        f"{sql_file.name} has `add column` without `if not exists`"
+    )
+
+
+def test_recall_migration_defines_expected_tables():
+    text = (SQL_DIR / "phase4_recall.sql").read_text(encoding="utf-8").lower()
+    for table in RECALL_TABLES:
+        assert f"create table if not exists {table}" in text
+
+
+def test_recall_migration_adds_scoring_and_due_date_columns():
+    text = (SQL_DIR / "phase4_recall.sql").read_text(encoding="utf-8").lower()
+    for column in ("importance", "mention_count", "due_date", "durability", "next_due", "easiness"):
+        assert column in text
+
+
+def test_recall_migration_adds_note_toggle_and_candidate_text():
+    text = (SQL_DIR / "phase4_recall.sql").read_text(encoding="utf-8").lower()
+    assert "recall_enabled" in text
+    assert "recall_status" in text
+    # Must be an explicit ALTER, not only a column in the create-table body.
+    assert "add column if not exists text text" in text
+
+
+def test_scheduler_migration_adds_state_and_learning_step():
+    text = (SQL_DIR / "phase4_recall_scheduler.sql").read_text(encoding="utf-8").lower()
+    assert "add column if not exists state" in text
+    assert "add column if not exists learning_step" in text
+
+
+def test_pgvector_migration_defines_chunks_indexes_and_match_functions():
+    text = (SQL_DIR / "phase4_pgvector.sql").read_text(encoding="utf-8").lower()
+    assert "create extension if not exists vector" in text
+    assert "create table if not exists note_chunks" in text
+    assert "using hnsw" in text
+    for function in ("match_note_chunks", "match_notes", "match_entities"):
+        assert f"create or replace function {function}" in text
+
+
+def test_match_functions_are_user_scoped():
+    text = (SQL_DIR / "phase4_pgvector.sql").read_text(encoding="utf-8").lower()
+    assert text.count("match_user_id") >= 6

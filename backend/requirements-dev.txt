@@ -1,0 +1,6 @@
+# Lightweight dependencies for the unit-test suite.
+# Most tests are stdlib-only; python-dotenv is imported by
+# backend/app/__init__.py and pydantic is needed for the schema-model tests.
+pytest>=8.0
+python-dotenv>=1.0
+pydantic>=2.0
