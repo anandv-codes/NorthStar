@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Sparkle, Timer } from "@phosphor-icons/react";
 import { fetchDueCards, fetchSuggestions } from "../../../shared/api/httpClient";
+import { getTodayRecallSeconds } from "../../../shared/lib/recallTime";
 import { Button } from "../../../shared/ui/Button";
 
 /**
@@ -11,6 +12,7 @@ export function RecallSpotlight() {
   const navigate = useNavigate();
   const [dueCount, setDueCount] = useState<number | null>(null);
   const [suggestionCount, setSuggestionCount] = useState<number | null>(null);
+  const [todaySeconds, setTodaySeconds] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,8 +33,20 @@ export function RecallSpotlight() {
     };
   }, []);
 
+  useEffect(() => {
+    const sync = () => setTodaySeconds(getTodayRecallSeconds());
+    sync();
+    window.addEventListener("focus", sync);
+    const interval = setInterval(sync, 5000);
+    return () => {
+      window.removeEventListener("focus", sync);
+      clearInterval(interval);
+    };
+  }, []);
+
   const loading = dueCount === null || suggestionCount === null;
   const hasWork = (dueCount ?? 0) > 0 || (suggestionCount ?? 0) > 0;
+  const todayMinutes = Math.round(todaySeconds / 60);
 
   return (
     <section
@@ -57,6 +71,11 @@ export function RecallSpotlight() {
               ? "A few minutes of active recall now beats re-reading your notes later."
               : "Turn on recall from any note to start building your review deck."}
           </p>
+          {todayMinutes > 0 ? (
+            <p className="mt-2 text-xs font-medium text-neutral-500">
+              Already reviewed for {todayMinutes} min today
+            </p>
+          ) : null}
         </div>
 
         <Button

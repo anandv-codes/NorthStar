@@ -23,15 +23,12 @@ import {
 } from "../../shared/api/httpClient";
 import { Button } from "../../shared/ui/Button";
 import { Modal } from "../../shared/ui/Modal";
-import { SummaryCard } from "./components/SummaryCard";
-import { TaskBoard } from "./components/TaskBoard";
-import { OpenQuestions } from "./components/OpenQuestions";
-import { RiskWatch } from "./components/RiskWatch";
+import { TodaySummaryCard } from "./components/TodaySummaryCard";
 import { ConceptCloud } from "./components/ConceptCloud";
 import { RecentMemoryFeed } from "./components/RecentMemoryFeed";
 import { ActivityHeatmap } from "./components/ActivityHeatmap";
-import { RecallToday } from "./components/RecallToday";
 import { RecallSpotlight } from "./components/RecallSpotlight";
+import { WhatToDoPanel } from "./components/WhatToDoPanel";
 import { QuickAddNote } from "./components/QuickAddNote";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -145,7 +142,14 @@ export function DashboardPage() {
       ) : null}
 
       {/* What matters today */}
-      <SummaryCard title="Today" status={dailySummary} loading={generatingDaily} onGenerate={handleGenerateDaily} />
+      <TodaySummaryCard
+        daily={dailySummary}
+        weekly={weeklySummary}
+        generatingDaily={generatingDaily}
+        generatingWeekly={generatingWeekly}
+        onGenerateDaily={handleGenerateDaily}
+        onGenerateWeekly={handleGenerateWeekly}
+      />
 
       {/* What to remember — the core loop leads the dashboard per the product pivot */}
       <div className="mt-5">
@@ -153,40 +157,32 @@ export function DashboardPage() {
       </div>
 
       {/* What to do */}
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <Panel title="Open tasks">
-          <TaskBoard tasks={tasks} onToggle={handleToggleTask} />
-        </Panel>
-        <Panel title="Open questions">
-          <OpenQuestions questions={questions} onResolve={handleResolveQuestion} onDismiss={handleDismissQuestion} />
-        </Panel>
-        <Panel title="Risks">
-          <RiskWatch risks={risks} onResolve={handleResolveRisk} />
-        </Panel>
+      <div className="mt-5">
+        <WhatToDoPanel
+          tasks={tasks}
+          questions={questions}
+          risks={risks}
+          onToggleTask={handleToggleTask}
+          onResolveQuestion={handleResolveQuestion}
+          onDismissQuestion={handleDismissQuestion}
+          onResolveRisk={handleResolveRisk}
+        />
       </div>
 
-      {/* Supporting trends */}
+      {/* Supporting, lower-priority context */}
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ActivityHeatmap key={heatmapKey} />
         </div>
-        <RecallToday />
-      </div>
-
-      {/* Secondary / lower-frequency context */}
-      <div className="mt-5">
-        <SummaryCard title="This week" status={weeklySummary} loading={generatingWeekly} onGenerate={handleGenerateWeekly} />
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Panel title="Concepts">
           <ConceptCloud concepts={concepts} />
         </Panel>
-        <div className="lg:col-span-2">
-          <Panel title="Recent memory">
-            <RecentMemoryFeed notes={recentNotes} />
-          </Panel>
-        </div>
+      </div>
+
+      <div className="mt-5">
+        <Panel title="Recent memory">
+          <RecentMemoryFeed notes={recentNotes} />
+        </Panel>
       </div>
 
       <Modal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} title="Quick note">
