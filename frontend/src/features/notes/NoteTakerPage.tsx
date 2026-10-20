@@ -1,10 +1,15 @@
 import { useCallback, useRef, useState } from "react";
-import { Brain, CheckCircle, Microphone, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
+import { Brain, CheckCircle, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
 import { createNote, getNoteStatus, setNoteRecall, type NoteStatus } from "../../shared/api/httpClient";
 import { Button } from "../../shared/ui/Button";
+import { MicButton, MicStatus } from "../../shared/ui/MicButton";
+import { appendTranscript, useSpeechDictation } from "../../shared/lib/useSpeechDictation";
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 20000;
+
+const TERMINAL_NOTE_STATUSES = new Set(["completed", "enriched", "failed"]);
+const isTerminalStatus = (status: string) => TERMINAL_NOTE_STATUSES.has(status);
 
 const RECALL_STATUS_LABELS: Record<string, string> = {
   ready: "Recall on",
@@ -24,6 +29,10 @@ export function NoteTakerPage() {
   const [history, setHistory] = useState<NoteStatus[]>([]);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const dictation = useSpeechDictation({
+    onFinal: (chunk) => setText((current) => appendTranscript(current, chunk)),
+  });
+
   const stopPolling = useCallback(() => {
     if (pollTimer.current) {
       clearTimeout(pollTimer.current);
@@ -37,7 +46,7 @@ export function NoteTakerPage() {
         try {
           const status = await getNoteStatus(noteId);
           setNote(status);
-          if (status.status === "enriched" || status.status === "failed" || Date.now() - startedAt > POLL_TIMEOUT_MS) {
+          if (isTerminalStatus(status.status) || Date.now() - startedAt > POLL_TIMEOUT_MS) {
             setHistory((current) => [status, ...current.filter((n) => n.note_id !== status.note_id)]);
             return;
           }
@@ -52,9 +61,10 @@ export function NoteTakerPage() {
 
   const handleSubmit = async () => {
     const trimmed = text.trim();
-    if (!trimmed || submitting) {
+    if (!trimmed || submitting || dictation.listening) {
       return;
     }
+    dictation.cancel();
     setSubmitting(true);
     setError(null);
     stopPolling();
@@ -71,7 +81,7 @@ export function NoteTakerPage() {
     }
   };
 
-  const isProcessing = note && note.status !== "enriched" && note.status !== "failed";
+  const isProcessing = Boolean(note) && !isTerminalStatus(note?.status ?? "");
 
   const handleToggleRecall = async () => {
     if (!note || togglingRecall) {
@@ -107,18 +117,23 @@ export function NoteTakerPage() {
             onChange={(e) => setText(e.target.value)}
             placeholder="Had a call with the design team about the onboarding flow..."
             rows={6}
-            className="w-full resize-none rounded-xl border border-neutral-200 p-4 pr-12 text-sm leading-relaxed text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-950 focus:outline-none focus:ring-2 focus:ring-neutral-950/10"
+            className="w-full resize-none rounded-xl border border-neutral-200 p-4 pr-14 text-sm leading-relaxed text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-950 focus:outline-none focus:ring-2 focus:ring-neutral-950/10"
           />
-          <button
-            type="button"
-            disabled
-            title="Voice input coming soon"
-            aria-label="Voice input (coming soon)"
-            className="absolute right-3 top-3 inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-lg text-neutral-300"
-          >
-            <Microphone size={18} />
-          </button>
+          <MicButton
+            listening={dictation.listening}
+            starting={dictation.starting}
+            supported={dictation.supported}
+            onToggle={dictation.toggle}
+            className="absolute right-2 top-2 bg-white"
+          />
         </div>
+        <MicStatus
+          listening={dictation.listening}
+          starting={dictation.starting}
+          interim={dictation.interim}
+          error={dictation.error}
+          supported={dictation.supported}
+        />
         <div className="mt-4 flex items-center justify-between">
           <p className="text-xs text-neutral-400">{text.trim().length} characters</p>
           <div className="flex items-center gap-3">
@@ -132,7 +147,11 @@ export function NoteTakerPage() {
               <Brain size={14} />
               Add to Recall
             </label>
-            <Button onClick={handleSubmit} disabled={submitting || !text.trim()}>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || dictation.listening || !text.trim()}
+              title={dictation.listening ? "Stop listening to save your note" : undefined}
+            >
               {submitting ? <Spinner size={16} className="animate-spin" /> : <PaperPlaneTilt size={16} weight="bold" />}
               Save note
             </Button>
@@ -162,7 +181,7 @@ export function NoteTakerPage() {
               ) : note.status === "failed" ? null : (
                 <CheckCircle size={12} weight="fill" />
               )}
-              {isProcessing ? "Processing" : note.status === "failed" ? "Failed" : "Enriched"}
+              {isProcessing ? "Processing" : note.status === "failed" ? "Failed" : "Processed"}
             </span>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-neutral-700">{note.raw_text}</p>
