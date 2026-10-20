@@ -43,7 +43,7 @@ def create_note(payload: NoteCreateRequest):
 
 
     logger.info("Sending SQS job")
-    send_note_job(                          #Create SQS job for note processing lambda
+    send_note_job(                          #Queue a job for the EC2 SQS worker
         {
             "user_id": payload.user_id,
             "note_id": note_id,

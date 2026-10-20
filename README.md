@@ -67,7 +67,7 @@ PROCESS_NOTES_INLINE=true
 
 `SUPABASE_URL`, `SUPABASE_KEY`, and `JWT_SECRET_KEY` are required for the normal application flows. `GEMINI_API_KEY` is required for note enrichment, chat, dense retrieval, hybrid retrieval, and guarded-rewrite evaluations.
 
-`PROCESS_NOTES_INLINE=true` is **required for local runs** — it processes each note synchronously in-process instead of routing it through the real AWS SQS queue + Lambda consumer used in the deployed environment. Without it, note creation fails locally (no AWS queue exists to receive the job).
+`PROCESS_NOTES_INLINE=true` is **required for local runs** — it processes each note synchronously in-process instead of routing it through the real AWS SQS queue + EC2 `northstar-note-worker` used in the deployed environment. Without it, note creation fails locally (no AWS queue exists to receive the job).
 
 Useful optional settings:
 
@@ -126,10 +126,11 @@ npm run build
 
 See [docs/ec2_deployment.md](docs/ec2_deployment.md) for the full EC2 checklist
 (instance/IAM/SQS setup, migrations, systemd services, Nginx, and frontend
-build). In short: keep `PROCESS_NOTES_INLINE=false`, run the always-on SQS
-consumer (`python -m app.workers.sqs_consumer`) as its own service, build the
-frontend with `VITE_API_BASE_URL` pointing at the API, and scope
-`CORS_ALLOW_ORIGINS` to the real frontend origin.
+build). The deployment work lives on the `prd-m1` branch; the guide's clone
+command checks it out explicitly. In short: keep `PROCESS_NOTES_INLINE=false`,
+run the always-on SQS consumer (`python -m app.workers.sqs_consumer`) as its own
+service, build the frontend with `VITE_API_BASE_URL` pointing at the API, and
+scope `CORS_ALLOW_ORIGINS` to the real frontend origin.
 
 ## Run Retrieval Evaluations
 

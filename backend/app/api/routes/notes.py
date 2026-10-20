@@ -56,7 +56,7 @@ def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_u
     put_note_item(item)                         #Save initial note with status "processing"
 
     if not PROCESS_NOTES_INLINE:
-        # Real SQS + Lambda consumer only exists in the deployed environment.
+        # The EC2 SQS worker (`app.workers.sqs_consumer`) consumes this job.
         logger.info("Sending SQS job")
         send_note_job(
             {
