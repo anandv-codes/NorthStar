@@ -16,9 +16,11 @@ def send_note_job(payload: dict) -> dict:
     message_args = {
         "QueueUrl": SQS_QUEUE_URL,
         "MessageBody": json.dumps(payload),
-        "MessageGroupId": note_id,
     }
+    # MessageGroupId / MessageDeduplicationId are FIFO-only; sending them to a
+    # standard queue is an InvalidParameterValue error.
     if SQS_QUEUE_URL.endswith(".fifo"):
+        message_args["MessageGroupId"] = note_id
         message_args["MessageDeduplicationId"] = note_id
 
     response = sqs.send_message(**message_args)

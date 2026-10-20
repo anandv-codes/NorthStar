@@ -34,6 +34,12 @@ def _cors_origins() -> list[str]:
 
 app = FastAPI(title="NorthStar Backend")
 
+
+@app.get("/health", tags=["ops"])
+def health() -> dict[str, str]:
+    """Liveness probe for Nginx/ALB health checks and uptime monitoring."""
+    return {"status": "ok"}
+
 #CORS
 _origins = _cors_origins()
 app.add_middleware(

@@ -1,151 +1,214 @@
-# EC2 Deployment Guide — NorthStar Backend
+# EC2 Deployment Guide — NorthStar
 
-Context: analysis in [docs/latency_improvements.md](latency_improvements.md) and
-the Lambda-vs-EC2 discussion concluded EC2 (or an equivalent long-running
-container host) is the right fit today, primarily because:
-- [backend/app/infrastructure/vector/vectorstore.py](../backend/app/infrastructure/vector/vectorstore.py)
-  uses a **local-disk Chroma `PersistentClient`** — incompatible with
-  Lambda's ephemeral, non-shared `/tmp` across invocations/containers.
-- The retrieval pipeline depends on `sentence-transformers` (CrossEncoder
-  reranker + optional local embeddings), which pulls in `torch` — large,
-  slow to cold-start, and best amortized by a long-running warm process
-  (matches the singleton-caching patterns already in the codebase:
-  `get_hybrid_retriever()`, `get_embeddings()`, `_get_chat_llm()`, etc.).
-- `backend/deploy_lambda.ps1` and `requirements_lambda.txt` are confirmed
-  stale/broken (wrong handler import path, missing `chromadb` /
-  `sentence-transformers` / `rank_bm25`) — not blockers for this decision,
-  but ruled out "just fix the zip" as a quick alternative.
+Deploy the FastAPI backend and the SQS note worker to a single EC2 instance,
+with **Supabase** (managed Postgres + pgvector) as the database and **Gemini**
+for LLM/embeddings. The React SPA is built with Vite and served as static files
+by Nginx on the same box.
 
-This doc covers deploying the FastAPI backend (`backend/app/main.py`) to a
-single EC2 instance now, with an explicit path toward SQS-driven background
-processing and EventBridge later, without over-building for scale you don't
-have yet (YAGNI — start simple, call out exactly where it'll need to change).
+This replaces the earlier Chroma-on-EBS design: the runtime vector store is now
+`pgvector` in Supabase ([phase4_pgvector.sql](../backend/sql/phase4_pgvector.sql)),
+so there is **no local vector index to own, snapshot, or pin to one instance**.
 
 ---
 
-## 1. Current state (as of this writing)
+## 0. Architecture
 
-- Web process: FastAPI app, run via `uvicorn` (see `.vscode`/task
-  `Start Backend` → `python -m uvicorn backend.app.main:app`).
-- CORS is wide open (`allow_origins=["*"]` in
-  [backend/app/main.py](../backend/app/main.py#L24)) — fine for local dev,
-  **must be restricted to the real frontend origin(s) before internet-facing
-  deployment**.
-- Note ingestion: `POST /notes` always writes to Supabase, then either:
-  - sends an SQS job (`send_note_job`) — the production-shaped path, or
-  - processes inline and synchronously if `PROCESS_NOTES_INLINE=true` — a
-    local debugging convenience only ([backend/app/api/routes/notes.py](../backend/app/api/routes/notes.py#L45)).
-- SQS consumption today is a manual `POST /notes/poll/process-jobs`
-  endpoint that polls once and processes whatever it finds
-  ([backend/app/api/routes/notes.py](../backend/app/api/routes/notes.py#L113)) —
-  this is a stand-in, not a real consumer loop. Treat replacing it as part
-  of this deployment, not optional polish (see §6).
-- Vector store: Chroma, local disk, path from `CHROMA_PATH`
-  (default `./chroma_data`) — must live on durable, backed-up storage, and
-  there can only be **one** process/instance that owns it unless/until it's
-  moved to something shared (see §3 and §7).
+```mermaid
+flowchart TB
+    subgraph Client
+        FE["React SPA (Vite build)<br/>served by Nginx"]
+    end
 
----
+    subgraph EC2["EC2 instance (Ubuntu)"]
+        Nginx["Nginx + TLS<br/>app. + api. subdomains"]
+        API["FastAPI (uvicorn)<br/>systemd: northstar-api"]
+        Worker["SQS consumer<br/>systemd: northstar-note-worker"]
+    end
 
-## 2. Instance sizing
+    subgraph AWS
+        SQS["SQS note-jobs queue"]
+        DLQ["SQS DLQ<br/>maxReceiveCount 3"]
+        CW["CloudWatch Logs + Alarms"]
+        SSM["SSM Parameter Store<br/>(optional secrets)"]
+    end
 
-The CPU-bound cost center is `sentence-transformers` (cross-encoder rerank
-on every retrieval + optional local embeddings) plus a per-request
-rebuilt in-memory BM25 index (`rank_bm25`, rebuilt from Supabase on every
-call — see [backend/app/domain/query_retrieval/strategies/sparse.py](../backend/app/domain/query_retrieval/strategies/sparse.py)).
-Everything else (Gemini calls, Supabase calls) is I/O-bound, not CPU-bound.
+    subgraph Managed
+        Supabase["Supabase Postgres<br/>+ pgvector"]
+        Gemini["Gemini API<br/>extraction, embeddings, chat"]
+    end
 
-**Recommendation to start:** `t3.medium` (2 vCPU / 4 GB) or, if available in
-your region and you want ~20% better price/performance for this CPU-bound
-inference workload, the Graviton (ARM) equivalent `t4g.medium` — PyTorch and
-`sentence-transformers` both ship ARM wheels, so this isn't exotic, just
-confirm during setup that `pip install` pulls `manylinux2014_aarch64` wheels
-and doesn't fall back to a source build.
+    FE -->|"HTTPS"| Nginx
+    Nginx -->|"/api routes"| API
+    API -->|"POST /notes: write + enqueue"| Supabase
+    API -->|"send_note_job"| SQS
+    API -->|"chat / retrieval"| Gemini
+    API -->|"read/write + RPC"| Supabase
+    SQS -->|"long-poll"| Worker
+    SQS -.->|"redrive"| DLQ
+    Worker -->|"extraction / questions"| Gemini
+    Worker -->|"inserts + embeddings"| Supabase
+    API --> CW
+    Worker --> CW
+```
 
-- Start on a burstable (`t3`/`t4g`) instance and watch CPU-credit balance in
-  CloudWatch — note processing is bursty (one request at a time locally),
-  not sustained load, which is exactly what burstable instances are
-  priced for.
-- If CPU credits run out under real traffic, that's your signal to move to
-  a fixed-performance type (`m7g`/`c7g` family) — don't pre-provision for
-  that before you've measured it.
-- Memory floor: `sentence-transformers` + model weights + FastAPI + Chroma
-  in one process comfortably needs 4 GB; don't go below that.
+Requests flow: browser → Nginx → FastAPI. `POST /notes` writes the note as
+`processing`, enqueues an SQS job, and returns `202`. The worker consumes the
+job, enriches the note, writes memory rows and recall candidates, generates
+questions if `recall_enabled`, embeds chunks into pgvector, then marks the note
+`completed`.
 
 ---
 
-## 3. Storage
+## 1. Prerequisites
 
-- Root volume: `gp3` EBS (cheaper and faster than the old `gp2` default at
-  the same size — always pick `gp3` explicitly in the console/CLI/Terraform).
-- Put `CHROMA_PATH` on its own **separate EBS volume**, not the root volume:
-  - Lets you snapshot/back up the vector index independently of the OS disk.
-  - Lets you resize it without touching the root volume.
-  - Makes a future "move this to a new instance" migration a volume
-    detach/attach instead of a data copy.
-- Take scheduled EBS snapshots (AWS Backup or a simple cron + `aws ec2
-  create-snapshot`) of the Chroma volume — this is your only copy of the
-  vector index; losing it means re-embedding every note.
-- Logs: the pipeline trace log
-  ([backend/app/infrastructure/llm/prompt_logger.py](../backend/app/infrastructure/llm/prompt_logger.py))
-  writes to `backend/logs/` by default and grows unbounded with no
-  rotation today. Either set `PROMPT_LOG_DIR` to a volume with lifecycle
-  rules, add log rotation (`logrotate`), or ship it to CloudWatch Logs and
-  stop relying on local disk retention entirely (see §8).
+- AWS account, an EC2 key pair, and a region chosen to sit near your Supabase
+  project (lower latency, no cross-region egress on every request).
+- A Supabase project with the SQL migrations applied (see §4).
+- A Gemini API key.
+- Two DNS records pointing at the instance's Elastic IP:
+  `app.example.com` and `api.example.com`.
 
 ---
 
-## 4. Networking & security
+## 2. Provision AWS
 
-- Don't expose `uvicorn` directly to the internet. Put a reverse proxy
-  (Nginx, or an ALB — see below) in front for TLS termination, and bind
-  `uvicorn` to `127.0.0.1` or a private security-group-restricted interface.
-- **Single instance now:** Nginx on the same box is simplest and cheapest
-  (one less moving part, no extra monthly cost). Terminate TLS there
-  (Let's Encrypt via `certbot`).
-- **If/when you add a second instance** (see §7 scaling path): switch to an
-  Application Load Balancer — it gives you health checks, zero-downtime
-  deploys (register/deregister targets), and is the natural place to attach
-  WAF later. Don't pay for an ALB before you need the second target.
-- Security group: inbound 443 (and 80 for redirect) from `0.0.0.0/0`, SSH
-  (22) restricted to your IP/VPN only — never `0.0.0.0/0` on 22.
-- Restrict CORS (`main.py`) to your actual frontend origin(s) once deployed
-  — the current `allow_origins=["*"]` is a dev-only setting.
-- IAM: attach an **instance role** (not long-lived static AWS access keys
-  baked into `.env`) granting only `sqs:SendMessage` /
-  `sqs:ReceiveMessage` / `sqs:DeleteMessage` on the specific queue ARN, plus
-  CloudWatch Logs write access. `boto3` picks up instance-role credentials
-  automatically — no code change needed, just don't set
-  `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` env vars on the instance.
+1. **Instance:** Ubuntu 24.04 LTS, `t3.medium` (2 vCPU / 4 GB) is a safe start.
+   `t4g.medium` works too if your dependencies install ARM wheels. You can drop
+   to `t3.small` if you skip the optional `sentence-transformers` install (§3).
+2. **Storage:** 30 GB `gp3` root volume. No separate vector volume is needed.
+3. **Elastic IP:** allocate and associate it so DNS survives reboots.
+4. **Security group:**
+   - inbound 80/443 from `0.0.0.0/0`
+   - inbound 22 from **your IP only** — never `0.0.0.0/0`
+   - no inbound access to 8000 (uvicorn binds to loopback)
+5. **IAM instance role** (attach to the instance; do not put static AWS keys in
+   `.env`). Minimal policy for a standard queue:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Action": [
+         "sqs:SendMessage",
+         "sqs:ReceiveMessage",
+         "sqs:DeleteMessage",
+         "sqs:GetQueueAttributes",
+         "sqs:ChangeMessageVisibility"
+       ],
+       "Resource": "arn:aws:sqs:<region>:<account-id>:northstar-note-jobs"
+     }]
+   }
+   ```
+
+6. **SQS queue:**
+   - Type: **Standard** (simplest) or **FIFO** if you want strict per-note
+     ordering. `send_note_job` sets `MessageGroupId` only for `.fifo` URLs.
+   - Visibility timeout: **600 s** (must exceed worst-case note processing:
+     enrichment + question generation + embeddings).
+   - Message retention: 4 days.
+   - Dead-letter queue: create `northstar-note-jobs-dlq`, set
+     `maxReceiveCount` to **3** on the main queue's redrive policy.
+   - Record the queue URL for `SQS_QUEUE_URL`.
 
 ---
 
-## 5. Secrets & configuration
+## 3. Server setup
 
-- Don't ship a plaintext `.env` with real secrets as part of your deploy
-  artifact (git pull of a private repo is *ok* if the repo itself is
-  private and the `.env` is excluded — but prefer the option below as you
-  mature).
-- Preferred: AWS Systems Manager **Parameter Store** (free for standard
-  parameters) holding `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`,
-  `JWT_SECRET`, etc. as `SecureString`s, fetched into environment variables
-  by the systemd unit's `ExecStartPre` or a small startup script. Secrets
-  Manager is the fancier/paid option (automatic rotation) — not needed yet.
-- Reference [backend/.env.example](../backend/.env.example) (already
-  created as part of the latency work) for the full list of vars to
-  provision, plus add: `SQS_QUEUE_URL`, `AWS_ENDPOINT_URL` (leave unset for
-  real AWS), `CHROMA_PATH` (point at the dedicated EBS mount), `PROMPT_LOG_DIR`.
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3-venv python3-pip nginx git postgresql-client
+
+sudo useradd --create-home --shell /usr/sbin/nologin northstar
+sudo mkdir -p /opt/northstar
+sudo chown northstar:northstar /opt/northstar
+
+sudo -u northstar git clone <your-repo-url> /opt/northstar
+cd /opt/northstar
+
+sudo -u northstar python3 -m venv .venv
+sudo -u northstar .venv/bin/pip install --upgrade pip
+sudo -u northstar .venv/bin/pip install -r backend/requirements.txt
+```
+
+> `requirements.txt` includes `sentence-transformers` (and therefore `torch`),
+> which is only needed for local embeddings or the semantic reranker. With the
+> defaults (`EMBEDDING_PROVIDER=google`, token-overlap reranker) you can omit it
+> to save ~2 GB of disk and install time:
+> `sudo -u northstar .venv/bin/pip install -r <(grep -v -E 'sentence-transformers|chromadb' backend/requirements.txt)`
+> Do not omit it if you enable `EMBEDDING_PROVIDER=local` or
+> `QUERY_RETRIEVAL_RERANKER=semantic`.
 
 ---
 
-## 6. Process management: web process + background consumer
+## 4. Database migrations
 
-Run two long-lived systemd services on the instance, not one — they have
-different scaling/restart/failure characteristics and you don't want a
-burst of note-processing CPU usage to slow down chat/API responsiveness,
-or an API redeploy to interrupt in-flight note processing.
+The app stores everything in Supabase; run the SQL **there**, not on EC2.
+Follow [backend/sql/README.md](../backend/sql/README.md). Summary:
 
-**`northstar-api.service`** — the FastAPI web process:
+```bash
+export SUPABASE_DB_URL='postgresql://postgres:<password>@db.<project>.supabase.co:5432/postgres'
+./backend/scripts/apply_migrations.sh
+```
+
+Or run these files in order in the Supabase SQL editor:
+
+1. `auth_jwt.sql`
+2. `chat_conversations.sql`
+3. `phase3_work_memory.sql`
+4. `phase4_recall.sql`
+5. `phase4_recall_scheduler.sql`
+6. `phase4_pgvector.sql` (enable the `vector` extension first if needed)
+
+Verify all 22 tables exist with the query in the root
+[README](../README.md#2-set-up-the-database).
+
+**Backfill existing notes** once after `phase4_pgvector.sql` (new notes embed
+automatically):
+
+```bash
+cd /opt/northstar
+sudo -u northstar .venv/bin/python -m backend.scripts.backfill_pgvector
+```
+
+Keep `EMBEDDING_DIMENSIONS=768`; it must match `vector(768)`.
+
+---
+
+## 5. Environment
+
+```bash
+sudo -u northstar cp backend/.env.example backend/.env
+sudo -u northstar chmod 600 backend/.env
+sudo -u northstar nano backend/.env
+```
+
+Required for a working deployment:
+
+| Variable | Value |
+|---|---|
+| `GEMINI_API_KEY` | your key |
+| `SUPABASE_URL` | project URL |
+| `SUPABASE_KEY` | service-role key (server-side only) |
+| `JWT_SECRET_KEY` | `openssl rand -hex 32` |
+| `CORS_ALLOW_ORIGINS` | `https://app.example.com` |
+| `PROCESS_NOTES_INLINE` | `false` |
+| `SQS_QUEUE_URL` | queue URL from §2 |
+| `AWS_REGION` | e.g. `us-east-1` |
+| `EMBEDDING_PROVIDER` | `google` |
+| `EMBEDDING_DIMENSIONS` | `768` |
+
+Leave `AWS_ENDPOINT_URL` unset. Never commit `.env`; `.gitignore` already
+excludes it. For a step up from a plaintext file, load the secrets from SSM
+Parameter Store (`SecureString`) in the systemd `ExecStartPre` or a small
+startup script.
+
+---
+
+## 6. systemd services
+
+Create `/etc/systemd/system/northstar-api.service`:
+
 ```ini
 [Unit]
 Description=NorthStar FastAPI backend
@@ -162,49 +225,8 @@ User=northstar
 [Install]
 WantedBy=multi-user.target
 ```
-`--workers 2` is a starting point for a 2 vCPU box (rule of thumb: workers
-≈ vCPUs for a mixed I/O+CPU workload); watch CPU and tune. More workers
-means more copies of the `sentence-transformers` model loaded in memory —
-budget RAM accordingly (don't just crank workers up without checking memory
-headroom).
 
-**`northstar-note-worker.service`** — replaces the manual
-`/poll/process-jobs` endpoint with a real consumer loop. This is the one
-piece of actual code you need to add for this deployment:
-
-```python
-# backend/app/workers/sqs_consumer.py (new file)
-"""Long-running SQS consumer loop — the EC2-native replacement for the
-manual /notes/poll/process-jobs debug endpoint."""
-import logging
-import time
-
-from .note_processor import process_sqs_message
-from ..infrastructure.queue.sqs_poller import poll_sqs_messages, delete_sqs_message
-
-logger = logging.getLogger(__name__)
-
-
-def run_forever(max_messages: int = 5, wait_time_seconds: int = 20) -> None:
-    while True:
-        messages = poll_sqs_messages(max_messages=max_messages, wait_time_seconds=wait_time_seconds)
-        for message in messages:
-            try:
-                process_sqs_message(message["body"])
-                delete_sqs_message(message["receipt_handle"])
-            except Exception:
-                logger.exception("note job failed, leaving message for SQS retry/DLQ")
-
-
-if __name__ == "__main__":
-    run_forever()
-```
-Use `wait_time_seconds=20` (SQS long polling max) so the loop isn't busy-
-polling — this is already supported by `poll_sqs_messages`'s signature, just
-wasn't being used that way from the one-shot HTTP endpoint. Keep the
-`poll/process-jobs` HTTP endpoint around only if you still want a manual
-"kick the queue now" debug tool; it's no longer the primary consumption
-path once this service exists.
+Create `/etc/systemd/system/northstar-note-worker.service`:
 
 ```ini
 [Unit]
@@ -223,210 +245,190 @@ User=northstar
 WantedBy=multi-user.target
 ```
 
-**Configure a Dead Letter Queue (DLQ)** on the SQS queue now (small,
-free-tier-friendly, and prevents a single poison-pill note from looping
-forever): maxReceiveCount 3-5, DLQ visible in the console for manual
-inspection/replay.
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now northstar-api northstar-note-worker
+sudo systemctl status northstar-api northstar-note-worker
+curl -s http://127.0.0.1:8000/health   # {"status":"ok"}
+```
+
+`--workers 2` is a starting point for 2 vCPU; each worker is a separate process.
+Watch memory before increasing it.
 
 ---
 
-## 7. Scaling path & the Chroma trade-off (read before adding a 2nd instance)
+## 7. Nginx + TLS
 
-Single instance is the right starting point — don't build an Auto Scaling
-Group for a workload you haven't measured yet. But be aware of this
-constraint **before** you reach for a second instance:
+`/etc/nginx/sites-available/northstar`:
 
-> Local-disk Chroma means at most **one** process/instance can own the
-> vector store. This is the same fundamental issue that ruled out Lambda.
+```nginx
+server {
+    listen 80;
+    server_name app.example.com;
 
-Two ways forward when you actually need to scale (don't do either
-preemptively):
-1. **Split roles, don't duplicate them**: run the API (stateless, safe to
-   scale horizontally behind an ALB) on N instances, but keep exactly one
-   dedicated instance running the note-worker + owning the Chroma volume.
-   The API instances call retrieval functions that talk to that one
-   worker's Chroma... except today retrieval happens in-process, not over
-   the network, so this requires turning Chroma access into a small
-   internal service (or moving it off local disk — option 2).
-2. **Move to a shared/managed vector store** (bigger change, but the
-   cleaner long-term fix): Supabase/Postgres + `pgvector` is the natural
-   choice since you're already on Supabase — every instance reads/writes
-   the same database, no shared-filesystem problem, no extra service to
-   run. This removes the Chroma single-owner constraint entirely and is
-   also what would eventually unblock a Lambda migration if you revisit
-   that later.
+    root /opt/northstar/frontend/dist;
+    index index.html;
 
-Recommendation: stay on single-instance + local Chroma until you have
-concrete evidence (CPU/memory/latency metrics) that one box can't keep up,
-then prefer option 2 over option 1 — it's less operational complexity
-long-term even though it's a bigger one-time migration.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
 
----
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
 
-## 8. Observability
+server {
+    listen 80;
+    server_name api.example.com;
 
-- Install the CloudWatch agent and ship:
-  - `backend/logs/gemini_prompt_response.txt` (pipeline/stage-timing trace
-    log) → a CloudWatch Logs group. This turns the `elapsed_ms` lines added
-    for latency work into something you can actually alarm/dashboard on
-    instead of `Get-Content -Tail`.
-  - systemd journal output for both services (`journalctl -u
-    northstar-api`, `journalctl -u northstar-note-worker`).
-- Add a lightweight `/health` route (not present today) for the ALB/Nginx
-  health check and for your own uptime monitoring — trivial to add, do it
-  before go-live rather than after an incident.
-- CloudWatch alarms worth setting immediately: CPU credit balance (if on a
-  `t3`/`t4g`), disk space on the Chroma EBS volume, SQS
-  `ApproximateNumberOfMessagesVisible` (queue backing up = worker can't
-  keep pace or is down), SQS DLQ depth > 0 (something is permanently
-  failing).
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;     # chat/embedding calls can be slow
+        client_max_body_size 10m;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/northstar /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d app.example.com -d api.example.com
+```
+
+`app.example.com` serves the SPA; `api.example.com` proxies to uvicorn with TLS
+terminated by Nginx.
 
 ---
 
-## 9. Cost optimizations
+## 8. Frontend build
 
-- Burstable (`t3`/`t4g`) instance + `gp3` EBS is already the cheap default;
-  the main lever beyond that is **right-sizing after measuring**, not
-  guessing upfront.
-- A **Compute Savings Plan or Reserved Instance** once you're confident
-  this runs 24/7 long-term cuts the EC2 bill ~30-40% vs on-demand for the
-  same commitment most teams are comfortable with (1-year, no upfront).
-  Don't commit until you've settled on an instance size.
-- The SQS consumer is a good Spot-instance candidate **if/when** it's split
-  onto its own instance (per §7 option 1): it's a queue drain, naturally
-  tolerant of interruption (message just becomes visible again after
-  `VisibilityTimeout`), unlike the API tier which shouldn't be on Spot.
-- CloudWatch Logs: set a retention period (e.g. 30-90 days) on the log
-  groups — default is "never expire," which quietly accumulates cost.
-- Stop (don't terminate) dev/staging instances outside working hours if you
-  stand up a separate non-prod environment — EBS volumes persist while
-  stopped, compute billing pauses.
-- Data transfer: keep the EC2 instance, Supabase project, and users in/near
-  the same region to minimize cross-region transfer costs and latency
-  (compounds with the latency work already done elsewhere).
+Vite inlines `VITE_API_BASE_URL` at **build time** — set it before building and
+rebuild whenever the API URL changes.
+
+```bash
+cd /opt/northstar/frontend
+sudo -u northstar cp .env.example .env
+# set VITE_API_BASE_URL=https://api.example.com
+sudo -u northstar npm ci
+sudo -u northstar npm run build     # outputs frontend/dist
+```
+
+The Nginx `root` above points at `/opt/northstar/frontend/dist`. Re-run the
+build on every frontend deploy.
+
+If you prefer to build in CI, upload the resulting `dist/` to the instance
+(e.g. `rsync`) instead of running Node there.
 
 ---
 
-## 10. Looking ahead: SQS (solidify) and EventBridge (later)
+## 9. Go-live checklist
 
-**SQS** — already wired up ([backend/app/infrastructure/queue/](../backend/app/infrastructure/queue/)),
-just needs the real consumer loop from §6 instead of the manual polling
-endpoint, plus a DLQ. That's the only SQS work this deployment requires.
+- [ ] Supabase migrations 1–6 applied; 22 tables verified.
+- [ ] `backfill_pgvector` run (skip if the database has no notes yet).
+- [ ] `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`, `JWT_SECRET_KEY` set.
+- [ ] `CORS_ALLOW_ORIGINS=https://app.example.com` (not `*`).
+- [ ] `PROCESS_NOTES_INLINE=false`.
+- [ ] SQS queue + DLQ created; redrive `maxReceiveCount=3`; visibility 600 s.
+- [ ] Instance role has SQS send/receive/delete (no static AWS keys on disk).
+- [ ] Security group: 22 restricted to your IP; 80/443 public; 8000 closed.
+- [ ] Both systemd services enabled and healthy.
+- [ ] `/health` returns `{"status":"ok"}` over HTTPS.
+- [ ] Frontend built with `VITE_API_BASE_URL=https://api.example.com`.
+- [ ] Nginx SPA fallback works (deep link refresh on `/app/recall`).
+- [ ] Certbot renewed (`sudo certbot renew --dry-run`).
+- [ ] Smoke test below passes end-to-end.
+- [ ] CloudWatch alarms set for SQS depth and DLQ > 0.
+- [ ] Log retention configured (see §10).
 
-**EventBridge** — not needed yet; don't add it just because it's available.
-Reach for it specifically when either of these becomes real:
-- **Scheduled jobs**: e.g. periodic chat-thread summary refresh, stale
-  "processing" note sweep/retry, nightly corpus re-embedding checks.
-  EventBridge Scheduler (cron-like rules invoking a Lambda or hitting an
-  internal endpoint) is simpler than a one-off `cron` entry buried on the
-  EC2 instance, and survives instance replacement.
-- **Multiple consumers for the same event**: today "note created" has
-  exactly one consumer (the enrichment pipeline). If a second concern
-  shows up later (e.g. analytics, notifications, a search-index sync) that
-  also needs to react to note creation, that's the point to introduce an
-  EventBridge **event bus** with `note.created`/`note.completed` events and
-  let SQS become one of several subscribers, rather than fanning out
-  manually from inside `note_processor.py`. Don't pre-build this fan-out
-  for a second consumer that doesn't exist yet.
+### Smoke test
+
+```bash
+API=https://api.example.com
+
+curl -s $API/health
+
+# Register (or log in) and capture the access token.
+TOKEN=$(curl -s -X POST $API/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"deploy-test@example.com","password":"correct-horse-battery"}' \
+  | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+
+# Create a recall-enabled note; expect 202 + note_id.
+NOTE=$(curl -s -X POST $API/notes \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"text":"Met the design team. We decided to simplify onboarding. Risk: the API deadline is tight.","recall_enabled":true}')
+echo "$NOTE"
+NOTE_ID=$(echo "$NOTE" | python3 -c 'import sys,json; print(json.load(sys.stdin)["note_id"])')
+
+# Poll until status=completed (worker is running).
+sleep 20
+curl -s $API/notes/$NOTE_ID -H "Authorization: Bearer $TOKEN"
+
+# Suggestions should exist; accept one, then it appears in the due queue.
+curl -s "$API/recall/candidates?status=suggested&limit=5" -H "Authorization: Bearer $TOKEN"
+```
+
+Then open `https://app.example.com`, log in, create a note with **Add to
+Recall**, accept a suggestion, and complete a review. The dashboard nav badge
+should reflect due/new cards.
 
 ---
 
-## 11. Decisions & trade-offs summary
+## 10. Observability, backups, cost
 
-| Decision | Choice | Why | Revisit when |
-|---|---|---|---|
-| Compute | EC2 (not Lambda) | Local-disk Chroma + heavy ML deps need a persistent, long-running process | Vector store moves to pgvector/managed store |
-| Instance family | Burstable `t3`/`t4g.medium` | Workload is bursty, not sustained | CPU credits regularly exhausted under real traffic |
-| Reverse proxy | Nginx (not ALB) | Single instance, avoid paying for ALB with one target | A second instance is actually needed |
-| Vector store | Local Chroma on dedicated EBS | Matches current code, zero migration cost now | Need >1 instance, or durability concerns outgrow snapshots |
-| Secrets | SSM Parameter Store | Free, simple, no plaintext `.env` secrets in the deploy artifact | Need automatic rotation (→ Secrets Manager) |
-| Background jobs | SQS consumer systemd service | Replaces the placeholder HTTP poll endpoint with a real always-on loop | — |
-| Fan-out / scheduling | Not yet (plain SQS only) | No second consumer or cron need exists today | A second consumer or recurring scheduled job is actually needed (→ EventBridge) |
+- **Logs:** `journalctl -u northstar-api -u northstar-note-worker -f`. Install
+  the CloudWatch agent to ship journald output; set a 30–90 day retention
+  policy. The Gemini prompt/response trace log is **off** by default
+  (`PROMPT_LOG_ENABLED=false`) because it contains full note text.
+- **Alarms:** SQS `ApproximateNumberOfMessagesVisible` (backlog),
+  DLQ depth > 0, instance CPU credit balance (burstable), disk usage.
+- **Backups:** Supabase handles database backups on paid plans. Confirm the
+  retention window; optionally schedule `pg_dump` for an independent copy.
+  There is no Chroma volume to snapshot anymore.
+- **Cost:** `t3.medium` + 30 GB `gp3` is the baseline. A 1-year Compute Savings
+  Plan cuts ~30–40% once the instance size is settled. Set CloudWatch Logs
+  retention to avoid unbounded storage.
 
 ---
 
-## 12. Open items / explicit TODOs before go-live
+## 11. Rollback
 
-- [ ] Restrict `CORSMiddleware` origins in `main.py` (currently `"*"`).
-- [ ] Add a `/health` endpoint.
-- [ ] Add the SQS Dead Letter Queue + `maxReceiveCount`.
-- [ ] Write `backend/app/workers/sqs_consumer.py` (sketch provided in §6)
-      and its systemd unit; retire reliance on the manual poll endpoint.
-- [ ] Move AWS credentials off static keys onto an EC2 instance role.
-- [ ] Set CloudWatch Logs retention policy.
-- [ ] Confirm `pip install` on the instance resolves ARM wheels correctly
-      if you choose `t4g` (Graviton) — verify no source builds are
-      triggered for `torch`/`sentence-transformers`.
+```bash
+# Code
+sudo -u northstar git -C /opt/northstar fetch --all
+sudo -u northstar git -C /opt/northstar checkout <previous-tag-or-sha>
+sudo -u northstar /opt/northstar/.venv/bin/pip install -r backend/requirements.txt
+sudo systemctl restart northstar-api northstar-note-worker
 
+# Frontend
+cd /opt/northstar/frontend && sudo -u northstar npm ci && sudo -u northstar npm run build
+```
 
+Migrations are additive and idempotent; rolling back code does not require
+reverting schema. Never drop tables/columns to roll back a deploy.
 
-```mermaid
+---
 
-flowchart TB
-    subgraph Client["Client"]
-        FE["Frontend SPA (Vite/React)"]
-    end
+## 12. Notes & known constraints
 
-    subgraph AWS["AWS"]
-        subgraph Edge["Edge / Entry"]
-            ALB["ALB (future, 2+ instances)<br/>or Nginx (now, single instance)"]
-        end
-
-        subgraph APITier["API Tier - EC2 Auto Scaling Group"]
-            direction TB
-            API1["EC2: FastAPI (uvicorn)<br/>systemd: northstar-api"]
-            API2["EC2: FastAPI (uvicorn)<br/>scale-out, future"]
-        end
-
-        subgraph Queueing["Async Processing"]
-            SQSQ["SQS: note-jobs queue"]
-            DLQ["SQS: DLQ<br/>maxReceiveCount 3-5"]
-        end
-
-        subgraph WorkerTier["Worker Tier - EC2 single owner"]
-            Worker["EC2: note-processor<br/>systemd: northstar-note-worker<br/>long-poll SQS consumer"]
-            Chroma["Chroma vector store<br/>local EBS volume"]
-        end
-
-        subgraph Future["Future - not built yet"]
-            EB["EventBridge<br/>scheduled jobs / multi-consumer fan-out"]
-        end
-
-        subgraph Obs["Observability"]
-            CW["CloudWatch<br/>Logs + Metrics + Alarms"]
-        end
-
-        SSM["SSM Parameter Store<br/>secrets, SecureString"]
-    end
-
-    subgraph External["External Services"]
-        Supabase["Supabase<br/>Postgres: notes, memory, auth"]
-        Gemini["Gemini API<br/>embeddings, rewrite, chat, extraction"]
-    end
-
-    FE -->|"HTTPS"| ALB
-    ALB --> API1
-    ALB -.->|"future target"| API2
-
-    API1 -->|"POST /notes: write + enqueue"| Supabase
-    API1 -->|"send_note_job"| SQSQ
-    API1 -->|"chat / retrieval calls"| Gemini
-    API1 -->|"read/write"| Supabase
-
-    SQSQ -->|"long-poll receive"| Worker
-    SQSQ -.->|"maxReceiveCount exceeded"| DLQ
-
-    Worker -->|"extraction, rewrite"| Gemini
-    Worker -->|"insert tasks/facts/etc"| Supabase
-    Worker <-->|"embed/query/upsert"| Chroma
-
-    API1 -.->|"query_related_notes - single-owner constraint"| Chroma
-
-    API1 -.->|"instance role fetches"| SSM
-    Worker -.->|"instance role fetches"| SSM
-
-    API1 --> CW
-    Worker --> CW
-    SQSQ -.->|"queue depth metric"| CW
-
-    EB -.->|"later: scheduled summary refresh, multi-consumer fan-out"| SQSQ
+- `POST /notes/poll/process-jobs` remains a **debug-only** endpoint. Queue
+  consumption belongs to `northstar-note-worker`; do not rely on the HTTP
+  endpoint in production.
+- Because the vector index lives in Postgres, the API tier is now stateless and
+  **can** scale horizontally behind an ALB later. You do not need that today.
+- Only one worker is needed to start. Increase concurrency by running more
+  worker services/replicas; SQS distributes messages. Note that Gemini and
+  embedding calls are the real throughput limit.
+- `EMBEDDING_DIMENSIONS` and the `vector(768)` columns must stay in sync.
+  Changing the embedding model requires a migration and full re-embed.
+- `PROCESS_NOTES_INLINE=true` is for local debugging only; with it, note
+  processing runs inside the API request and can time out.

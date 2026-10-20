@@ -124,7 +124,12 @@ npm run build
 
 ## Deploying beyond local testing
 
-For real (non-local) usage, set `PROCESS_NOTES_INLINE=false` and provision the real AWS pieces the deployed environment relies on: an SQS queue and the Lambda consumer in [backend/lambda_function.py](backend/lambda_function.py) (deployed via [backend/deploy_lambda.ps1](backend/deploy_lambda.ps1)). Also scope [CORS](backend/app/main.py) to your real frontend origin instead of `*`.
+See [docs/ec2_deployment.md](docs/ec2_deployment.md) for the full EC2 checklist
+(instance/IAM/SQS setup, migrations, systemd services, Nginx, and frontend
+build). In short: keep `PROCESS_NOTES_INLINE=false`, run the always-on SQS
+consumer (`python -m app.workers.sqs_consumer`) as its own service, build the
+frontend with `VITE_API_BASE_URL` pointing at the API, and scope
+`CORS_ALLOW_ORIGINS` to the real frontend origin.
 
 ## Run Retrieval Evaluations
 
