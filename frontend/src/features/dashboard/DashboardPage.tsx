@@ -53,6 +53,7 @@ export function DashboardPage() {
   const [generatingDaily, setGeneratingDaily] = useState(false);
   const [generatingWeekly, setGeneratingWeekly] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -99,26 +100,41 @@ export function DashboardPage() {
     }
   };
 
-  const handleToggleTask = async (task: MemoryTask) => {
-    const nextStatus = task.status === "done" || task.status === "completed" ? "open" : "done";
-    const updated = await patchTaskStatus(task.task_id, nextStatus);
-    setTasks((current) => current.map((t) => (t.task_id === updated.task_id ? updated : t)));
+  // Wrap mutations so a failed request surfaces a message and never leaves the
+  // optimistic state silently out of sync with the server.
+  const runAction = async (action: () => Promise<void>, fallback: string) => {
+    setActionError(null);
+    try {
+      await action();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : fallback);
+    }
   };
 
-  const handleResolveQuestion = async (question: MemoryQuestion) => {
-    const updated = await patchQuestionStatus(question.question_id, "resolved");
-    setQuestions((current) => current.map((q) => (q.question_id === updated.question_id ? updated : q)));
-  };
+  const handleToggleTask = (task: MemoryTask) =>
+    runAction(async () => {
+      const nextStatus = task.status === "completed" ? "open" : "completed";
+      const updated = await patchTaskStatus(task.task_id, nextStatus);
+      setTasks((current) => current.map((t) => (t.task_id === updated.task_id ? updated : t)));
+    }, "Couldn't update that task.");
 
-  const handleDismissQuestion = async (question: MemoryQuestion) => {
-    const updated = await patchQuestionStatus(question.question_id, "dismissed");
-    setQuestions((current) => current.filter((q) => q.question_id !== updated.question_id));
-  };
+  const handleResolveQuestion = (question: MemoryQuestion) =>
+    runAction(async () => {
+      const updated = await patchQuestionStatus(question.question_id, "answered");
+      setQuestions((current) => current.map((q) => (q.question_id === updated.question_id ? updated : q)));
+    }, "Couldn't resolve that question.");
 
-  const handleResolveRisk = async (risk: MemoryRisk) => {
-    const updated = await patchRiskStatus(risk.risk_id, "resolved");
-    setRisks((current) => current.filter((r) => r.risk_id !== updated.risk_id));
-  };
+  const handleDismissQuestion = (question: MemoryQuestion) =>
+    runAction(async () => {
+      const updated = await patchQuestionStatus(question.question_id, "archived");
+      setQuestions((current) => current.filter((q) => q.question_id !== updated.question_id));
+    }, "Couldn't dismiss that question.");
+
+  const handleResolveRisk = (risk: MemoryRisk) =>
+    runAction(async () => {
+      const updated = await patchRiskStatus(risk.risk_id, "resolved");
+      setRisks((current) => current.filter((r) => r.risk_id !== updated.risk_id));
+    }, "Couldn't resolve that risk.");
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -138,6 +154,12 @@ export function DashboardPage() {
       {loadError ? (
         <p className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {loadError}
+        </p>
+      ) : null}
+
+      {actionError ? (
+        <p role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {actionError}
         </p>
       ) : null}
 

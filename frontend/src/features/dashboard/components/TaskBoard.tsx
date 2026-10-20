@@ -14,7 +14,7 @@ export function TaskBoard({ tasks, onToggle }: TaskBoardProps) {
   return (
     <ul className="divide-y divide-neutral-100">
       {tasks.map((task) => {
-        const done = task.status === "done" || task.status === "completed";
+        const done = task.status === "completed";
         return (
           <li key={task.task_id} className="flex items-start gap-3 py-3">
             <button

@@ -47,7 +47,9 @@ export function RecallPage() {
   const [reviewedCount, setReviewedCount] = useState(0);
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [requeueNotice, setRequeueNotice] = useState<string | null>(null);
   const cardShownAt = useRef<number>(Date.now());
+  const requeuedCardIds = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setStage("loading");
@@ -58,6 +60,8 @@ export function RecallPage() {
       setDueCards(due.cards);
       setIndex(0);
       setReviewedCount(0);
+      setRequeueNotice(null);
+      requeuedCardIds.current = new Set();
       if (suggestionList.suggestions.length > 0) {
         setStage("suggestions");
       } else if (due.cards.length > 0) {
@@ -147,13 +151,34 @@ export function RecallPage() {
     try {
       await reviewCard(current.card_id, grade, elapsedMs);
     } catch (err) {
+      // Keep the card on screen so the review isn't silently dropped; the user
+      // can retry against the same card.
       setError(err instanceof Error ? err.message : "Couldn't save that review.");
+      return;
     }
+    setError(null);
     setRevealed(false);
+
+    // Anki-style learning step: a forgotten card comes back once more in this
+    // session, a few cards later, instead of disappearing until tomorrow.
+    const willRequeue = grade === 1 && !requeuedCardIds.current.has(current.card_id);
+    if (willRequeue) {
+      requeuedCardIds.current.add(current.card_id);
+      setDueCards((cards) => {
+        const next = [...cards];
+        const insertAt = Math.min(index + 3, next.length);
+        next.splice(insertAt, 0, current);
+        return next;
+      });
+    }
+    setRequeueNotice(
+      willRequeue ? "Marked as forgotten — this card will come back later this session." : null,
+    );
+
     setReviewedCount((c) => c + 1);
     const nextIndex = index + 1;
     setIndex(nextIndex);
-    if (nextIndex >= dueCards.length) {
+    if (!willRequeue && nextIndex >= dueCards.length) {
       setStage("finished");
     }
   };
@@ -176,7 +201,7 @@ export function RecallPage() {
       </header>
 
       {error ? (
-        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
       {stage === "loading" ? (
@@ -282,15 +307,19 @@ export function RecallPage() {
           <p className="mt-4 text-center text-xs text-neutral-400">
             Card {index + 1} of {dueCards.length}
           </p>
+          {requeueNotice ? (
+            <p role="status" className="mt-1.5 text-center text-xs font-medium text-amber-700">
+              {requeueNotice}
+            </p>
+          ) : null}
         </>
       ) : (
         <div className="flex flex-col items-center rounded-2xl border border-neutral-200 bg-white py-16 text-center shadow-card">
           <p className="font-display text-xl font-semibold text-neutral-950">You're all caught up</p>
           <p className="mt-2 max-w-xs text-sm text-neutral-500">
-            You reviewed {reviewedCount} card{reviewedCount === 1 ? "" : "s"}. New cards will show up here as they
-            become due.
-          </p>
-          <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-600">
+            You logged {reviewedCount} review{reviewedCount === 1 ? "" : "s"}. New cards will show up here as
+            they become due.
+          </p>          <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-600">
             <Timer size={14} weight="bold" />
             Session time: {formatSessionTime(sessionSeconds)}
           </span>

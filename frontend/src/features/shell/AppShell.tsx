@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   ChatCircleDots,
@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import clsx from "clsx";
 import { useAuthorization } from "../../shared/auth/useAuthorization";
+import { fetchDueCards, fetchSuggestions } from "../../shared/api/httpClient";
 import { LogoMark } from "../../shared/ui/Logo";
 
 const NAV_ITEMS = [
@@ -24,6 +25,26 @@ export function AppShell() {
   const { userId, logout } = useAuthorization();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [recallCount, setRecallCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sync = () => {
+      Promise.all([fetchDueCards(1), fetchSuggestions(1)])
+        .then(([due, suggestions]) => {
+          if (!cancelled) setRecallCount(due.total_due + suggestions.total);
+        })
+        .catch(() => {
+          if (!cancelled) setRecallCount(0);
+        });
+    };
+    sync();
+    window.addEventListener("focus", sync);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -70,24 +91,36 @@ export function AppShell() {
         </div>
 
         <nav id="app-nav" className="mt-2 flex flex-col gap-1 lg:mt-8">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                clsx(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-neutral-950 text-white"
-                    : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950",
-                )
-              }
-            >
-              <item.icon size={18} weight="bold" />
-              {item.label}
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const showBadge = item.to === "/app/recall" && recallCount > 0;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileOpen(false)}
+                aria-label={showBadge ? `${item.label}, ${recallCount} waiting` : undefined}
+                className={({ isActive }) =>
+                  clsx(
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-neutral-950 text-white"
+                      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950",
+                  )
+                }
+              >
+                <item.icon size={18} weight="bold" />
+                <span className="flex-1">{item.label}</span>
+                {showBadge ? (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent-600 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+                  >
+                    {recallCount > 99 ? "99+" : recallCount}
+                  </span>
+                ) : null}
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className="mt-auto hidden flex-col gap-3 pt-8 lg:flex">

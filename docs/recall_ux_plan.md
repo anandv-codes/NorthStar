@@ -183,6 +183,11 @@ Session shell (reuse the card aesthetic):
 - Send `elapsed_ms` measured from question render to grade click.
 - On submit: remove the card from the local queue, show the next card; do not
   block on a refetch. Show a running "reviewed" counter.
+- **Again / Forgot re-queue (in-session):** grade `1` inserts the card back into
+  the local queue a few positions later (once per card per session, to avoid an
+  infinite loop) and shows "this card will come back later this session". This
+  mirrors a one-step Anki learning step without waiting for the server's
+  `next_due`. Grades `3/4/5` advance normally.
 - End state: "Session complete — N reviewed. Great work." with links back to
   `#/today` and `#/notes`.
 - Errors: if `review` returns 404 (card already gone) skip it; surface other

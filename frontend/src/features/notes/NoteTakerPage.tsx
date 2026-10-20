@@ -1,10 +1,17 @@
 import { useCallback, useRef, useState } from "react";
 import { Brain, CheckCircle, Microphone, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
-import { createNote, getNoteStatus, type NoteStatus } from "../../shared/api/httpClient";
+import { createNote, getNoteStatus, setNoteRecall, type NoteStatus } from "../../shared/api/httpClient";
 import { Button } from "../../shared/ui/Button";
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 20000;
+
+const RECALL_STATUS_LABELS: Record<string, string> = {
+  ready: "Recall on",
+  pending: "Generating cards…",
+  failed: "Generation failed",
+  off: "Recall off",
+};
 
 export function NoteTakerPage() {
   const [text, setText] = useState("");
@@ -12,6 +19,8 @@ export function NoteTakerPage() {
   const [submitting, setSubmitting] = useState(false);
   const [note, setNote] = useState<NoteStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [togglingRecall, setTogglingRecall] = useState(false);
+  const [recallError, setRecallError] = useState<string | null>(null);
   const [history, setHistory] = useState<NoteStatus[]>([]);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -64,6 +73,24 @@ export function NoteTakerPage() {
 
   const isProcessing = note && note.status !== "enriched" && note.status !== "failed";
 
+  const handleToggleRecall = async () => {
+    if (!note || togglingRecall) {
+      return;
+    }
+    setTogglingRecall(true);
+    setRecallError(null);
+    try {
+      const result = await setNoteRecall(note.note_id, !note.recall_enabled);
+      setNote((current) =>
+        current ? { ...current, recall_enabled: result.enabled, recall_status: result.recall_status } : current,
+      );
+    } catch (err) {
+      setRecallError(err instanceof Error ? err.message : "Couldn't update recall for this note.");
+    } finally {
+      setTogglingRecall(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
@@ -114,7 +141,7 @@ export function NoteTakerPage() {
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
       {note ? (
@@ -142,6 +169,37 @@ export function NoteTakerPage() {
           {note.enriched_summary ? (
             <p className="mt-3 rounded-xl bg-neutral-50 p-3 text-sm leading-relaxed text-neutral-600">
               {note.enriched_summary}
+            </p>
+          ) : null}
+
+          <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-4">
+            <div className="flex items-center gap-2">
+              <Brain size={16} className="text-neutral-500" weight="bold" />
+              <span className="text-sm font-medium text-neutral-700">
+                {RECALL_STATUS_LABELS[note.recall_status ?? "off"] ?? "Recall off"}
+              </span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={Boolean(note.recall_enabled)}
+              aria-label="Add this note to Recall"
+              disabled={togglingRecall}
+              onClick={() => void handleToggleRecall()}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                note.recall_enabled ? "bg-accent-600" : "bg-neutral-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  note.recall_enabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+          {recallError ? (
+            <p role="alert" className="mt-2 text-xs text-red-600">
+              {recallError}
             </p>
           ) : null}
         </div>

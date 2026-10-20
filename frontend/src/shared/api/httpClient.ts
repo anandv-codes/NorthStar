@@ -1,4 +1,6 @@
-const BASE_URL = "http://localhost:8000";
+// Vite inlines this at build time; set VITE_API_BASE_URL in the deployment
+// environment (see frontend/.env.example) so the bundle talks to the real API.
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 const ACCESS_TOKEN_KEY = "northstar_access_token";
 const REFRESH_TOKEN_KEY = "northstar_refresh_token";
 const USER_ID_KEY = "northstar_user_id";

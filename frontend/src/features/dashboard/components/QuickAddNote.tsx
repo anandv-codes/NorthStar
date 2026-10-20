@@ -55,9 +55,13 @@ export function QuickAddNote({ onCreated }: QuickAddNoteProps) {
         </button>
       </div>
 
-      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-sm text-red-600">
+          {error}
+        </p>
+      ) : null}
       {success ? (
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-accent-700">
+        <p role="status" className="mt-2 flex items-center gap-1.5 text-sm text-accent-700">
           <CheckCircle size={16} weight="fill" /> Note saved
         </p>
       ) : null}
