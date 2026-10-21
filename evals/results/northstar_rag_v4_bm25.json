@@ -1,0 +1,1064 @@
+{
+  "runner": "bm25_smoke",
+  "code_revision": "3c5f29c",
+  "configuration": {
+    "k": 5,
+    "k1": 1.5,
+    "b": 0.75
+  },
+  "case_count": 50,
+  "summary": {
+    "precision_at_k": 0.23255813953488372,
+    "recall_at_k": 0.7325581395348837,
+    "mean_reciprocal_rank_at_k": 0.5976744186046511,
+    "isolation_failure_count": 0,
+    "no_context_pass_count": 0,
+    "no_context_case_count": 7,
+    "conflict_retrieval_pass_count": 0,
+    "conflict_case_count": 0
+  },
+  "cases": [
+    {
+      "id": "v4-mba-positioning-01",
+      "query": "Which customer need did I decide the paid planning tool should own, and what alternatives do buyers weigh?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-revision-plan",
+        "mba-funnel-done",
+        "mba-strategy-moat",
+        "mba-marketing-positioning"
+      ],
+      "relevant_note_ids": [
+        "mba-marketing-positioning"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.25,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-npv-01",
+      "query": "Why did the slower-payback option still win the capital budgeting case?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-finance-npv",
+        "int-revision-done",
+        "swe-architecture-outbox",
+        "mba-pricing-econ",
+        "mba-acquisition-case"
+      ],
+      "relevant_note_ids": [
+        "mba-finance-npv"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-bottleneck-01",
+      "query": "Where did the work pile up once we added another person to the approval stage?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-redis-cluster",
+        "int-revision-done",
+        "int-star-conflict",
+        "int-star-leadership",
+        "swe-retro-estimates"
+      ],
+      "relevant_note_ids": [
+        "mba-ops-bottleneck"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-moat-01",
+      "query": "Why could the established vendor keep charging more in that enterprise software example?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-session-new",
+        "mba-strategy-moat"
+      ],
+      "relevant_note_ids": [
+        "mba-strategy-moat"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-funnel-status-01",
+      "query": "Did the cohort drop-off review get finished, and where do new accounts stall?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-funnel-plan",
+        "mba-funnel-done",
+        "swe-auth-scopes",
+        "mba-churn-case",
+        "swe-review-risk"
+      ],
+      "relevant_note_ids": [
+        "mba-funnel-plan",
+        "mba-funnel-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-wacc-01",
+      "query": "Why is the company's financing mix so sensitive to the cost of equity?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-finance-wacc",
+        "int-payments-prep",
+        "mba-churn-case",
+        "int-toposort",
+        "swe-staging-cost"
+      ],
+      "relevant_note_ids": [
+        "mba-finance-wacc"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-fulfillment-change-01",
+      "query": "What is my latest distribution setup recommendation, and what data overturned the first one?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-ops-centralize",
+        "mba-ops-regional",
+        "swe-search-plan",
+        "int-binary-duplicates",
+        "int-mock-feedback"
+      ],
+      "relevant_note_ids": [
+        "mba-ops-centralize",
+        "mba-ops-regional"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-pricing-synthesis-01",
+      "query": "What did I conclude about entering 15% cheaper, and what has to be true for that to work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-pricing-entry",
+        "swe-staging-cost",
+        "mba-pricing-econ"
+      ],
+      "relevant_note_ids": [
+        "mba-pricing-entry",
+        "mba-pricing-econ"
+      ],
+      "precision_at_k": 0.6666666666666666,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-churn-nextstep-01",
+      "query": "What did I decide to look at first in the subscriber retention case?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-search-plan",
+        "int-binary-duplicates",
+        "int-mock-feedback",
+        "mba-acquisition-case",
+        "mba-funnel-plan"
+      ],
+      "relevant_note_ids": [
+        "mba-churn-case"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-mba-delegation-01",
+      "query": "What made handing off the weekly numbers meeting succeed?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-auth-scopes",
+        "mba-leadership",
+        "mba-funnel-plan",
+        "mba-funnel-done"
+      ],
+      "relevant_note_ids": [
+        "mba-leadership"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-checkout-rootcause-01",
+      "query": "What was really behind the order submission slowdown?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-architecture-outbox",
+        "swe-modal-focus",
+        "swe-order-backfill"
+      ],
+      "relevant_note_ids": [
+        "swe-checkout-retry"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-sync-writes-01",
+      "query": "Why did we leave the purchase write path blocking instead of making it async?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-architecture-outbox",
+        "swe-retro-estimates",
+        "swe-trace-ids",
+        "mba-strategy-moat",
+        "swe-flaky-tests"
+      ],
+      "relevant_note_ids": [
+        "swe-architecture-outbox"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-retro-misses-01",
+      "query": "What did the team blame for missing its sprint commitments?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-retro-estimates",
+        "mba-finance-npv",
+        "swe-order-backfill",
+        "swe-api-freeze",
+        "swe-auth-scopes"
+      ],
+      "relevant_note_ids": [
+        "swe-retro-estimates"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-search-status-01",
+      "query": "Where are we with the new retrieval rollout?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-funnel-plan",
+        "swe-retro-estimates"
+      ],
+      "relevant_note_ids": [
+        "swe-search-plan",
+        "swe-search-update"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-dashboard-p95-01",
+      "query": "Why did the slowest dashboard loads get faster?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-dashboard-query"
+      ],
+      "relevant_note_ids": [
+        "swe-dashboard-query"
+      ],
+      "precision_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-pricing-rollback-01",
+      "query": "Why did we undo the checkout price display change?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-pricing-entry",
+        "swe-review-risk",
+        "swe-retro-estimates",
+        "swe-checkout-retry",
+        "swe-flaky-tests"
+      ],
+      "relevant_note_ids": [
+        "swe-pricing-rollback"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-api-blocker-01",
+      "query": "What is holding up the interface agreement?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-star-conflict",
+        "int-star-leadership"
+      ],
+      "relevant_note_ids": [
+        "swe-api-freeze",
+        "swe-auth-scopes"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-billing-alerts-01",
+      "query": "What caused the duplicate pages from monitoring, and how was it fixed?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-ops-centralize",
+        "swe-oncall-runbook",
+        "swe-billing-cleanup",
+        "swe-billing-alerts",
+        "swe-checkout-retry"
+      ],
+      "relevant_note_ids": [
+        "swe-billing-alerts",
+        "swe-billing-cleanup"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-session-storage-01",
+      "query": "What are we doing now for login state, and why did the original idea get dropped?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-retro-estimates",
+        "swe-flaky-tests",
+        "swe-trace-ids"
+      ],
+      "relevant_note_ids": [
+        "swe-session-old",
+        "swe-session-new"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-staging-security-01",
+      "query": "What did the audit finding change in the test environment?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-security-staging",
+        "swe-review-risk",
+        "swe-session-new",
+        "mba-funnel-done"
+      ],
+      "relevant_note_ids": [
+        "swe-security-staging"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-oncall-page-01",
+      "query": "When should someone be woken up under the new incident policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-funnel-plan",
+        "int-star-conflict",
+        "swe-checkout-retry"
+      ],
+      "relevant_note_ids": [
+        "swe-oncall-runbook"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-ci-time-01",
+      "query": "Why did the build pipeline get 12 minutes shorter?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-flaky-tests",
+        "swe-oncall-runbook",
+        "int-booking-holds"
+      ],
+      "relevant_note_ids": [
+        "swe-flaky-tests"
+      ],
+      "precision_at_k": 0.3333333333333333,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-order-backfill-01",
+      "query": "How big was the timestamp repair, and what caused the missing values?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-order-backfill",
+        "int-fintech-process"
+      ],
+      "relevant_note_ids": [
+        "swe-order-backfill"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-modal-focus-01",
+      "query": "Why couldn't people tab through the dialog properly, and what fixed it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-modal-focus",
+        "mba-ops-centralize",
+        "int-profile-cache",
+        "swe-checkout-retry"
+      ],
+      "relevant_note_ids": [
+        "swe-modal-focus"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-trace-debug-01",
+      "query": "How did we connect worker logs to the originating request?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-trace-ids",
+        "swe-retro-estimates",
+        "int-profile-cache",
+        "swe-architecture-outbox"
+      ],
+      "relevant_note_ids": [
+        "swe-trace-ids"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-cloud-cost-01",
+      "query": "Where did we find the largest easy savings in our cloud bill?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-staging-cost",
+        "swe-retro-estimates"
+      ],
+      "relevant_note_ids": [
+        "swe-staging-cost"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-swe-review-risk-01",
+      "query": "What new step did we add before approving database or permission changes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-funnel-plan",
+        "mba-churn-case",
+        "swe-review-risk",
+        "swe-security-staging",
+        "swe-session-new"
+      ],
+      "relevant_note_ids": [
+        "swe-review-risk"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-sliding-pointer-01",
+      "query": "How do I move the start of the window when a character repeats?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-sliding-window",
+        "swe-session-old"
+      ],
+      "relevant_note_ids": [
+        "int-sliding-window"
+      ],
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-knapsack-order-01",
+      "query": "Why does the one-array DP loop run from the top down?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-knapsack",
+        "int-house-robber",
+        "mba-ops-centralize",
+        "swe-dashboard-query",
+        "int-chat-shard"
+      ],
+      "relevant_note_ids": [
+        "int-knapsack"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-toposort-cycle-01",
+      "query": "How can Kahn's method tell me that a directed graph is cyclic?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-toposort",
+        "int-payment-events",
+        "swe-trace-ids",
+        "mba-strategy-moat"
+      ],
+      "relevant_note_ids": [
+        "int-toposort"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-binary-duplicates-01",
+      "query": "Which search variant finds the first matching slot when the array has repeated values?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-search-plan",
+        "int-binary-duplicates",
+        "int-knapsack",
+        "int-fintech-process",
+        "swe-search-update"
+      ],
+      "relevant_note_ids": [
+        "int-binary-duplicates"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-heap-build-01",
+      "query": "What is the time complexity of turning an unsorted array into a priority queue?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-mock-feedback",
+        "swe-trace-ids",
+        "int-knapsack",
+        "int-payment-events",
+        "int-heap-build"
+      ],
+      "relevant_note_ids": [
+        "int-heap-build"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.2,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-profile-cache-01",
+      "query": "What caching approach did I pick for the user profile service, and why not write to cache on updates?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-profile-cache",
+        "int-chat-shard",
+        "swe-pricing-rollback",
+        "mba-ops-regional",
+        "swe-architecture-outbox"
+      ],
+      "relevant_note_ids": [
+        "int-profile-cache"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-payment-retry-01",
+      "query": "How do I keep repeated charge attempts from creating duplicate payments?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-session-new",
+        "swe-billing-cleanup",
+        "swe-billing-alerts",
+        "int-payments-prep",
+        "swe-order-backfill"
+      ],
+      "relevant_note_ids": [
+        "int-payment-events"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-chat-shard-01",
+      "query": "What key did I choose to split message threads across machines?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-star-leadership",
+        "mba-funnel-done"
+      ],
+      "relevant_note_ids": [
+        "int-chat-shard"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-booking-holds-01",
+      "query": "How do I stop two people from taking the same seat without a distributed lock?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-booking-holds",
+        "swe-billing-alerts",
+        "mba-ops-regional",
+        "mba-ops-simulation",
+        "int-star-leadership"
+      ],
+      "relevant_note_ids": [
+        "int-booking-holds"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-conflict-story-01",
+      "query": "What did the ownership dispute teach me about working with another engineer?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-revision-done",
+        "mba-marketing-positioning",
+        "int-star-conflict",
+        "int-star-leadership"
+      ],
+      "relevant_note_ids": [
+        "int-star-conflict"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-deadline-story-01",
+      "query": "What did I change after missing the migration date?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-order-backfill",
+        "swe-k8s-ingress",
+        "swe-session-new",
+        "swe-review-risk",
+        "swe-search-update"
+      ],
+      "relevant_note_ids": [
+        "int-star-deadline"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-leadership-story-01",
+      "query": "How did I divide work on the four-person effort so nobody had to work late?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-star-leadership",
+        "swe-staging-cost",
+        "int-knapsack",
+        "int-chat-shard",
+        "swe-trace-ids"
+      ],
+      "relevant_note_ids": [
+        "int-star-leadership"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-revision-status-01",
+      "query": "Which interview topics are still shaky after my last review?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-revision-done",
+        "int-fintech-process",
+        "swe-security-staging",
+        "int-sliding-window",
+        "int-google-prep"
+      ],
+      "relevant_note_ids": [
+        "int-revision-plan",
+        "int-revision-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-fintech-process-01",
+      "query": "What are the stages and expected wait time for the fintech role?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-acquisition-case",
+        "int-fintech-process",
+        "int-mock-feedback",
+        "swe-flaky-tests",
+        "swe-trace-ids"
+      ],
+      "relevant_note_ids": [
+        "int-fintech-process"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-payments-focus-01",
+      "query": "What should I study before talking to the payments company?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-payments-prep",
+        "mba-finance-wacc",
+        "swe-order-backfill",
+        "mba-funnel-plan",
+        "int-mock-feedback"
+      ],
+      "relevant_note_ids": [
+        "int-payments-prep"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-int-mock-feedback-01",
+      "query": "What did the practice interview reveal about how I should open a solution?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-house-robber",
+        "int-fintech-process",
+        "int-google-prep",
+        "int-mock-feedback"
+      ],
+      "relevant_note_ids": [
+        "int-mock-feedback"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.25,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-nc-mba-acquisition-01",
+      "query": "What valuation did I settle on for the fintech acquisition case?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-acquisition-case",
+        "mba-funnel-plan",
+        "mba-churn-case",
+        "int-fintech-process",
+        "mba-funnel-done"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-nc-mba-simulation-01",
+      "query": "Which professor graded the operations simulation?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "mba-ops-simulation",
+        "mba-ops-bottleneck",
+        "int-heap-build"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-nc-swe-k8s-upgrade-01",
+      "query": "What was the final Kubernetes upgrade date?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-k8s-ingress"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-nc-swe-redis-resize-01",
+      "query": "Who approved the Redis cluster resize?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-redis-cluster",
+        "swe-session-old",
+        "swe-session-new"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-nc-swe-mobile-oncall-01",
+      "query": "What is the current on-call rotation for the mobile team?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "swe-mobile-oncall",
+        "swe-billing-alerts",
+        "swe-api-freeze",
+        "swe-auth-scopes",
+        "swe-oncall-runbook"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-nc-int-google-feedback-01",
+      "query": "What was the interviewer's feedback after the Google system design round?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-google-prep",
+        "int-fintech-process",
+        "int-booking-holds",
+        "int-revision-plan",
+        "int-payment-events"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v4-nc-int-fintech-offers-01",
+      "query": "How many offers did the fintech company extend?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "int-fintech-process",
+        "int-payments-prep",
+        "mba-acquisition-case",
+        "mba-finance-wacc"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    }
+  ]
+}

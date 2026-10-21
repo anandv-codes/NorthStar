@@ -79,6 +79,18 @@ jobs:
       - name: Run v0 smoke retrieval baseline
         run: python -m evals.scripts.run_retrieval_eval
 
+      - name: Rebuild and validate v4 focused dataset
+        run: |
+          python -m evals.scripts.build_rag_v4_focused_dataset
+          python -m evals.scripts.validate_rag_v4_dataset
+
+      - name: Run v4 BM25 retrieval baseline
+        run: >
+          python -m evals.scripts.run_retrieval_eval
+          --cases evals/datasets/northstar_rag_v4.jsonl
+          --corpus evals/datasets/northstar_rag_v4_corpus.jsonl
+          --output evals/results/northstar_rag_v4_bm25.json
+
       - name: Rebuild and validate v1 golden dataset
         run: |
           python -m evals.scripts.build_rag_v1_expanded_dataset
@@ -94,7 +106,7 @@ jobs:
       - name: Publish job summary
         if: always()
         run: |
-          for report in evals/results/northstar_rag_v0_smoke_bm25.md evals/results/northstar_rag_v1_bm25.md; do
+          for report in evals/results/northstar_rag_v0_smoke_bm25.md evals/results/northstar_rag_v4_bm25.md evals/results/northstar_rag_v1_bm25.md; do
             if [ -f "$report" ]; then
               cat "$report" >> "$GITHUB_STEP_SUMMARY"
               echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -109,6 +121,8 @@ jobs:
           path: |
             evals/results/northstar_rag_v0_smoke_bm25.json
             evals/results/northstar_rag_v0_smoke_bm25.md
+            evals/results/northstar_rag_v4_bm25.json
+            evals/results/northstar_rag_v4_bm25.md
             evals/results/northstar_rag_v1_bm25.json
             evals/results/northstar_rag_v1_bm25.md
           retention-days: 30

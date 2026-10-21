@@ -8,12 +8,14 @@ NorthStar is a personal work-management application. This plan evaluates one use
 
 The initial approach is deliberately narrow:
 
-- Maintain the versioned v1 golden dataset as 100 detailed personal work-memory questions over an isolated synthetic corpus.
+- Use v4 as the current focused 50-case daily-note retrieval benchmark; keep the versioned v1 dataset for detailed conflict and isolation coverage.
 - Include conflicting-source evaluation in the first dataset version.
 - Begin with report-only results; do not block development until a baseline is trustworthy.
 - Establish offline evaluation before adding OpenTelemetry tracing.
 - Use an LLM judge for the first claim-based assessment loop; preserve inputs, rubric version, and outputs so a human review process can be added later.
 - Keep a synthetic second-user corpus as a retrieval-isolation regression test, even though the product is personal rather than multi-tenant.
+
+The current focused dataset is `northstar_rag_v4`: 50 cases over 63 daily notes, split into 10 MBA, 17 software-work, and 16 SDE interview-prep answerable cases plus 7 no-context cases. V4 removes exact-identifier anchors and deliberately reduces query/evidence token overlap. It has no conflict cases, so V1 remains the conflict-coverage benchmark.
 
 ## Outcomes
 

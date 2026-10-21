@@ -79,6 +79,22 @@ python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf --cases evals/datas
 
 Cases carry a `v3` tag when newly authored (vs. reused from V2), plus a category tag (`paraphrase`, `vocabulary-mismatch`, `lexical-trap`, `synthesis`, `cross-account-synthesis`) so results can be broken down per category, not just as one flat average.
 
+## Focused V4 Daily-Note Dataset
+
+V4 is the current focused retrieval benchmark: 50 synthetic questions over 63 synthetic daily notes. It is deliberately SWE/interview-heavy: 43 answerable cases split into 10 MBA, 17 software-development work, and 16 SDE interview-prep questions, plus 7 no-context near-misses. Five secondary-user notes mirror primary-user facts for isolation checks.
+
+V4 removes exact `ITEM-*`/`DFX-*` anchors and paraphrases most queries so BM25 cannot win on identifier lookup or shared vocabulary. It includes multi-note status, chronology, and learning-state questions. It has no conflict cases, so conflict checks report `0/0`; use V1/V3 for conflict coverage.
+
+Rebuild, validate, and run the sparse baseline from the workspace root:
+
+```powershell
+python -m evals.scripts.build_rag_v4_focused_dataset
+python -m evals.scripts.validate_rag_v4_dataset
+python -m evals.scripts.run_retrieval_eval --cases evals/datasets/northstar_rag_v4.jsonl --corpus evals/datasets/northstar_rag_v4_corpus.jsonl --output evals/results/northstar_rag_v4_bm25.json
+```
+
+This writes `evals/results/northstar_rag_v4_bm25.json` and `.md`. The validator enforces the 50-case/63-note contract, answerable and no-context domain splits, source references, claim support references, and the 58/5 primary/secondary corpus split.
+
 ## Dense Chroma Baseline
 
 The dense runner evaluates fixtures using the existing Gemini embedding provider and a dedicated Chroma path and collection. It never uses the production `chroma_data` path or `notes` collection, and it recreates only its own evaluation collection before each run.

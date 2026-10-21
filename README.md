@@ -145,7 +145,17 @@ Sparse BM25 evaluates the production `BM25Index` against an in-memory synthetic 
 # Small deterministic smoke benchmark
 python -m evals.scripts.run_retrieval_eval
 
-# Rebuild and validate the 100-question v1 fixture
+# Rebuild and validate the current focused v4 benchmark
+python -m evals.scripts.build_rag_v4_focused_dataset
+python -m evals.scripts.validate_rag_v4_dataset
+
+# Save the v4 BM25 baseline
+python -m evals.scripts.run_retrieval_eval `
+  --cases evals/datasets/northstar_rag_v4.jsonl `
+  --corpus evals/datasets/northstar_rag_v4_corpus.jsonl `
+  --output evals/results/northstar_rag_v4_bm25.json
+
+# Rebuild and validate the historical 100-question v1 fixture
 python -m evals.scripts.build_rag_v1_expanded_dataset
 python -m evals.scripts.validate_rag_v1_dataset
 
@@ -155,6 +165,8 @@ python -m evals.scripts.run_retrieval_eval `
   --corpus evals/datasets/northstar_rag_v1_corpus.jsonl `
   --output evals/results/northstar_rag_v1_bm25.json
 ```
+
+V4 is the current focused benchmark: 50 questions over 63 synthetic daily notes, split into 10 MBA, 17 software-work, and 16 SDE interview-prep answerable cases plus 7 no-context cases. It has no conflict cases, so use v1 or v3 when evaluating conflict coverage.
 
 ### Dense, Hybrid, Reranker, And Rewrite Baselines
 
@@ -181,19 +193,20 @@ The guarded rewrite run uses an empty synthetic recent-memory input and records 
 | Configuration | JSON result | Markdown report |
 | --- | --- | --- |
 | v0 sparse smoke | `evals/results/northstar_rag_v0_smoke_bm25.json` | `evals/results/northstar_rag_v0_smoke_bm25.md` |
+| v4 focused sparse BM25 | `evals/results/northstar_rag_v4_bm25.json` | `evals/results/northstar_rag_v4_bm25.md` |
 | v1 sparse BM25 | `evals/results/northstar_rag_v1_bm25.json` | `evals/results/northstar_rag_v1_bm25.md` |
 | v1 dense Chroma | `evals/results/northstar_rag_v1_dense.json` | `evals/results/northstar_rag_v1_dense.md` |
 | v1 RRF | `evals/results/northstar_rag_v1_rrf.json` | `evals/results/northstar_rag_v1_rrf.md` |
 | v1 RRF plus reranker | `evals/results/northstar_rag_v1_rerank.json` | `evals/results/northstar_rag_v1_rerank.md` |
 | v1 guarded rewrite | `evals/results/northstar_rag_v1_rewrite.json` | `evals/results/northstar_rag_v1_rewrite.md` |
 
-Each report records Precision@5, Recall@5, MRR@5, isolation failures, no-context behavior, conflict-evidence completeness, retrieval configuration, and source revision. Compare modes only after every configuration has been run against the same regenerated v1 fixture.
+Each report records Precision@5, Recall@5, MRR@5, isolation failures, no-context behavior, conflict-evidence completeness, retrieval configuration, and source revision. Compare modes only after every configuration has been run against the same regenerated fixture. Use v4 for focused semantic retrieval and v1 for conflict coverage.
 
 ## CI Evaluation Workflow
 
 [`.github/workflows/rag-eval.yml`](.github/workflows/rag-eval.yml) automates the retrieval suite:
 
-- Qualifying pull requests run fixture validation plus v0 and v1 sparse BM25 baselines.
+- Qualifying pull requests run fixture validation plus v0, v4, and v1 sparse BM25 baselines.
 - Qualifying pushes to `main` additionally run dense Chroma, RRF, and RRF-plus-reranker baselines.
 - Manual dispatch offers `run_dense` for dense/RRF/reranker and `run_rewrite` for the cost-bearing guarded-rewrite benchmark.
 

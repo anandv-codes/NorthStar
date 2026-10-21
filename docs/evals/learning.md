@@ -153,3 +153,39 @@ Install `backend/requirements.txt` in the selected Python environment, configure
 - Retrieval and generation modules remain read-only evaluation subjects. The harness changes only `evals/`, documentation, and CI workflow files.
 - The local environment does not currently have Chroma, the Gemini LangChain package, or `GEMINI_API_KEY`; no dense, RRF, reranker, or rewrite quality result has been claimed from it.
 - Do not infer that RRF, reranking, or rewriting improves quality until their protected-run artifacts exist for the same v1 fixture. Compare category failures, no-context behavior, and conflict evidence alongside aggregate metrics.
+
+## 2026-10-21: Focused V4 Daily-Note Retrieval Benchmark
+
+**Artifacts:** `evals/datasets/northstar_rag_v4.jsonl`, `evals/datasets/northstar_rag_v4_corpus.jsonl`, `evals/results/northstar_rag_v4_bm25.json`, and `evals/results/northstar_rag_v4_bm25.md`.
+
+| Measure | Result |
+| --- | ---: |
+| Scenario count | 50 |
+| Synthetic notes | 63 |
+| Precision@5 | 0.233 |
+| Recall@5 | 0.733 |
+| MRR@5 | 0.598 |
+| Isolation failures | 0 |
+| No-context checks | 0/7 |
+| Conflict-evidence checks | 0/0 |
+
+### Dataset Decisions
+
+- V4 replaces the deferred 254-case plan with a focused benchmark for retrieval over daily notes, not a daily-summary quality benchmark.
+- The 50 cases are 43 answerable questions and 7 no-context near-misses. Answerable cases split 10 MBA, 17 software-development work, and 16 SDE interview prep; no-context cases split 2 MBA, 3 software work, and 2 interview prep.
+- The corpus has 63 notes: 58 primary-user notes and 5 deliberately similar secondary-user notes for isolation checks.
+- Queries avoid exact `ITEM-*`/`DFX-*` anchors. They were rewritten to reduce lexical overlap: 36 of the 43 answerable queries share at most two tokens with their gold notes, and 8 share none.
+- V4 has multi-note status, chronology, and learning-state cases but no conflict cases. Conflict metrics are therefore `0/0` and are not comparable with V1/V3 conflict coverage.
+- `evals/scripts/build_rag_v4_focused_dataset.py` rebuilds the fixture deterministically; `evals/scripts/validate_rag_v4_dataset.py` enforces the case, note, domain, user, reference, and claim-support contract.
+- The sparse CI job now rebuilds and validates V4 and publishes `northstar_rag_v4_bm25` alongside the v0 and v1 reports.
+
+### Baseline Learning
+
+- The sparse baseline is no longer near the ceiling: BM25 retrieves no gold note at all for 11 of 43 answerable cases and retrieves only one of two gold notes for another. This leaves room to measure whether dense or hybrid retrieval closes genuine semantic gaps.
+- Precision@5 is 0.233 because short daily notes share broad domain words; top-five context is noisy even when a relevant note is present. Recall and MRR expose the larger semantic misses.
+- BM25 fails all 7 no-context cases because it always returns positive-scoring notes for near-miss vocabulary. Retrieval alone cannot enforce abstention; answer generation needs a grounded refusal path.
+- Zero isolation failures validate only the in-memory user partitioning for this fixture. Production storage boundaries still require separate verification.
+
+### Next Experiment
+
+Run the unchanged V4 fixture through isolated dense and hybrid retrieval, preserving all case IDs and gold note references. Compare category failures and no-context behavior against this sparse baseline before tuning candidate depth, fusion, or rewriting. Do not treat the V4 result as answer-quality evidence.
