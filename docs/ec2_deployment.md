@@ -932,6 +932,8 @@ Forbidden`.
 - [ ] Certbot renewed (`sudo certbot renew --dry-run`).
 - [ ] Mic works over HTTPS (Chrome/Edge/Android; Firefox is unsupported).
 - [ ] Smoke test below passes end-to-end.
+- [ ] Baseline API p95 captured with k6; VUs, duration, endpoints, and
+      instance type recorded.
 - [ ] CloudWatch alarms set for SQS depth and DLQ > 0.
 - [ ] Log retention configured (see §11).
 
@@ -1075,6 +1077,60 @@ aws sqs get-queue-attributes --queue-url "$SQS_QUEUE_URL" \
 - **Supabase free tier:** pauses after inactivity. If the app must stay online,
   use a paid project or keep-alive checks against the API (which will fail if
   Supabase is paused).
+
+### Latency (p95)
+
+The API and worker emit timing events as one JSON object per line to stdout
+without the usual log prefix, so the fields are easy to parse locally and in
+CloudWatch:
+
+- `request_timing`: `method`, `route`, `path`, `status`, `duration_ms`.
+- `note_processing`: `message_id`, `note_id`, `duration_ms`, `queue_ms`,
+  `end_to_end_ms`, `success=true`.
+- `note_processing_failed`: the same timing fields with `success=false` and
+  `error_type`, without `end_to_end_ms`.
+
+Server-side API p95 from journald:
+
+```bash
+cd /opt/northstar
+sudo journalctl -u northstar-api -o cat --since "1 hour ago" \
+  | python3 backend/scripts/p95_latency.py --event request_timing
+```
+
+Worker processing and note-to-ready p95:
+
+```bash
+sudo journalctl -u northstar-note-worker -o cat --since "24 hours ago" \
+  | python3 backend/scripts/p95_latency.py \
+      --event note_processing --field end_to_end_ms
+```
+
+The script uses nearest-rank percentiles and prints p50/p95/p99/max plus the
+sample count. A p95 with only a handful of samples is not meaningful; report
+p50 and `n` instead.
+
+For a controlled load-test number, run the k6 scripts; see
+[`loadtest/README.md`](../loadtest/README.md). k6's `http_req_duration` is
+client-observed and includes network/TLS, while `request_timing.duration_ms`
+is server-side. Report which one you mean.
+
+If the CloudWatch agent from the **Logs** bullet is installed, query the same
+events in Logs Insights:
+
+```sql
+fields @timestamp, event, route, status, duration_ms
+| filter event = "request_timing"
+| stats pct(duration_ms, 95) as p95_ms, count() as requests by bin(5m), route
+```
+
+```sql
+fields @timestamp, event, success, duration_ms, queue_ms, end_to_end_ms
+| filter event = "note_processing"
+| stats pct(duration_ms, 95) as processing_p95_ms,
+        pct(end_to_end_ms, 95) as end_to_end_p95_ms,
+        count() as notes by bin(15m)
+```
 
 ---
 

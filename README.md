@@ -130,7 +130,8 @@ build). The deployment work lives on the `prd-m1` branch; the guide's clone
 command checks it out explicitly. In short: keep `PROCESS_NOTES_INLINE=false`,
 run the always-on SQS consumer (`python -m app.workers.sqs_consumer`) as its own
 service, build the frontend with `VITE_API_BASE_URL` pointing at the API, and
-scope `CORS_ALLOW_ORIGINS` to the real frontend origin.
+scope `CORS_ALLOW_ORIGINS` to the real frontend origin. For API and worker
+latency measurement, see [loadtest/README.md](loadtest/README.md).
 
 ## Run Retrieval Evaluations
 

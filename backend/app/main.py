@@ -10,6 +10,7 @@ from .api.routes.memory import router as memory_router
 from .api.routes.recall import router as recall_router
 from .api.routes.retrieval import router as retrieval_router
 from .api.routes.summaries import router as summaries_router
+from .observability import install_request_timing
 
 load_dotenv()
 
@@ -49,6 +50,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+install_request_timing(app)
 
 app.include_router(notes_router, prefix="/notes", tags=["notes"])
 app.include_router(memory_router, tags=["memory"])
