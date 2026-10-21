@@ -1,15 +1,21 @@
 import { useEffect, useId, useState } from "react";
 import { Check, PencilSimple, Spinner, X } from "@phosphor-icons/react";
-import type { RecallSuggestion } from "../../shared/api/httpClient";
+import type { RecallDeck, RecallSuggestion } from "../../shared/api/httpClient";
+import { DeckPicker } from "./components/DeckPicker";
 
 interface SuggestionCardProps {
   suggestion: RecallSuggestion;
+  decks: RecallDeck[];
+  deckValue?: string | null;
+  deckSaving?: boolean;
   selected: boolean;
   processing: "accept" | "reject" | "save" | null;
   onSelect: (selected: boolean) => void;
   onAccept: () => void;
   onReject: () => void;
   onSave: (question: string, answer: string) => Promise<void>;
+  onDeckChange: (deckId: string) => void;
+  onCreateDeck: () => void;
   /** Generate the answer on demand; resolves with the new answer text. */
   onRevealAnswer: () => Promise<string | null>;
 }
@@ -27,12 +33,17 @@ function validateAnswerField(value: string): string | null {
 
 export function SuggestionCard({
   suggestion,
+  decks,
+  deckValue,
+  deckSaving = false,
   selected,
   processing,
   onSelect,
   onAccept,
   onReject,
   onSave,
+  onDeckChange,
+  onCreateDeck,
   onRevealAnswer,
 }: SuggestionCardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
@@ -46,7 +57,7 @@ export function SuggestionCard({
   const [answerError, setAnswerError] = useState<string | null>(null);
   const questionErrorId = useId();
   const answerErrorId = useId();
-  const busy = processing !== null || revealing;
+  const busy = processing !== null || revealing || deckSaving;
 
   useEffect(() => {
     setDraftQuestion(suggestion.question);
@@ -140,6 +151,17 @@ export function SuggestionCard({
                 Edit
               </button>
             ) : null}
+          </div>
+
+          <div className="mt-2">
+            <DeckPicker
+              decks={decks}
+              value={deckValue ?? suggestion.deck_id ?? null}
+              onChange={onDeckChange}
+              onCreate={onCreateDeck}
+              disabled={busy}
+              compact
+            />
           </div>
 
           {editing ? (

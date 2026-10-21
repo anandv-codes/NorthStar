@@ -5,9 +5,16 @@ from ...schemas.models import (
     DueCardsResponse,
     RecallBulkAcceptRequest,
     RecallBulkAcceptResponse,
+    RecallBulkDeckAssignRequest,
+    RecallCardDeckUpdateRequest,
+    RecallCardListResponse,
     RecallCardResponse,
     RecallDecisionRequest,
     RecallDecisionResponse,
+    RecallDeckCreate,
+    RecallDeckListResponse,
+    RecallDeckResponse,
+    RecallDeckUpdate,
     RecallGradeRequest,
     RecallReviewResult,
     RecallSuggestionListResponse,
@@ -19,10 +26,20 @@ from ...domain.recall.question_service import (
     build_context,
     generate_answer_for_candidate,
 )
+from ...domain.recall.deck_service import (
+    archive_deck,
+    assign_candidates_to_deck,
+    create_deck,
+    get_active_deck,
+    list_cards,
+    list_decks_with_stats,
+    move_card_to_deck,
+    restore_deck,
+    update_deck,
+)
 from ...domain.recall.review_service import (
     accept_candidate,
     accept_candidates,
-    due_cards,
     list_suggestions,
     reject_candidate,
     review_card,
@@ -65,6 +82,7 @@ def _to_suggestion(row: dict) -> RecallSuggestionResponse:
         answer=row.get("answer"),
         item_type=row.get("item_type") or "fact",
         source_note_id=row.get("source_note_id"),
+        deck_id=row.get("deck_id"),
         score=row.get("score"),
         importance=row.get("importance"),
         durability=row.get("durability"),
@@ -75,11 +93,14 @@ def _to_suggestion(row: dict) -> RecallSuggestionResponse:
 @router.get("/candidates", response_model=RecallSuggestionListResponse)
 def get_candidates(
     status: str = Query(default="suggested"),
+    source_note_id: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     user_id: str = Depends(get_current_user_id),
 ):
     repo = get_recall_repository()
-    rows = repo.query_candidates(user_id, status=status, limit=limit)
+    rows = repo.query_candidates(
+        user_id, status=status, limit=limit, source_note_id=source_note_id
+    )
     suggestions = [_to_suggestion(row) for row in rows if row.get("prompt")]
     return RecallSuggestionListResponse(suggestions=suggestions, total=len(suggestions))
 
@@ -97,6 +118,7 @@ def patch_suggestion(
             repo=get_recall_repository(),
             question=payload.question,
             answer=payload.answer,
+            deck_id=payload.deck_id,
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="candidate_not_found")
@@ -124,6 +146,7 @@ def post_accept_candidates(
         repo=repo,
         model=get_chat_model(),
         contexts=contexts,
+        deck_id=payload.deck_id,
     )
     return RecallBulkAcceptResponse(**result)
 
@@ -202,12 +225,187 @@ def post_reject_candidate(
     return RecallDecisionResponse(status=result["status"], candidate_id=candidate_id)
 
 
+# ---------------------------------------------------------------------------
+# Decks
+# ---------------------------------------------------------------------------
+
+def _to_deck(row: dict) -> RecallDeckResponse:
+    return RecallDeckResponse(**row)
+
+
+@router.get("/decks", response_model=RecallDeckListResponse)
+def get_decks(
+    include_archived: bool = Query(default=False),
+    user_id: str = Depends(get_current_user_id),
+):
+    decks = list_decks_with_stats(
+        user_id,
+        repo=get_recall_repository(),
+        include_archived=include_archived,
+    )
+    return RecallDeckListResponse(decks=[_to_deck(deck) for deck in decks], total=len(decks))
+
+
+@router.post("/decks", response_model=RecallDeckResponse, status_code=201)
+def post_deck(
+    payload: RecallDeckCreate,
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        deck = create_deck(
+            user_id,
+            repo=get_recall_repository(),
+            name=payload.name,
+            description=payload.description,
+            color=payload.color,
+        )
+    except ValueError as exc:
+        code = 409 if str(exc) == "deck_name_taken" else 422
+        raise HTTPException(status_code=code, detail=str(exc))
+    return _to_deck({**deck, "total_cards": 0, "due_cards": 0, "new_cards": 0, "suspended_cards": 0})
+
+
+@router.patch("/decks/{deck_id}", response_model=RecallDeckResponse)
+def patch_deck(
+    deck_id: str,
+    payload: RecallDeckUpdate,
+    user_id: str = Depends(get_current_user_id),
+):
+    repo = get_recall_repository()
+    try:
+        deck = update_deck(
+            user_id,
+            deck_id,
+            repo=repo,
+            name=payload.name,
+            description=payload.description,
+            description_provided="description" in payload.model_fields_set,
+            color=payload.color,
+            sort_order=payload.sort_order,
+        )
+    except LookupError:
+        raise HTTPException(status_code=404, detail="deck_not_found")
+    except ValueError as exc:
+        code = 409 if str(exc) == "deck_name_taken" else 422
+        raise HTTPException(status_code=code, detail=str(exc))
+
+    stats = next(
+        (row for row in list_decks_with_stats(user_id, repo=repo) if row["deck_id"] == deck_id),
+        {},
+    )
+    return _to_deck({**deck, **stats})
+
+
+@router.delete("/decks/{deck_id}", response_model=RecallDeckResponse)
+def delete_deck(
+    deck_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    repo = get_recall_repository()
+    try:
+        deck = archive_deck(user_id, deck_id, repo=repo)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="deck_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return _to_deck(deck)
+
+
+@router.post("/decks/{deck_id}/restore", response_model=RecallDeckResponse)
+def post_restore_deck(
+    deck_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    repo = get_recall_repository()
+    try:
+        deck = restore_deck(user_id, deck_id, repo=repo)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="deck_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return _to_deck(deck)
+
+
+@router.post("/candidates/assign-deck", response_model=RecallSuggestionListResponse)
+def post_assign_candidates_deck(
+    payload: RecallBulkDeckAssignRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    repo = get_recall_repository()
+    try:
+        rows = assign_candidates_to_deck(
+            user_id,
+            list(dict.fromkeys(payload.candidate_ids)),
+            payload.deck_id,
+            repo=repo,
+        )
+    except LookupError:
+        raise HTTPException(status_code=404, detail="deck_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    suggestions = [_to_suggestion(row) for row in rows if row.get("prompt")]
+    return RecallSuggestionListResponse(suggestions=suggestions, total=len(suggestions))
+
+
+@router.get("/cards", response_model=RecallCardListResponse)
+def get_cards(
+    deck_id: str | None = Query(default=None),
+    include_not_due: bool = Query(default=False),
+    status: str = Query(default="active"),
+    limit: int = Query(default=200, ge=1, le=500),
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        cards = list_cards(
+            user_id,
+            repo=get_recall_repository(),
+            deck_id=deck_id,
+            include_not_due=include_not_due,
+            status=status,
+            limit=limit,
+        )
+    except LookupError:
+        raise HTTPException(status_code=404, detail="deck_not_found")
+    return RecallCardListResponse(
+        cards=[RecallCardResponse(**card) for card in cards],
+        total=len(cards),
+    )
+
+
+@router.patch("/cards/{card_id}", response_model=RecallCardResponse)
+def patch_card(
+    card_id: str,
+    payload: RecallCardDeckUpdateRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    repo = get_recall_repository()
+    try:
+        get_active_deck(user_id, payload.deck_id, repo=repo)
+        card = move_card_to_deck(user_id, card_id, payload.deck_id, repo=repo)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="card_or_deck_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return RecallCardResponse(**card)
+
+
 @router.get("/due", response_model=DueCardsResponse)
 def get_due_cards(
+    deck_id: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     user_id: str = Depends(get_current_user_id),
 ):
-    cards = due_cards(user_id, repo=get_recall_repository(), limit=limit)
+    try:
+        cards = list_cards(
+            user_id,
+            repo=get_recall_repository(),
+            deck_id=deck_id,
+            include_not_due=False,
+            status="active",
+            limit=limit,
+        )
+    except LookupError:
+        raise HTTPException(status_code=404, detail="deck_not_found")
     return DueCardsResponse(
         cards=[RecallCardResponse(**card) for card in cards],
         total_due=len(cards),

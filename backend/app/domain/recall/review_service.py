@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Any
 
 from .card_generation import RecallConfig, load_recall_config, validate_answer_edit, validate_question
+from .deck_service import ensure_default_deck, get_active_deck
 from .question_service import generate_answer_for_candidate
 from .scheduling import AnkiScheduler, SystemClock, initial_card_state, load_scheduler_config
 
@@ -37,6 +38,7 @@ def accept_candidate(
     context: dict[str, Any] | None = None,
     recall_config: RecallConfig | None = None,
     now: datetime | None = None,
+    deck_id: str | None = None,
 ) -> dict[str, Any]:
     """Copy the question/answer into a scheduled card and mark the candidate accepted.
 
@@ -70,11 +72,22 @@ def accept_candidate(
         if not answer:
             raise ValueError("candidate_has_no_answer")
 
+    if deck_id is not None:
+        get_active_deck(user_id, deck_id, repo=repo)
+    resolved_deck_id = deck_id or candidate.get("deck_id")
+    if resolved_deck_id:
+        deck = repo.get_deck(user_id, resolved_deck_id)
+        if deck is None or deck.get("archived_at"):
+            resolved_deck_id = None
+    if not resolved_deck_id:
+        resolved_deck_id = ensure_default_deck(user_id, repo=repo, now=now)["deck_id"]
+
     state = initial_card_state(now=now)
     card = repo.create_card(
         user_id,
         {
             "candidate_id": candidate_id,
+            "deck_id": resolved_deck_id,
             "question": question,
             "answer": answer,
             "source_note_ids": [candidate["source_note_id"]] if candidate.get("source_note_id") else [],
@@ -86,7 +99,11 @@ def accept_candidate(
     updated = repo.update_candidate(
         user_id,
         candidate_id,
-        {"status": "carded", "decided_at": now.isoformat()},
+        {
+            "status": "carded",
+            "deck_id": resolved_deck_id,
+            "decided_at": now.isoformat(),
+        },
     )
     return {"status": "carded", "card": card, "candidate": updated or candidate}
 
@@ -98,6 +115,7 @@ def update_suggestion(
     repo: Any,
     question: str | None = None,
     answer: str | None = None,
+    deck_id: str | None = None,
     recall_config: RecallConfig | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
@@ -110,7 +128,7 @@ def update_suggestion(
         raise LookupError("candidate_not_found")
     if candidate.get("status") != "suggested":
         raise ValueError("candidate_not_editable")
-    if question is None and answer is None:
+    if question is None and answer is None and deck_id is None:
         raise ValueError("no_fields_to_update")
 
     updates: dict[str, Any] = {}
@@ -126,6 +144,9 @@ def update_suggestion(
         if not ok:
             raise ValueError(f"invalid_answer:{reason}")
         updates["answer"] = normalized_answer
+    if deck_id is not None:
+        get_active_deck(user_id, deck_id, repo=repo)
+        updates["deck_id"] = deck_id
 
     updated = repo.update_candidate(user_id, candidate_id, updates)
     return updated or {**candidate, **updates, "updated_at": now.isoformat()}
@@ -193,6 +214,7 @@ def accept_candidates(
     contexts: dict[str, dict[str, Any]] | None = None,
     recall_config: RecallConfig | None = None,
     now: datetime | None = None,
+    deck_id: str | None = None,
 ) -> dict[str, Any]:
     """Accept multiple suggestions, returning per-candidate outcomes.
 
@@ -214,6 +236,7 @@ def accept_candidates(
                 context=(contexts or {}).get(candidate_id),
                 recall_config=recall_config,
                 now=now,
+                deck_id=deck_id,
             )
         except LookupError:
             failed += 1

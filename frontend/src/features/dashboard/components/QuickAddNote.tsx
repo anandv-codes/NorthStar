@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CheckCircle, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
+import { useNavigate } from "react-router-dom";
+import { Brain, CheckCircle, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
 import { createNote } from "../../../shared/api/httpClient";
 import { Button } from "../../../shared/ui/Button";
 import { MicButton, MicStatus } from "../../../shared/ui/MicButton";
@@ -10,7 +11,9 @@ interface QuickAddNoteProps {
 }
 
 export function QuickAddNote({ onCreated }: QuickAddNoteProps) {
+  const navigate = useNavigate();
   const [text, setText] = useState("");
+  const [recallEnabled, setRecallEnabled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +31,13 @@ export function QuickAddNote({ onCreated }: QuickAddNoteProps) {
     setSubmitting(true);
     setError(null);
     try {
-      await createNote({ text: trimmed });
+      const created = await createNote({ text: trimmed, recall_enabled: recallEnabled });
       setText("");
+      if (recallEnabled) {
+        setRecallEnabled(false);
+        navigate(`/app/recall/verify?note=${encodeURIComponent(created.note_id)}`);
+        return;
+      }
       setSuccess(true);
       onCreated?.();
       setTimeout(() => setSuccess(false), 2500);
@@ -79,7 +87,17 @@ export function QuickAddNote({ onCreated }: QuickAddNoteProps) {
         </p>
       ) : null}
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-neutral-500">
+          <input
+            type="checkbox"
+            checked={recallEnabled}
+            onChange={(event) => setRecallEnabled(event.target.checked)}
+            className="h-3.5 w-3.5 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950/20"
+          />
+          <Brain size={14} />
+          Add to Recall
+        </label>
         <Button
           onClick={handleSubmit}
           disabled={submitting || dictation.listening || !text.trim()}

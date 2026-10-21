@@ -1,83 +1,44 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowClockwise, Minus, NotePencil, Sparkle, Timer, X, Check } from "@phosphor-icons/react";
-import clsx from "clsx";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  RecallCard,
-  RecallGrade,
-  RecallSuggestion,
-  acceptSuggestion,
-  acceptSuggestions,
-  fetchDueCards,
+  ArrowClockwise,
+  ArrowRight,
+  Cards,
+  CheckCircle,
+  ClockCounterClockwise,
+  NotePencil,
+  Plus,
+  Sparkle,
+} from "@phosphor-icons/react";
+import {
+  fetchRecallDecks,
   fetchSuggestions,
-  rejectSuggestion,
-  revealSuggestionAnswer,
-  reviewCard,
-  updateSuggestion,
+  type RecallDeck,
 } from "../../shared/api/httpClient";
-import { addTodayRecallSeconds } from "../../shared/lib/recallTime";
 import { Button } from "../../shared/ui/Button";
-import { SuggestionCard } from "./SuggestionCard";
-
-type Stage = "loading" | "suggestions" | "start" | "reviewing" | "finished" | "empty" | "error";
-
-const GRADE_OPTIONS: Array<{
-  grade: RecallGrade;
-  label: string;
-  icon: typeof X;
-  className: string;
-}> = [
-  { grade: 1, label: "Forgot", icon: X, className: "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100" },
-  { grade: 3, label: "Tricky", icon: Minus, className: "border-orange-200 bg-orange-50 text-orange-800 hover:bg-orange-100" },
-  { grade: 4, label: "Got it", icon: Check, className: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" },
-  { grade: 5, label: "Easy", icon: Sparkle, className: "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100" },
-];
-
-function formatSessionTime(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
+import { DeckCard } from "./components/DeckCard";
+import { DeckFormModal } from "./components/DeckFormModal";
 
 export function RecallPage() {
-  const [stage, setStage] = useState<Stage>("loading");
-  const [suggestions, setSuggestions] = useState<RecallSuggestion[]>([]);
-  const [processingSuggestionId, setProcessingSuggestionId] = useState<string | null>(null);
-  const [processingAction, setProcessingAction] = useState<"accept" | "reject" | "save" | null>(null);
-  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<Set<string>>(new Set());
-  const [bulkAccepting, setBulkAccepting] = useState(false);
-  const [dueCards, setDueCards] = useState<RecallCard[]>([]);
-  const [index, setIndex] = useState(0);
-  const [revealed, setRevealed] = useState(false);
-  const [reviewedCount, setReviewedCount] = useState(0);
-  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const navigate = useNavigate();
+  const [decks, setDecks] = useState<RecallDeck[]>([]);
+  const [suggestionCount, setSuggestionCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [requeueNotice, setRequeueNotice] = useState<string | null>(null);
-  const cardShownAt = useRef<number>(Date.now());
-  const requeuedCardIds = useRef<Set<string>>(new Set());
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingDeck, setEditingDeck] = useState<RecallDeck | null>(null);
 
   const load = useCallback(async () => {
-    setStage("loading");
+    setLoading(true);
     setError(null);
     try {
-      const [suggestionList, due] = await Promise.all([fetchSuggestions(), fetchDueCards()]);
-      setSuggestions(suggestionList.suggestions);
-      setSelectedSuggestionIds(new Set());
-      setDueCards(due.cards);
-      setIndex(0);
-      setReviewedCount(0);
-      setRequeueNotice(null);
-      requeuedCardIds.current = new Set();
-      if (suggestionList.suggestions.length > 0) {
-        setStage("suggestions");
-      } else if (due.cards.length > 0) {
-        setStage("start");
-      } else {
-        setStage("empty");
-      }
+      const [deckList, suggestions] = await Promise.all([fetchRecallDecks(true), fetchSuggestions(1)]);
+      setDecks(deckList.decks);
+      setSuggestionCount(suggestions.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't load your recall deck.");
-      setStage("error");
+      setError(err instanceof Error ? err.message : "Couldn't load your recall decks.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -85,381 +46,200 @@ export function RecallPage() {
     void load();
   }, [load]);
 
-  // Only ticks during the active review phase, and feeds the Dashboard's
-  // "Recall today" card via localStorage (see shared/lib/recallTime.ts).
-  useEffect(() => {
-    if (stage !== "reviewing") {
-      return;
-    }
-    const interval = setInterval(() => {
-      setSessionSeconds((s) => s + 1);
-      addTodayRecallSeconds(1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [stage]);
-
-  useEffect(() => {
-    if (stage === "reviewing") {
-      cardShownAt.current = Date.now();
-    }
-  }, [stage, index]);
-
-  const removeSuggestion = (candidateId: string) => {
-    setSuggestions((current) => current.filter((s) => s.candidate_id !== candidateId));
-    setSelectedSuggestionIds((current) => {
-      const next = new Set(current);
-      next.delete(candidateId);
-      return next;
+  const handleSavedDeck = (deck: RecallDeck) => {
+    setDecks((current) => {
+      const exists = current.some((item) => item.deck_id === deck.deck_id);
+      return exists
+        ? current.map((item) => (item.deck_id === deck.deck_id ? { ...item, ...deck } : item))
+        : [...current, deck];
     });
   };
 
-  const handleAcceptSuggestion = async (suggestion: RecallSuggestion) => {
-    setProcessingSuggestionId(suggestion.candidate_id);
-    setProcessingAction("accept");
-    try {
-      const result = await acceptSuggestion(suggestion.candidate_id);
-      removeSuggestion(suggestion.candidate_id);
-      if (result.card) {
-        setDueCards((current) => [...current, result.card as RecallCard]);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add that to your recall deck.");
-    } finally {
-      setProcessingSuggestionId(null);
-      setProcessingAction(null);
-    }
-  };
-
-  const handleSaveSuggestion = async (
-    suggestion: RecallSuggestion,
-    question: string,
-    answer: string,
-  ) => {
-    setProcessingSuggestionId(suggestion.candidate_id);
-    setProcessingAction("save");
-    try {
-      const updated = await updateSuggestion(suggestion.candidate_id, { question, answer });
-      setSuggestions((current) =>
-        current.map((item) => (item.candidate_id === suggestion.candidate_id ? updated : item)),
-      );
-    } finally {
-      setProcessingSuggestionId(null);
-      setProcessingAction(null);
-    }
-  };
-
-  const handleRevealAnswer = async (suggestion: RecallSuggestion): Promise<string | null> => {
-    const updated = await revealSuggestionAnswer(suggestion.candidate_id);
-    if (!updated) return suggestion.answer ?? null;
-    setSuggestions((current) =>
-      current.map((item) =>
-        item.candidate_id === suggestion.candidate_id ? { ...item, ...updated } : item,
-      ),
-    );
-    return updated.answer ?? null;
-  };
-
-  const handleSelectSuggestion = (candidateId: string, selected: boolean) => {
-    setSelectedSuggestionIds((current) => {
-      const next = new Set(current);
-      if (selected) {
-        next.add(candidateId);
-      } else {
-        next.delete(candidateId);
-      }
-      return next;
-    });
-  };
-
-  const allSuggestionsSelected =
-    suggestions.length > 0 &&
-    suggestions.every((suggestion) => selectedSuggestionIds.has(suggestion.candidate_id));
-
-  const handleSelectAllSuggestions = (selected: boolean) => {
-    setSelectedSuggestionIds(
-      selected ? new Set(suggestions.map((suggestion) => suggestion.candidate_id)) : new Set(),
-    );
-  };
-
-  const handleBulkAccept = async () => {
-    const candidateIds = Array.from(selectedSuggestionIds);
-    if (candidateIds.length === 0) return;
-
-    setBulkAccepting(true);
-    setError(null);
-    try {
-      const result = await acceptSuggestions(candidateIds);
-      const acceptedIds = new Set(
-        result.results
-          .filter((item) => item.status === "carded")
-          .map((item) => item.candidate_id),
-      );
-      const acceptedCards = result.results
-        .map((item) => item.card)
-        .filter((card): card is RecallCard => Boolean(card));
-
-      setSuggestions((current) => current.filter((s) => !acceptedIds.has(s.candidate_id)));
-      setSelectedSuggestionIds((current) => {
-        const next = new Set(current);
-        acceptedIds.forEach((candidateId) => next.delete(candidateId));
-        return next;
-      });
-      if (acceptedCards.length > 0) {
-        setDueCards((current) => [...current, ...acceptedCards]);
-      }
-      if (result.failed > 0) {
-        const firstError = result.results.find((item) => item.error)?.error;
-        setError(
-          `${result.failed} suggestion${result.failed === 1 ? "" : "s"} couldn't be added${
-            firstError ? `: ${firstError}` : "."
-          }`,
-        );
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add the selected suggestions.");
-    } finally {
-      setBulkAccepting(false);
-    }
-  };
-
-  const handleRejectSuggestion = async (suggestion: RecallSuggestion) => {
-    setProcessingSuggestionId(suggestion.candidate_id);
-    setProcessingAction("reject");
-    try {
-      await rejectSuggestion(suggestion.candidate_id);
-      removeSuggestion(suggestion.candidate_id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't skip that suggestion.");
-    } finally {
-      setProcessingSuggestionId(null);
-      setProcessingAction(null);
-    }
-  };
-
-  // Once every suggestion has been triaged, move on to reviewing due cards (if any).
-  useEffect(() => {
-    if (stage === "suggestions" && suggestions.length === 0) {
-      setStage(dueCards.length > 0 ? "start" : "empty");
-    }
-  }, [stage, suggestions.length, dueCards.length]);
-
-  const handleStart = () => {
-    setSessionSeconds(0);
-    setStage("reviewing");
-  };
-
-  const current = dueCards[index];
-
-  const handleGrade = async (grade: RecallGrade) => {
-    if (!current) {
-      return;
-    }
-    const elapsedMs = Date.now() - cardShownAt.current;
-    try {
-      await reviewCard(current.card_id, grade, elapsedMs);
-    } catch (err) {
-      // Keep the card on screen so the review isn't silently dropped; the user
-      // can retry against the same card.
-      setError(err instanceof Error ? err.message : "Couldn't save that review.");
-      return;
-    }
-    setError(null);
-    setRevealed(false);
-
-    // Anki-style learning step: a forgotten card comes back once more in this
-    // session, a few cards later, instead of disappearing until tomorrow.
-    const willRequeue = grade === 1 && !requeuedCardIds.current.has(current.card_id);
-    if (willRequeue) {
-      requeuedCardIds.current.add(current.card_id);
-      setDueCards((cards) => {
-        const next = [...cards];
-        const insertAt = Math.min(index + 3, next.length);
-        next.splice(insertAt, 0, current);
-        return next;
-      });
-    }
-    setRequeueNotice(
-      willRequeue ? "Marked as forgotten — this card will come back later this session." : null,
-    );
-
-    setReviewedCount((c) => c + 1);
-    const nextIndex = index + 1;
-    setIndex(nextIndex);
-    if (!willRequeue && nextIndex >= dueCards.length) {
-      setStage("finished");
-    }
-  };
-
-  const progress = dueCards.length === 0 ? 100 : Math.round((index / dueCards.length) * 100);
+  const activeDecks = decks.filter((deck) => !deck.archived_at);
+  const archivedDecks = decks.filter((deck) => Boolean(deck.archived_at));
+  const totalDue = activeDecks.reduce((sum, deck) => sum + deck.due_cards, 0);
+  const totalCards = activeDecks.reduce((sum, deck) => sum + deck.total_cards, 0);
+  const hasCards = totalCards > 0;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-4xl">
       <header className="mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-neutral-950">Recall</h1>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
-            <Timer size={14} weight="bold" />
-            {formatSessionTime(sessionSeconds)}
-          </span>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-neutral-950">Recall</h1>
+            <p className="mt-1 max-w-xl text-sm text-neutral-500">
+              Review by category, or let NorthStar decide what is due today.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {suggestionCount > 0 ? (
+              <Button variant="outline" onClick={() => navigate("/app/recall/verify")}>
+                <CheckCircle size={16} weight="bold" />
+                Verify {suggestionCount} new
+              </Button>
+            ) : null}
+            <Button onClick={() => navigate(totalDue > 0 ? "/app/recall/study/all?mode=due" : "/app/recall/study/all?mode=all")}>
+              <ClockCounterClockwise size={16} weight="bold" />
+              {totalDue > 0 ? `Review ${totalDue} due` : "Review all cards"}
+            </Button>
+          </div>
         </div>
-        <p className="mt-1 text-sm text-neutral-500">
-          Spaced-repetition review of the ideas worth remembering, Anki-style.
-        </p>
       </header>
 
       {error ? (
-        <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
       ) : null}
 
-      {stage === "loading" ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-neutral-200 bg-white shadow-card">
+      <div className="mb-6 grid grid-cols-3 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-card">
+        {[
+          { label: "Due today", value: totalDue, icon: ClockCounterClockwise },
+          { label: "Cards", value: totalCards, icon: Cards },
+          { label: "New questions", value: suggestionCount, icon: Sparkle },
+        ].map(({ label, value, icon: Icon }, index) => (
+          <div
+            key={label}
+            className={`flex items-center gap-3 px-4 py-4 sm:px-5 ${index > 0 ? "border-l border-neutral-100" : ""}`}
+          >
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
+              <Icon size={16} weight="bold" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-lg font-semibold leading-none text-neutral-950">{loading ? "—" : value}</p>
+              <p className="mt-1 truncate text-[11px] font-medium text-neutral-500">{label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-neutral-200 bg-white shadow-card">
           <span className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-950" />
         </div>
-      ) : stage === "error" ? (
-        <div className="flex flex-col items-center rounded-2xl border border-neutral-200 bg-white py-16 text-center shadow-card">
-          <Button variant="outline" onClick={() => void load()}>
-            <ArrowClockwise size={16} />
-            Try again
-          </Button>
-        </div>
-      ) : stage === "suggestions" ? (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-400">
-              New from your notes — {suggestions.length} to review
-            </p>
-            <div className="flex items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-neutral-600">
-                <input
-                  type="checkbox"
-                  checked={allSuggestionsSelected}
-                  onChange={(event) => handleSelectAllSuggestions(event.target.checked)}
-                  className="h-4 w-4 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950"
-                />
-                Select all
-              </label>
-              <Button
-                size="sm"
-                disabled={selectedSuggestionIds.size === 0 || bulkAccepting}
-                onClick={() => void handleBulkAccept()}
-              >
-                {bulkAccepting ? "Adding…" : `Add selected (${selectedSuggestionIds.size})`}
-              </Button>
-            </div>
-          </div>
-          {suggestions.map((suggestion) => (
-            <SuggestionCard
-              key={suggestion.candidate_id}
-              suggestion={suggestion}
-              selected={selectedSuggestionIds.has(suggestion.candidate_id)}
-              processing={processingSuggestionId === suggestion.candidate_id ? processingAction : null}
-              onSelect={(selected) => handleSelectSuggestion(suggestion.candidate_id, selected)}
-              onAccept={() => void handleAcceptSuggestion(suggestion)}
-              onReject={() => void handleRejectSuggestion(suggestion)}
-              onSave={(question, answer) => handleSaveSuggestion(suggestion, question, answer)}
-              onRevealAnswer={() => handleRevealAnswer(suggestion)}
-            />
-          ))}
-        </div>
-      ) : stage === "empty" ? (
-        <div className="flex flex-col items-center rounded-2xl border border-neutral-200 bg-white py-16 text-center shadow-card">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-500">
-            <Sparkle size={20} weight="bold" />
-          </span>
-          <p className="mt-5 font-display text-xl font-semibold text-neutral-950">Nothing due right now</p>
-          <p className="mt-2 max-w-xs text-sm text-neutral-500">
-            Turn on recall for a note to generate review cards, then check back here.
-          </p>
-          <Button className="mt-6" onClick={() => void load()} variant="outline">
-            <ArrowClockwise size={16} />
-            Check again
-          </Button>
-          <Link to="/app/notes" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent-600 hover:text-accent-700">
-            <NotePencil size={16} />
-            Go write a note
-          </Link>
-        </div>
-      ) : stage === "start" ? (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-card">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-950 text-white">
-            <Timer size={20} weight="bold" />
-          </span>
-          <p className="mt-5 font-display text-xl font-semibold text-neutral-950">Ready to review?</p>
-          <p className="mt-2 max-w-xs text-sm text-neutral-500">
-            {dueCards.length} card{dueCards.length === 1 ? "" : "s"} due. The timer starts as soon as you begin.
-          </p>
-          <Button className="mt-6" onClick={handleStart}>
-            Start session
-          </Button>
-        </div>
-      ) : stage === "reviewing" && current ? (
-        <>
-          <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-            <div
-              className="h-full rounded-full bg-neutral-950 transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <div className="flex min-h-[320px] flex-col rounded-2xl border border-neutral-200 bg-white p-8 shadow-card">
-            <div className="flex flex-1 flex-col items-center justify-center text-center">
-              <p className="font-display text-xl font-semibold leading-snug text-neutral-950 sm:text-2xl">
-                {current.question}
-              </p>
-              {revealed ? (
-                <p className="mt-6 max-w-md text-sm leading-relaxed text-neutral-600">{current.answer}</p>
-              ) : null}
-            </div>
-
-            {!revealed ? (
-              <Button className="mx-auto mt-6" onClick={() => setRevealed(true)}>
-                Show answer
-              </Button>
-            ) : (
-              <div className="mx-auto mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                {GRADE_OPTIONS.map(({ grade, label, icon: Icon, className }) => (
-                  <button
-                    key={grade}
-                    type="button"
-                    onClick={() => void handleGrade(grade)}
-                    className={clsx(
-                      "inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-sm font-medium transition-colors",
-                      className,
-                    )}
-                  >
-                    <Icon size={15} weight="bold" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <p className="mt-4 text-center text-xs text-neutral-400">
-            Card {index + 1} of {dueCards.length}
-          </p>
-          {requeueNotice ? (
-            <p role="status" className="mt-1.5 text-center text-xs font-medium text-amber-700">
-              {requeueNotice}
-            </p>
-          ) : null}
-        </>
       ) : (
-        <div className="flex flex-col items-center rounded-2xl border border-neutral-200 bg-white py-16 text-center shadow-card">
-          <p className="font-display text-xl font-semibold text-neutral-950">You're all caught up</p>
-          <p className="mt-2 max-w-xs text-sm text-neutral-500">
-            You logged {reviewedCount} review{reviewedCount === 1 ? "" : "s"}. New cards will show up here as
-            they become due.
-          </p>          <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-600">
-            <Timer size={14} weight="bold" />
-            Session time: {formatSessionTime(sessionSeconds)}
-          </span>
-          <Button variant="outline" className="mt-6" onClick={() => void load()}>
-            <ArrowClockwise size={16} />
-            Check for more
-          </Button>
-        </div>
+        <>
+          <section aria-labelledby="decks-heading">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 id="decks-heading" className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-400">
+                Your decks
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDeck(null);
+                  setFormOpen(true);
+                }}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
+              >
+                <Plus size={14} weight="bold" />
+                New deck
+              </button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {activeDecks.map((deck) => (
+                <DeckCard
+                  key={deck.deck_id}
+                  deck={deck}
+                  onEdit={(item) => {
+                    setEditingDeck(item);
+                    setFormOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+
+            {archivedDecks.length > 0 ? (
+              <div className="mt-6">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-neutral-400">
+                  Archived
+                </h3>
+                <ul className="space-y-2">
+                  {archivedDecks.map((deck) => (
+                    <li
+                      key={deck.deck_id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-neutral-700">{deck.name}</p>
+                        <p className="text-xs text-neutral-400">
+                          {deck.total_cards} active · {deck.suspended_cards} suspended
+                        </p>
+                      </div>
+                      <Link
+                        to={`/app/recall/decks/${deck.deck_id}`}
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 hover:bg-neutral-100"
+                      >
+                        Manage
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+
+          {!hasCards ? (
+            <div className="mt-6 flex flex-col items-center rounded-2xl border border-neutral-200 bg-white py-12 text-center shadow-card">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-500">
+                <Sparkle size={20} weight="bold" />
+              </span>
+              <p className="mt-5 font-display text-lg font-semibold text-neutral-950">No cards yet</p>
+              <p className="mt-1.5 max-w-sm text-sm text-neutral-500">
+                Add a note with recall turned on, verify its questions, and file them into a deck.
+              </p>
+              <Link
+                to="/app/notes"
+                className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-600 hover:text-accent-700"
+              >
+                <NotePencil size={16} />
+                Write a note
+              </Link>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white px-5 py-4 shadow-card">
+            <div>
+              <p className="text-sm font-semibold text-neutral-950">Review everything</p>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                Includes cards that are not due yet. Grades still update scheduling.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/app/recall/study/all?mode=due"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-neutral-200 px-3 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-100"
+              >
+                Due only
+                <ArrowRight size={13} weight="bold" />
+              </Link>
+              <Link
+                to="/app/recall/study/all?mode=all"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-neutral-950 px-3 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+              >
+                All cards
+                <ArrowRight size={13} weight="bold" />
+              </Link>
+            </div>
+          </div>
+        </>
       )}
+
+      <DeckFormModal
+        open={formOpen}
+        deck={editingDeck}
+        onClose={() => setFormOpen(false)}
+        onSaved={handleSavedDeck}
+      />
+
+      <button
+        type="button"
+        onClick={() => void load()}
+        className="mt-6 inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-950"
+      >
+        <ArrowClockwise size={14} />
+        Refresh
+      </button>
     </div>
   );
 }

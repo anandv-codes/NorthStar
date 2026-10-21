@@ -20,6 +20,7 @@ class InMemoryRecallRepository:
     def __init__(self) -> None:
         self.candidates: dict[str, dict[str, Any]] = {}
         self.cards: dict[str, dict[str, Any]] = {}
+        self.decks: dict[str, dict[str, Any]] = {}
         self.reviews: list[dict[str, Any]] = []
         self.commitments: dict[str, dict[str, Any]] = {}
 
@@ -82,6 +83,83 @@ class InMemoryRecallRepository:
         row.update({**updates, "updated_at": _now()})
         return row
 
+    def assign_candidates_to_deck(
+        self, user_id: str, candidate_ids: list[str], deck_id: str | None
+    ) -> list[dict[str, Any]]:
+        updated = []
+        for candidate_id in candidate_ids:
+            row = self.get_candidate(user_id, candidate_id)
+            if row is not None:
+                row.update({"deck_id": deck_id, "updated_at": _now()})
+                updated.append(row)
+        return updated
+
+    # -- Decks -------------------------------------------------------------
+
+    def create_deck(self, user_id: str, deck: dict[str, Any]) -> dict[str, Any]:
+        deck_id = deck.get("deck_id") or str(uuid.uuid4())
+        row = {
+            "description": None,
+            "color": "neutral",
+            "is_default": False,
+            "sort_order": 0,
+            "archived_at": None,
+            **deck,
+            "deck_id": deck_id,
+            "user_id": user_id,
+            "created_at": deck.get("created_at") or _now(),
+            "updated_at": _now(),
+        }
+        self.decks[deck_id] = row
+        return row
+
+    def get_deck(self, user_id: str, deck_id: str) -> dict[str, Any] | None:
+        row = self.decks.get(deck_id)
+        return row if row and row["user_id"] == user_id else None
+
+    def find_deck_by_name(self, user_id: str, name: str) -> dict[str, Any] | None:
+        for row in self.decks.values():
+            if (
+                row["user_id"] == user_id
+                and row.get("archived_at") is None
+                and row["name"].lower() == name.lower()
+            ):
+                return row
+        return None
+
+    def query_decks(
+        self, user_id: str, include_archived: bool = False
+    ) -> list[dict[str, Any]]:
+        rows = [
+            row
+            for row in self.decks.values()
+            if row["user_id"] == user_id
+            and (include_archived or row.get("archived_at") is None)
+        ]
+        rows.sort(key=lambda row: (row.get("sort_order") or 0, row.get("created_at") or ""))
+        return rows
+
+    def update_deck(
+        self, user_id: str, deck_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]:
+        row = self.get_deck(user_id, deck_id)
+        if row is None:
+            return {}
+        row.update({**updates, "updated_at": _now()})
+        return row
+
+    def query_card_stats(self, user_id: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "deck_id": row.get("deck_id"),
+                "state": row.get("state"),
+                "status": row.get("status"),
+                "next_due": row.get("next_due"),
+            }
+            for row in self.cards.values()
+            if row["user_id"] == user_id
+        ]
+
     # -- Cards -------------------------------------------------------------
 
     def create_card(self, user_id: str, card: dict[str, Any]) -> dict[str, Any]:
@@ -107,11 +185,14 @@ class InMemoryRecallRepository:
         status: str | None = None,
         due_before: str | None = None,
         limit: int = 100,
+        deck_id: str | None = None,
     ) -> list[dict[str, Any]]:
         rows = [
             row
             for row in self.cards.values()
-            if row["user_id"] == user_id and (status is None or row.get("status") == status)
+            if row["user_id"] == user_id
+            and (status is None or row.get("status") == status)
+            and (deck_id is None or row.get("deck_id") == deck_id)
         ]
         if due_before is not None:
             rows = [row for row in rows if (row.get("next_due") or "") <= due_before]

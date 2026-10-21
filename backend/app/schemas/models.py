@@ -426,8 +426,53 @@ RecallCandidateStatus = Literal[
 ]
 RecallCardStatus = Literal["active", "suspended"]
 RecallCardState = Literal["new", "learning", "review", "relearning"]
+RecallDeckColor = Literal["neutral", "amber", "emerald", "sky", "violet", "rose"]
 CommitmentStatus = Literal["pending", "confirmed", "dismissed", "scheduled"]
 ReviewGrade = Literal[1, 3, 4, 5]
+
+
+class RecallDeckCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=60)
+    description: Optional[str] = Field(default=None, max_length=240)
+    color: RecallDeckColor = "neutral"
+
+
+class RecallDeckUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=60)
+    description: Optional[str] = Field(default=None, max_length=240)
+    color: Optional[RecallDeckColor] = None
+    sort_order: Optional[int] = Field(default=None, ge=0)
+
+
+class RecallDeckResponse(BaseModel):
+    deck_id: str
+    user_id: str
+    name: str
+    description: Optional[str] = None
+    color: RecallDeckColor = "neutral"
+    is_default: bool = False
+    sort_order: int = 0
+    archived_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+    total_cards: int = 0
+    due_cards: int = 0
+    new_cards: int = 0
+    suspended_cards: int = 0
+
+
+class RecallDeckListResponse(BaseModel):
+    decks: List[RecallDeckResponse] = Field(default_factory=list)
+    total: int = 0
+
+
+class RecallBulkDeckAssignRequest(BaseModel):
+    candidate_ids: List[str] = Field(..., min_length=1, max_length=200)
+    deck_id: str = Field(..., min_length=1)
+
+
+class RecallCardDeckUpdateRequest(BaseModel):
+    deck_id: str = Field(..., min_length=1)
 
 
 class NoteEntityLink(BaseModel):
@@ -467,6 +512,7 @@ class RecallCandidateResponse(RecallCandidateCreate):
 class RecallCardCreate(BaseModel):
     user_id: str
     candidate_id: Optional[str] = None
+    deck_id: Optional[str] = None
     question: str = Field(..., min_length=1)
     answer: str = Field(..., min_length=1)
     source_note_ids: List[str] = Field(default_factory=list)
@@ -535,6 +581,11 @@ class DueCardsResponse(BaseModel):
     total_due: int = 0
 
 
+class RecallCardListResponse(BaseModel):
+    cards: List[RecallCardResponse] = Field(default_factory=list)
+    total: int = 0
+
+
 class RecallSuggestionResponse(BaseModel):
     """A candidate shown to the user with its generated question/answer pair."""
 
@@ -543,6 +594,7 @@ class RecallSuggestionResponse(BaseModel):
     answer: Optional[str] = None
     item_type: str
     source_note_id: Optional[str] = None
+    deck_id: Optional[str] = None
     score: Optional[float] = None
     importance: Optional[float] = None
     durability: Optional[float] = None
@@ -557,10 +609,12 @@ class RecallSuggestionListResponse(BaseModel):
 class RecallSuggestionUpdateRequest(BaseModel):
     question: Optional[str] = None
     answer: Optional[str] = None
+    deck_id: Optional[str] = None
 
 
 class RecallBulkAcceptRequest(BaseModel):
     candidate_ids: List[str] = Field(..., min_length=1, max_length=100)
+    deck_id: Optional[str] = None
 
 
 class RecallBulkAcceptItem(BaseModel):

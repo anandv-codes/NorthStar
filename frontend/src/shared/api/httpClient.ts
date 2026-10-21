@@ -202,12 +202,43 @@ export interface PeriodSummaryStatus {
 
 export type RecallGrade = 1 | 3 | 4 | 5;
 
+export type RecallDeckColor = "neutral" | "amber" | "emerald" | "sky" | "violet" | "rose";
+
+export interface RecallDeck {
+  deck_id: string;
+  user_id: string;
+  name: string;
+  description?: string | null;
+  color: RecallDeckColor;
+  is_default: boolean;
+  sort_order: number;
+  archived_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  total_cards: number;
+  due_cards: number;
+  new_cards: number;
+  suspended_cards: number;
+}
+
+export interface RecallDeckList {
+  decks: RecallDeck[];
+  total: number;
+}
+
+export interface RecallDeckPayload {
+  name: string;
+  description?: string | null;
+  color?: RecallDeckColor;
+}
+
 export interface RecallSuggestion {
   candidate_id: string;
   question: string;
   answer?: string | null;
   item_type: string;
   source_note_id?: string | null;
+  deck_id?: string | null;
   score?: number | null;
   importance?: number | null;
   durability?: number | null;
@@ -222,6 +253,7 @@ export interface RecallSuggestionList {
 export interface RecallSuggestionUpdate {
   question?: string;
   answer?: string;
+  deck_id?: string | null;
 }
 
 export interface RecallBulkAcceptItem {
@@ -241,6 +273,7 @@ export interface RecallCard {
   card_id: string;
   user_id: string;
   candidate_id?: string | null;
+  deck_id?: string | null;
   question: string;
   answer: string;
   source_note_ids: string[];
@@ -262,6 +295,11 @@ export interface RecallCard {
 export interface DueCardsResponse {
   cards: RecallCard[];
   total_due: number;
+}
+
+export interface RecallCardList {
+  cards: RecallCard[];
+  total: number;
 }
 
 export interface RecallDecisionResponse {
@@ -774,20 +812,111 @@ export async function patchConceptStatus(
   });
 }
 
-export async function fetchDueCards(limit = 50) {
+export async function fetchDueCards(limit = 50, deckId?: string | null) {
   if (MOCK_MODE) {
-    return (await loadMockApi()).fetchDueCards(limit) as Promise<DueCardsResponse>;
+    return (await loadMockApi()).fetchDueCards(limit, deckId) as Promise<DueCardsResponse>;
   }
-  return requestJson<DueCardsResponse>(`${BASE_URL}/recall/due?limit=${limit}`);
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (deckId) params.set("deck_id", deckId);
+  return requestJson<DueCardsResponse>(`${BASE_URL}/recall/due?${params}`);
 }
 
-export async function fetchSuggestions(limit = 50) {
+export async function fetchSuggestions(limit = 50, sourceNoteId?: string | null) {
   if (MOCK_MODE) {
-    return (await loadMockApi()).fetchSuggestions(limit) as Promise<RecallSuggestionList>;
+    return (await loadMockApi()).fetchSuggestions(limit, sourceNoteId) as Promise<RecallSuggestionList>;
   }
-  return requestJson<RecallSuggestionList>(
-    `${BASE_URL}/recall/candidates?status=suggested&limit=${limit}`,
+  const params = new URLSearchParams({ status: "suggested", limit: String(limit) });
+  if (sourceNoteId) params.set("source_note_id", sourceNoteId);
+  return requestJson<RecallSuggestionList>(`${BASE_URL}/recall/candidates?${params}`);
+}
+
+export async function fetchRecallDecks(includeArchived = false) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchRecallDecks(includeArchived) as Promise<RecallDeckList>;
+  }
+  const params = new URLSearchParams();
+  if (includeArchived) params.set("include_archived", "true");
+  const query = params.toString();
+  return requestJson<RecallDeckList>(`${BASE_URL}/recall/decks${query ? `?${query}` : ""}`);
+}
+
+export async function createRecallDeck(payload: RecallDeckPayload) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).createRecallDeck(payload) as Promise<RecallDeck>;
+  }
+  return requestJson<RecallDeck>(`${BASE_URL}/recall/decks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateRecallDeck(deckId: string, payload: Partial<RecallDeckPayload>) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).updateRecallDeck(deckId, payload) as Promise<RecallDeck>;
+  }
+  return requestJson<RecallDeck>(`${BASE_URL}/recall/decks/${encodeURIComponent(deckId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function archiveRecallDeck(deckId: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).archiveRecallDeck(deckId) as Promise<RecallDeck>;
+  }
+  return requestJson<RecallDeck>(`${BASE_URL}/recall/decks/${encodeURIComponent(deckId)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function restoreRecallDeck(deckId: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).restoreRecallDeck(deckId) as Promise<RecallDeck>;
+  }
+  return requestJson<RecallDeck>(
+    `${BASE_URL}/recall/decks/${encodeURIComponent(deckId)}/restore`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) },
   );
+}
+
+export async function fetchRecallCards(options: {
+  deckId?: string | null;
+  includeNotDue?: boolean;
+  status?: string;
+  limit?: number;
+} = {}) {
+  const { deckId, includeNotDue = false, status = "active", limit = 200 } = options;
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchRecallCards(options) as Promise<RecallCardList>;
+  }
+  const params = new URLSearchParams({ status, limit: String(limit) });
+  if (deckId) params.set("deck_id", deckId);
+  if (includeNotDue) params.set("include_not_due", "true");
+  return requestJson<RecallCardList>(`${BASE_URL}/recall/cards?${params}`);
+}
+
+export async function moveRecallCard(cardId: string, deckId: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).moveRecallCard(cardId, deckId) as Promise<RecallCard>;
+  }
+  return requestJson<RecallCard>(`${BASE_URL}/recall/cards/${encodeURIComponent(cardId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deck_id: deckId }),
+  });
+}
+
+export async function assignCandidateDecks(candidateIds: string[], deckId: string) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).assignCandidateDecks(candidateIds, deckId) as Promise<RecallSuggestionList>;
+  }
+  return requestJson<RecallSuggestionList>(`${BASE_URL}/recall/candidates/assign-deck`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ candidate_ids: candidateIds, deck_id: deckId }),
+  });
 }
 
 export async function updateSuggestion(candidateId: string, payload: RecallSuggestionUpdate) {
@@ -804,14 +933,14 @@ export async function updateSuggestion(candidateId: string, payload: RecallSugge
   );
 }
 
-export async function acceptSuggestions(candidateIds: string[]) {
+export async function acceptSuggestions(candidateIds: string[], deckId?: string | null) {
   if (MOCK_MODE) {
-    return (await loadMockApi()).acceptSuggestions(candidateIds) as Promise<RecallBulkAcceptResponse>;
+    return (await loadMockApi()).acceptSuggestions(candidateIds, deckId) as Promise<RecallBulkAcceptResponse>;
   }
   return requestJson<RecallBulkAcceptResponse>(`${BASE_URL}/recall/candidates/accept-batch`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ candidate_ids: candidateIds }),
+    body: JSON.stringify({ candidate_ids: candidateIds, deck_id: deckId ?? null }),
   });
 }
 

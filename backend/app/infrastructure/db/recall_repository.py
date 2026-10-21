@@ -17,6 +17,7 @@ from .memory_repository import _execute_insert, _execute_upsert, _new_id, _utc_n
 
 RECALL_CANDIDATES_TABLE = os.getenv("SUPABASE_RECALL_CANDIDATES_TABLE", "recall_candidates")
 RECALL_CARDS_TABLE = os.getenv("SUPABASE_RECALL_CARDS_TABLE", "recall_cards")
+RECALL_DECKS_TABLE = os.getenv("SUPABASE_RECALL_DECKS_TABLE", "recall_decks")
 REVIEW_HISTORY_TABLE = os.getenv("SUPABASE_REVIEW_HISTORY_TABLE", "review_history")
 COMMITMENTS_TABLE = os.getenv("SUPABASE_COMMITMENTS_TABLE", "commitments")
 
@@ -106,6 +107,84 @@ class SupabaseRecallRepository:
         )
         return rows[0] if rows else {}
 
+    def assign_candidates_to_deck(
+        self, user_id: str, candidate_ids: list[str], deck_id: str | None
+    ) -> list[dict[str, Any]]:
+        if not candidate_ids:
+            return []
+        payload = {"deck_id": deck_id, "updated_at": _utc_now()}
+        return _run(
+            supabase.table(RECALL_CANDIDATES_TABLE)
+            .update(payload)
+            .eq("user_id", user_id)
+            .in_("candidate_id", candidate_ids)
+        )
+
+    # -- Decks -------------------------------------------------------------
+
+    def create_deck(self, user_id: str, deck: dict[str, Any]) -> dict[str, Any]:
+        now = _utc_now()
+        row = {
+            "description": None,
+            "color": "neutral",
+            "is_default": False,
+            "sort_order": 0,
+            **deck,
+            "deck_id": deck.get("deck_id") or _new_id(),
+            "user_id": user_id,
+            "created_at": deck.get("created_at") or now,
+            "updated_at": now,
+        }
+        inserted = _execute_insert(RECALL_DECKS_TABLE, row)
+        return inserted[0] if isinstance(inserted, list) and inserted else row
+
+    def get_deck(self, user_id: str, deck_id: str) -> dict[str, Any] | None:
+        return _first(
+            supabase.table(RECALL_DECKS_TABLE)
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("deck_id", deck_id)
+            .limit(1)
+        )
+
+    def find_deck_by_name(self, user_id: str, name: str) -> dict[str, Any] | None:
+        return _first(
+            supabase.table(RECALL_DECKS_TABLE)
+            .select("*")
+            .eq("user_id", user_id)
+            .ilike("name", name)
+            .is_("archived_at", None)
+            .limit(1)
+        )
+
+    def query_decks(
+        self, user_id: str, include_archived: bool = False
+    ) -> list[dict[str, Any]]:
+        query = supabase.table(RECALL_DECKS_TABLE).select("*").eq("user_id", user_id)
+        if not include_archived:
+            query = query.is_("archived_at", None)
+        return _run(query.order("sort_order", desc=False).order("created_at", desc=False))
+
+    def update_deck(
+        self, user_id: str, deck_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]:
+        payload = {**updates, "updated_at": _utc_now()}
+        rows = _run(
+            supabase.table(RECALL_DECKS_TABLE)
+            .update(payload)
+            .eq("user_id", user_id)
+            .eq("deck_id", deck_id)
+        )
+        return rows[0] if rows else {}
+
+    def query_card_stats(self, user_id: str) -> list[dict[str, Any]]:
+        """Minimal card fields for deck counts, aggregated by the domain."""
+        return _run(
+            supabase.table(RECALL_CARDS_TABLE)
+            .select("deck_id,state,status,next_due")
+            .eq("user_id", user_id)
+        )
+
     # -- Cards -------------------------------------------------------------
 
     def create_card(self, user_id: str, card: dict[str, Any]) -> dict[str, Any]:
@@ -135,12 +214,15 @@ class SupabaseRecallRepository:
         status: str | None = None,
         due_before: str | None = None,
         limit: int = 100,
+        deck_id: str | None = None,
     ) -> list[dict[str, Any]]:
         query = supabase.table(RECALL_CARDS_TABLE).select("*").eq("user_id", user_id)
         if status:
             query = query.eq("status", status)
         if due_before:
             query = query.lte("next_due", due_before)
+        if deck_id:
+            query = query.eq("deck_id", deck_id)
         return _run(query.order("next_due", desc=False).limit(max(1, limit)))
 
     def update_card(self, user_id: str, card_id: str, updates: dict[str, Any]) -> dict[str, Any]:

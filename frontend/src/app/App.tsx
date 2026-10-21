@@ -8,6 +8,9 @@ import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { NoteTakerPage } from "../features/notes/NoteTakerPage";
 import { ChatPage } from "../features/chat/ChatPage";
 import { RecallPage } from "../features/recall/RecallPage";
+import { RecallVerifyPage } from "../features/recall/RecallVerifyPage";
+import { DeckDetailPage } from "../features/recall/DeckDetailPage";
+import { StudyPage } from "../features/recall/StudyPage";
 
 export default function App() {
   return (
@@ -23,6 +26,9 @@ export default function App() {
           <Route path="notes" element={<NoteTakerPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="recall" element={<RecallPage />} />
+          <Route path="recall/verify" element={<RecallVerifyPage />} />
+          <Route path="recall/decks/:deckId" element={<DeckDetailPage />} />
+          <Route path="recall/study/:deckId" element={<StudyPage />} />
         </Route>
       </Route>
 

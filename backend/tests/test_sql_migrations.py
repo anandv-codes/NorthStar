@@ -59,6 +59,15 @@ def test_recall_migration_adds_note_toggle_and_candidate_text():
     assert "add column if not exists text text" in text
 
 
+def test_decks_migration_adds_deck_table_and_references():
+    text = (SQL_DIR / "phase4_recall_decks.sql").read_text(encoding="utf-8").lower()
+    assert "create table if not exists recall_decks" in text
+    assert "add column if not exists deck_id" in text
+    assert "is_default" in text
+    assert "update recall_cards" in text
+    assert "update recall_candidates" in text
+
+
 def test_scheduler_migration_adds_state_and_learning_step():
     text = (SQL_DIR / "phase4_recall_scheduler.sql").read_text(encoding="utf-8").lower()
     assert "add column if not exists state" in text

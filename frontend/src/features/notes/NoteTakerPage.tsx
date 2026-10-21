@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Brain, CheckCircle, PaperPlaneTilt, Spinner } from "@phosphor-icons/react";
 import { createNote, getNoteStatus, setNoteRecall, type NoteStatus } from "../../shared/api/httpClient";
 import { Button } from "../../shared/ui/Button";
@@ -19,6 +20,7 @@ const RECALL_STATUS_LABELS: Record<string, string> = {
 };
 
 export function NoteTakerPage() {
+  const navigate = useNavigate();
   const [text, setText] = useState("");
   const [recallEnabled, setRecallEnabled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -71,6 +73,11 @@ export function NoteTakerPage() {
     try {
       const created = await createNote({ text: trimmed, recall_enabled: recallEnabled });
       setText("");
+      if (recallEnabled) {
+        setRecallEnabled(false);
+        navigate(`/app/recall/verify?note=${encodeURIComponent(created.note_id)}`);
+        return;
+      }
       const status = await getNoteStatus(created.note_id);
       setNote(status);
       pollNote(created.note_id, Date.now());
@@ -220,6 +227,15 @@ export function NoteTakerPage() {
             <p role="alert" className="mt-2 text-xs text-red-600">
               {recallError}
             </p>
+          ) : null}
+          {note.recall_enabled && note.recall_status === "ready" ? (
+            <Link
+              to={`/app/recall/verify?note=${encodeURIComponent(note.note_id)}`}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent-600 hover:text-accent-700"
+            >
+              Verify the questions from this note
+              <PaperPlaneTilt size={13} weight="bold" />
+            </Link>
           ) : null}
         </div>
       ) : null}
