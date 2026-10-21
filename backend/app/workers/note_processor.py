@@ -96,7 +96,7 @@ def process_sqs_message(body:dict)-> dict:
         extraction_run = create_extraction_run(
             user_id=user_id,
             note_id=note_id,
-            model_name=os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash"),
+            model_name=os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite"),
             prompt_version=os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1"),
             status="completed",
         )

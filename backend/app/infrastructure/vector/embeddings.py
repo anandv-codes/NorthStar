@@ -73,10 +73,11 @@ def get_embeddings() -> Any:
     if provider == "openai":
         try:
             # Lazy import to avoid forcing extra deps for users who don't use OpenAI
-            from langchain.embeddings import OpenAIEmbeddings
+            from langchain_openai import OpenAIEmbeddings
         except Exception as exc:  # pragma: no cover - import guard
             raise RuntimeError(
-                "Install 'langchain' (and openai) to use OpenAI embeddings: pip install langchain openai"
+                "Install 'langchain-openai' (and openai) to use OpenAI embeddings: "
+                "pip install langchain-openai openai"
             ) from exc
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:

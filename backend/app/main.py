@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from .api.routes.auth import router as auth_router
 from .api.routes.chat import router as chat_router
 from .api.routes.notes import router as notes_router
@@ -29,7 +30,10 @@ def _cors_origins() -> list[str]:
     explicitly opt back into a wildcard (credentials are then disabled, as the
     CORS spec forbids combining ``*`` with credentials).
     """
-    raw = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    raw = os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173",
+    )
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
@@ -40,6 +44,26 @@ app = FastAPI(title="NorthStar Backend")
 def health() -> dict[str, str]:
     """Liveness probe for Nginx/ALB health checks and uptime monitoring."""
     return {"status": "ok"}
+
+
+logger = logging.getLogger(__name__)
+
+
+@app.middleware("http")
+async def unhandled_exception_guard(request, call_next):
+    """Turn unhandled errors into a readable JSON 500 that keeps CORS headers.
+
+    Registered *before* CORSMiddleware below so CORS wraps this handler. Without
+    that ordering, Starlette's outermost ServerErrorMiddleware answers with a
+    bare 500 and the browser reports the missing Access-Control-Allow-Origin
+    header as a CORS failure, hiding the real server-side error.
+    """
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("Unhandled error: %s %s", request.method, request.url.path)
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
 
 #CORS
 _origins = _cors_origins()

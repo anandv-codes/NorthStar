@@ -9,7 +9,7 @@ from functools import lru_cache
 
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 
 from ...schemas.models import WorkMemoryExtraction
 from .prompt_logger import log_gemini_interaction
@@ -174,7 +174,7 @@ def invoke_gemini(prompt_text: str) -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
+    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite")
     model = ChatGoogleGenerativeAI(
         google_api_key=api_key,
         model=model_id,
@@ -252,7 +252,7 @@ def generate_chat_answer(prompt: str) -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("CHAT_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash"))
+    model_id = os.getenv("CHAT_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite"))
     model = _get_chat_llm(model_id, api_key)
 
     response = model.invoke([HumanMessage(content=prompt)])
@@ -293,7 +293,7 @@ def generate_period_summary_narrative(prompt: str) -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
+    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite")
     model = _get_period_summary_llm(model_id, api_key)
 
     response = model.invoke([HumanMessage(content=prompt)])

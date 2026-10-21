@@ -62,7 +62,7 @@ def resolve_tool_call(user_id: str, message: str) -> ToolCallProposal | None:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
+    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite")
     llm = _get_tool_calling_llm(model_id, api_key)
     enabled_schemas = [
         definition.args_schema for name, definition in TOOL_REGISTRY.items() if name in ENABLED_TOOL_NAMES

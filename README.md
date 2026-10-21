@@ -72,7 +72,7 @@ PROCESS_NOTES_INLINE=true
 Useful optional settings:
 
 ```dotenv
-GEMINI_MODEL_ID=gemini-2.5-flash
+GEMINI_MODEL_ID=gemini-2.5-flash-lite
 EMBEDDING_MODEL_ID=gemini-embedding-001
 QUERY_RETRIEVAL_TOP_K=5
 QUERY_RETRIEVAL_RRF_K=60

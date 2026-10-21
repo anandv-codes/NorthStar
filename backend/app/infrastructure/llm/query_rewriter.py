@@ -5,7 +5,7 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 
 from .prompt_logger import append_pipeline_log
 from .prompt_loader import load_prompt
@@ -86,7 +86,7 @@ def rewrite_query_with_llm(
         )
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("QUERY_REWRITE_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash"))
+    model_id = os.getenv("QUERY_REWRITE_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite"))
     append_pipeline_log(
         "query rewrite",
         [
