@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ..deps import get_current_user_id
 from ...schemas.models import (
     DueCardsResponse,
+    RecallBulkAcceptRequest,
+    RecallBulkAcceptResponse,
     RecallCardResponse,
     RecallDecisionRequest,
     RecallDecisionResponse,
@@ -10,17 +12,19 @@ from ...schemas.models import (
     RecallReviewResult,
     RecallSuggestionListResponse,
     RecallSuggestionResponse,
+    RecallSuggestionUpdateRequest,
     ReviewHistoryResponse,
 )
 from ...domain.recall.review_service import (
     accept_candidate,
+    accept_candidates,
     due_cards,
     list_suggestions,
     reject_candidate,
     review_card,
+    update_suggestion,
 )
 from ...infrastructure.db.recall_repository import get_recall_repository
-from ...infrastructure.llm.gemini_client import get_chat_model
 
 router = APIRouter()
 
@@ -29,6 +33,7 @@ def _to_suggestion(row: dict) -> RecallSuggestionResponse:
     return RecallSuggestionResponse(
         candidate_id=row["candidate_id"],
         question=row.get("prompt") or "",
+        answer=row.get("answer"),
         item_type=row.get("item_type") or "fact",
         source_note_id=row.get("source_note_id"),
         score=row.get("score"),
@@ -50,6 +55,40 @@ def get_candidates(
     return RecallSuggestionListResponse(suggestions=suggestions, total=len(suggestions))
 
 
+@router.patch("/candidates/{candidate_id}", response_model=RecallSuggestionResponse)
+def patch_suggestion(
+    candidate_id: str,
+    payload: RecallSuggestionUpdateRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        row = update_suggestion(
+            user_id,
+            candidate_id,
+            repo=get_recall_repository(),
+            question=payload.question,
+            answer=payload.answer,
+        )
+    except LookupError:
+        raise HTTPException(status_code=404, detail="candidate_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return _to_suggestion(row)
+
+
+@router.post("/candidates/accept-batch", response_model=RecallBulkAcceptResponse)
+def post_accept_candidates(
+    payload: RecallBulkAcceptRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    result = accept_candidates(
+        user_id,
+        list(dict.fromkeys(payload.candidate_ids)),
+        repo=get_recall_repository(),
+    )
+    return RecallBulkAcceptResponse(**result)
+
+
 @router.post("/candidates/{candidate_id}/accept", response_model=RecallDecisionResponse)
 def post_accept_candidate(
     candidate_id: str,
@@ -58,7 +97,7 @@ def post_accept_candidate(
 ):
     try:
         result = accept_candidate(
-            user_id, candidate_id, repo=get_recall_repository(), model=get_chat_model()
+            user_id, candidate_id, repo=get_recall_repository()
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="candidate_not_found")

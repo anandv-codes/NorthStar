@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from .contracts import ContextBundle
 from .hybrid_retriever import get_note_context_retriever
 from .entity_context_retriever import get_entity_context_retriever
 
@@ -89,14 +90,15 @@ def fetch_note_context(
         reverse=True,
     )
 
-    return {
-        "related_notes": related_notes_list,
-        "matched_entity_names": entity_context.get("matched_entity_names", []),
-        "memory_items": entity_context.get("memory_items", []),
-        "retrieval_sources": {
+    bundle = ContextBundle(
+        notes=related_notes_list,
+        entity_names=entity_context.get("matched_entity_names", []),
+        memory_items=entity_context.get("memory_items", []),
+        sources={
             "hybrid_count": len(hybrid_results),
             "entity_linked_count": len(entity_context.get("related_notes", [])),
             "merged_note_count": len(related_notes_list),
             "memory_items_count": len(entity_context.get("memory_items", [])),
         },
-    }
+    )
+    return bundle.to_dict()

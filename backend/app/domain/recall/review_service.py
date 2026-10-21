@@ -1,7 +1,7 @@
-"""Review service: candidate decisions and card review (PR8).
+"""Review service: candidate decisions and card review.
 
-Flow: a ``suggested`` candidate is accepted -> the answer is generated -> a
-card is created and scheduled. Reviews grade the card and persist both the new
+Flow: a ``suggested`` candidate is accepted -> its stored question/answer pair
+is copied to a scheduled card. Reviews grade the card and persist both the new
 scheduling state and an immutable history entry.
 """
 from __future__ import annotations
@@ -9,8 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from .card_generation import RecallConfig, generate_answer, load_recall_config
-from .question_service import build_context
+from .card_generation import RecallConfig, load_recall_config, validate_answer_edit, validate_question
 from .scheduling import AnkiScheduler, SystemClock, initial_card_state, load_scheduler_config
 
 
@@ -31,12 +30,9 @@ def accept_candidate(
     candidate_id: str,
     *,
     repo: Any,
-    model: Any,
-    recall_config: RecallConfig | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Generate the answer, create + schedule a card, and mark the candidate accepted."""
-    recall_config = recall_config or load_recall_config()
+    """Copy the stored Q/A into a scheduled card and mark the candidate accepted."""
     now = now or SystemClock().now()
 
     candidate = repo.get_candidate(user_id, candidate_id)
@@ -48,13 +44,9 @@ def accept_candidate(
     question = (candidate.get("prompt") or "").strip()
     if not question:
         raise ValueError("candidate_has_no_question")
-
-    context = build_context(
-        candidate.get("text") or "", entity_names=[]
-    )
-    result = generate_answer(question, context, model, recall_config)
-    if result["status"] != "generated":
-        raise ValueError(f"answer_generation_failed:{result['reason']}")
+    answer = (candidate.get("answer") or "").strip()
+    if not answer:
+        raise ValueError("candidate_has_no_answer")
 
     state = initial_card_state(now=now)
     card = repo.create_card(
@@ -62,7 +54,7 @@ def accept_candidate(
         {
             "candidate_id": candidate_id,
             "question": question,
-            "answer": result["answer"],
+            "answer": answer,
             "source_note_ids": [candidate["source_note_id"]] if candidate.get("source_note_id") else [],
             "status": "active",
             **{k: v for k, v in state.items() if v is not None},
@@ -75,6 +67,46 @@ def accept_candidate(
         {"status": "carded", "decided_at": now.isoformat()},
     )
     return {"status": "carded", "card": card, "candidate": updated or candidate}
+
+
+def update_suggestion(
+    user_id: str,
+    candidate_id: str,
+    *,
+    repo: Any,
+    question: str | None = None,
+    answer: str | None = None,
+    recall_config: RecallConfig | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Edit the question/answer of a suggestion that has not been decided."""
+    recall_config = recall_config or load_recall_config()
+    now = now or SystemClock().now()
+
+    candidate = repo.get_candidate(user_id, candidate_id)
+    if candidate is None:
+        raise LookupError("candidate_not_found")
+    if candidate.get("status") != "suggested":
+        raise ValueError("candidate_not_editable")
+    if question is None and answer is None:
+        raise ValueError("no_fields_to_update")
+
+    updates: dict[str, Any] = {}
+    if question is not None:
+        normalized_question = str(question).strip()
+        ok, reason = validate_question(normalized_question, config=recall_config)
+        if not ok:
+            raise ValueError(f"invalid_question:{reason}")
+        updates["prompt"] = normalized_question
+    if answer is not None:
+        normalized_answer = str(answer).strip()
+        ok, reason = validate_answer_edit(normalized_answer, recall_config)
+        if not ok:
+            raise ValueError(f"invalid_answer:{reason}")
+        updates["answer"] = normalized_answer
+
+    updated = repo.update_candidate(user_id, candidate_id, updates)
+    return updated or {**candidate, **updates, "updated_at": now.isoformat()}
 
 
 def reject_candidate(
@@ -128,3 +160,43 @@ def review_card(
         },
     )
     return {"card": updated, "history": history, "scheduled": updates}
+
+
+def accept_candidates(
+    user_id: str,
+    candidate_ids: list[str],
+    *,
+    repo: Any,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Accept multiple suggestions, returning per-candidate outcomes."""
+    now = now or SystemClock().now()
+    results: list[dict[str, Any]] = []
+    accepted = 0
+    failed = 0
+
+    for candidate_id in candidate_ids:
+        try:
+            result = accept_candidate(user_id, candidate_id, repo=repo, now=now)
+        except LookupError:
+            failed += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "failed", "error": "candidate_not_found"}
+            )
+        except ValueError as exc:
+            failed += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "failed", "error": str(exc)}
+            )
+        else:
+            accepted += 1
+            results.append(
+                {
+                    "candidate_id": candidate_id,
+                    "status": result["status"],
+                    "card": result.get("card"),
+                    "error": None,
+                }
+            )
+
+    return {"accepted": accepted, "failed": failed, "results": results}

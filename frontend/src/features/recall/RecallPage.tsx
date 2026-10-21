@@ -7,10 +7,12 @@ import {
   RecallGrade,
   RecallSuggestion,
   acceptSuggestion,
+  acceptSuggestions,
   fetchDueCards,
   fetchSuggestions,
   rejectSuggestion,
   reviewCard,
+  updateSuggestion,
 } from "../../shared/api/httpClient";
 import { addTodayRecallSeconds } from "../../shared/lib/recallTime";
 import { Button } from "../../shared/ui/Button";
@@ -40,7 +42,9 @@ export function RecallPage() {
   const [stage, setStage] = useState<Stage>("loading");
   const [suggestions, setSuggestions] = useState<RecallSuggestion[]>([]);
   const [processingSuggestionId, setProcessingSuggestionId] = useState<string | null>(null);
-  const [processingAction, setProcessingAction] = useState<"accept" | "reject" | null>(null);
+  const [processingAction, setProcessingAction] = useState<"accept" | "reject" | "save" | null>(null);
+  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<Set<string>>(new Set());
+  const [bulkAccepting, setBulkAccepting] = useState(false);
   const [dueCards, setDueCards] = useState<RecallCard[]>([]);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -57,6 +61,7 @@ export function RecallPage() {
     try {
       const [suggestionList, due] = await Promise.all([fetchSuggestions(), fetchDueCards()]);
       setSuggestions(suggestionList.suggestions);
+      setSelectedSuggestionIds(new Set());
       setDueCards(due.cards);
       setIndex(0);
       setReviewedCount(0);
@@ -98,12 +103,21 @@ export function RecallPage() {
     }
   }, [stage, index]);
 
+  const removeSuggestion = (candidateId: string) => {
+    setSuggestions((current) => current.filter((s) => s.candidate_id !== candidateId));
+    setSelectedSuggestionIds((current) => {
+      const next = new Set(current);
+      next.delete(candidateId);
+      return next;
+    });
+  };
+
   const handleAcceptSuggestion = async (suggestion: RecallSuggestion) => {
     setProcessingSuggestionId(suggestion.candidate_id);
     setProcessingAction("accept");
     try {
       const result = await acceptSuggestion(suggestion.candidate_id);
-      setSuggestions((current) => current.filter((s) => s.candidate_id !== suggestion.candidate_id));
+      removeSuggestion(suggestion.candidate_id);
       if (result.card) {
         setDueCards((current) => [...current, result.card as RecallCard]);
       }
@@ -115,12 +129,93 @@ export function RecallPage() {
     }
   };
 
+  const handleSaveSuggestion = async (
+    suggestion: RecallSuggestion,
+    question: string,
+    answer: string,
+  ) => {
+    setProcessingSuggestionId(suggestion.candidate_id);
+    setProcessingAction("save");
+    try {
+      const updated = await updateSuggestion(suggestion.candidate_id, { question, answer });
+      setSuggestions((current) =>
+        current.map((item) => (item.candidate_id === suggestion.candidate_id ? updated : item)),
+      );
+    } finally {
+      setProcessingSuggestionId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handleSelectSuggestion = (candidateId: string, selected: boolean) => {
+    setSelectedSuggestionIds((current) => {
+      const next = new Set(current);
+      if (selected) {
+        next.add(candidateId);
+      } else {
+        next.delete(candidateId);
+      }
+      return next;
+    });
+  };
+
+  const allSuggestionsSelected =
+    suggestions.length > 0 &&
+    suggestions.every((suggestion) => selectedSuggestionIds.has(suggestion.candidate_id));
+
+  const handleSelectAllSuggestions = (selected: boolean) => {
+    setSelectedSuggestionIds(
+      selected ? new Set(suggestions.map((suggestion) => suggestion.candidate_id)) : new Set(),
+    );
+  };
+
+  const handleBulkAccept = async () => {
+    const candidateIds = Array.from(selectedSuggestionIds);
+    if (candidateIds.length === 0) return;
+
+    setBulkAccepting(true);
+    setError(null);
+    try {
+      const result = await acceptSuggestions(candidateIds);
+      const acceptedIds = new Set(
+        result.results
+          .filter((item) => item.status === "carded")
+          .map((item) => item.candidate_id),
+      );
+      const acceptedCards = result.results
+        .map((item) => item.card)
+        .filter((card): card is RecallCard => Boolean(card));
+
+      setSuggestions((current) => current.filter((s) => !acceptedIds.has(s.candidate_id)));
+      setSelectedSuggestionIds((current) => {
+        const next = new Set(current);
+        acceptedIds.forEach((candidateId) => next.delete(candidateId));
+        return next;
+      });
+      if (acceptedCards.length > 0) {
+        setDueCards((current) => [...current, ...acceptedCards]);
+      }
+      if (result.failed > 0) {
+        const firstError = result.results.find((item) => item.error)?.error;
+        setError(
+          `${result.failed} suggestion${result.failed === 1 ? "" : "s"} couldn't be added${
+            firstError ? `: ${firstError}` : "."
+          }`,
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't add the selected suggestions.");
+    } finally {
+      setBulkAccepting(false);
+    }
+  };
+
   const handleRejectSuggestion = async (suggestion: RecallSuggestion) => {
     setProcessingSuggestionId(suggestion.candidate_id);
     setProcessingAction("reject");
     try {
       await rejectSuggestion(suggestion.candidate_id);
-      setSuggestions((current) => current.filter((s) => s.candidate_id !== suggestion.candidate_id));
+      removeSuggestion(suggestion.candidate_id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't skip that suggestion.");
     } finally {
@@ -217,16 +312,39 @@ export function RecallPage() {
         </div>
       ) : stage === "suggestions" ? (
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-400">
-            New from your notes — {suggestions.length} to review
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-400">
+              New from your notes — {suggestions.length} to review
+            </p>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-neutral-600">
+                <input
+                  type="checkbox"
+                  checked={allSuggestionsSelected}
+                  onChange={(event) => handleSelectAllSuggestions(event.target.checked)}
+                  className="h-4 w-4 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950"
+                />
+                Select all
+              </label>
+              <Button
+                size="sm"
+                disabled={selectedSuggestionIds.size === 0 || bulkAccepting}
+                onClick={() => void handleBulkAccept()}
+              >
+                {bulkAccepting ? "Adding…" : `Add selected (${selectedSuggestionIds.size})`}
+              </Button>
+            </div>
+          </div>
           {suggestions.map((suggestion) => (
             <SuggestionCard
               key={suggestion.candidate_id}
               suggestion={suggestion}
+              selected={selectedSuggestionIds.has(suggestion.candidate_id)}
               processing={processingSuggestionId === suggestion.candidate_id ? processingAction : null}
+              onSelect={(selected) => handleSelectSuggestion(suggestion.candidate_id, selected)}
               onAccept={() => void handleAcceptSuggestion(suggestion)}
               onReject={() => void handleRejectSuggestion(suggestion)}
+              onSave={(question, answer) => handleSaveSuggestion(suggestion, question, answer)}
             />
           ))}
         </div>

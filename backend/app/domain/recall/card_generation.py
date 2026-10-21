@@ -1,8 +1,8 @@
-"""Question-first card generation with validation and de-duplication.
+"""Question/answer card generation with validation and de-duplication.
 
-Flow (product decision): a candidate's **question** is generated first and
-queued for the user. Only after the user accepts is the **answer** generated
-and an active card created (see ``review_service``/API layer).
+Flow (product decision): a candidate's **question** is generated first; only a
+validated question incurs an **answer** call. The pair is queued for the user,
+and accepting it copies both fields onto a card (see ``review_service``).
 
 The LLM is injected as a ``ChatModel`` so generation logic is testable with a
 fake. All validation is deterministic and lives here, not in the prompt.
@@ -86,6 +86,7 @@ def build_answer_prompt(question: str, context: dict[str, Any]) -> str:
         template,
         {
             "question": question,
+            "candidate_text": _as_text(context.get("candidate_text")),
             "source_note_text": _as_text(context.get("source_note_text")),
             "related_snippets": _format_snippets(context.get("related_snippets")),
             "entity_names": _format_names(context.get("entity_names")),
@@ -132,6 +133,20 @@ def validate_answer(
     return True, None
 
 
+def validate_answer_edit(
+    answer: str,
+    config: RecallConfig | None = None,
+) -> tuple[bool, str | None]:
+    """Validate a user-edited answer without requiring overlap with context."""
+    config = config or load_recall_config()
+    text = str(answer or "").strip()
+    if not text:
+        return False, "empty_answer"
+    if len(text) > config.max_answer_chars:
+        return False, "answer_too_long"
+    return True, None
+
+
 # ---------------------------------------------------------------------------
 # Generation
 # ---------------------------------------------------------------------------
@@ -168,6 +183,7 @@ def generate_answer(
     config = config or load_recall_config()
     context_text = " ".join(
         [
+            _as_text(context.get("candidate_text")),
             _as_text(context.get("source_note_text")),
             " ".join(context.get("related_snippets") or []),
         ]

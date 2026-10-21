@@ -39,6 +39,7 @@ EXPECTED_PLACEHOLDERS = {
     },
     "04-recall-answer_prompt.txt": {
         "question",
+        "candidate_text",
         "source_note_text",
         "related_snippets",
         "entity_names",

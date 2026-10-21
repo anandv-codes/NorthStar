@@ -12,6 +12,7 @@ from backend.app.domain.recall.card_generation import (
 CONFIG = RecallConfig(max_attempts=2)
 
 CONTEXT = {
+    "candidate_text": "SQS visibility timeout",
     "source_note_text": "SQS visibility timeout controls how long a message stays hidden after retrieval.",
     "related_snippets": ["Our workers set visibility timeout to avoid duplicate processing."],
     "entity_names": ["SQS"],
@@ -38,7 +39,9 @@ def test_question_prompt_renders_cleanly():
 def test_answer_prompt_renders_cleanly():
     prompt = build_answer_prompt("What does SQS visibility timeout control?", CONTEXT)
     assert "What does SQS visibility timeout control?" in prompt
+    assert "SQS visibility timeout" in prompt
     assert "{question}" not in prompt
+    assert "{candidate_text}" not in prompt
 
 
 def test_validate_question_rules():

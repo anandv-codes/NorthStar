@@ -6,11 +6,10 @@ import time
 from typing import Any
 
 from ..constants import GENERIC_QUERY_TERMS, NEGATION_TERMS
-from ..memory.services import query_recent_memory_for_user
 from ..ports import QueryRewriter
 from ...infrastructure.llm.prompt_logger import append_pipeline_log, elapsed_ms
-from ...infrastructure.llm.query_rewriter import get_query_rewriter
-from .utils import tokenize
+from .contracts import RetrievalRequest
+from .utils import extract_identifiers, tokenize
 from .hybrid_retriever import get_hybrid_retriever
 
 
@@ -30,13 +29,18 @@ def retrieve_query_context(
     Chat-only concerns: query quality scoring, rewrite decision, risk detection.
     Delegates the actual ranked retrieval to HybridRetriever.
     """
-    query_rewriter = query_rewriter or get_query_rewriter()
-
     normalized_query = str(query or "").strip()
     if not normalized_query:
         raise ValueError("query is required")
 
+    if query_rewriter is None:
+        from ...infrastructure.llm.query_rewriter import get_query_rewriter
+
+        query_rewriter = get_query_rewriter()
+
     clamped_limit = max(1, min(limit, 20))
+    from ..memory.services import query_recent_memory_for_user
+
     recent_memory = query_recent_memory_for_user(user_id=user_id, limit=min(5, clamped_limit))
     append_pipeline_log(
         "hybrid retrieval",
@@ -48,6 +52,9 @@ def retrieve_query_context(
     )
 
     # Chat-only: evaluate query quality and decide whether to attempt rewrite.
+    # Explicit identifiers (e.g. ITEM-4101) are already deterministic anchors;
+    # rewriting them risks injecting the likely answer into retrieval.
+    explicit_identifiers = extract_identifiers(normalized_query)
     query_quality = score_query_quality(normalized_query)
     rewrite_used = False
     fallback_reason: str | None = None
@@ -57,7 +64,16 @@ def retrieve_query_context(
     rewrite_risk_flags: list[str] = []
     alternate_query_text: str | None = None
 
-    if query_quality >= MIN_QUERY_QUALITY_TO_REWRITE:
+    if explicit_identifiers:
+        fallback_reason = "explicit_identifier"
+        append_pipeline_log(
+            "hybrid retrieval",
+            [
+                f"rewrite skipped: {fallback_reason}",
+                f"exact identifier(s): {', '.join(explicit_identifiers)}",
+            ],
+        )
+    elif query_quality >= MIN_QUERY_QUALITY_TO_REWRITE:
         try:
             stage_start = time.perf_counter()
             rewrite_result = query_rewriter.rewrite(
@@ -111,12 +127,16 @@ def retrieve_query_context(
     # Delegate the actual hybrid fetch to HybridRetriever.
     hybrid_retriever = get_hybrid_retriever()
     stage_start = time.perf_counter()
-    candidates = hybrid_retriever.fetch(
-        user_id=user_id,
-        query_text=normalized_query,
-        limit=clamped_limit,
-        alternate_query_text=alternate_query_text if rewrite_used else None,
+    retrieval_result = hybrid_retriever.retrieve(
+        RetrievalRequest(
+            user_id=user_id,
+            query=normalized_query,
+            limit=clamped_limit,
+            mode="chat",
+            alternate_query=alternate_query_text if rewrite_used else None,
+        )
     )
+    candidates = retrieval_result.candidates
     append_pipeline_log(
         "hybrid retrieval",
         [
@@ -134,6 +154,7 @@ def retrieve_query_context(
         "fallback_reason": fallback_reason,
         "rerank_used": candidates[0].get("rerank_score") is not None if candidates else False,
         "rerank_strategy": None,  # Rerank strategy is now handled inside HybridRetriever
+        "explicit_identifiers": explicit_identifiers,
         "candidates": candidates,
     }
 

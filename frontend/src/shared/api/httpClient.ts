@@ -205,6 +205,7 @@ export type RecallGrade = 1 | 3 | 4 | 5;
 export interface RecallSuggestion {
   candidate_id: string;
   question: string;
+  answer?: string | null;
   item_type: string;
   source_note_id?: string | null;
   score?: number | null;
@@ -216,6 +217,24 @@ export interface RecallSuggestion {
 export interface RecallSuggestionList {
   suggestions: RecallSuggestion[];
   total: number;
+}
+
+export interface RecallSuggestionUpdate {
+  question?: string;
+  answer?: string;
+}
+
+export interface RecallBulkAcceptItem {
+  candidate_id: string;
+  status: string;
+  card?: RecallCard | null;
+  error?: string | null;
+}
+
+export interface RecallBulkAcceptResponse {
+  accepted: number;
+  failed: number;
+  results: RecallBulkAcceptItem[];
 }
 
 export interface RecallCard {
@@ -769,6 +788,31 @@ export async function fetchSuggestions(limit = 50) {
   return requestJson<RecallSuggestionList>(
     `${BASE_URL}/recall/candidates?status=suggested&limit=${limit}`,
   );
+}
+
+export async function updateSuggestion(candidateId: string, payload: RecallSuggestionUpdate) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).updateSuggestion(candidateId, payload) as Promise<RecallSuggestion>;
+  }
+  return requestJson<RecallSuggestion>(
+    `${BASE_URL}/recall/candidates/${encodeURIComponent(candidateId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function acceptSuggestions(candidateIds: string[]) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).acceptSuggestions(candidateIds) as Promise<RecallBulkAcceptResponse>;
+  }
+  return requestJson<RecallBulkAcceptResponse>(`${BASE_URL}/recall/candidates/accept-batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ candidate_ids: candidateIds }),
+  });
 }
 
 export async function acceptSuggestion(candidateId: string) {

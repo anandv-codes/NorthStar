@@ -330,9 +330,7 @@ def process_sqs_message(body:dict)-> dict:
         }
     except Exception as e:
         logger.exception(f"Note processing failed for note_id={body.get('note_id')} user_id={body.get('user_id')}: {e}")
-        raise #Re-raise so AWS knows to retry
-
-
+        raise  # Re-raise so AWS knows to retry
 
 
 def lambda_handler(event, context):
@@ -346,24 +344,3 @@ def lambda_handler(event, context):
             logger.error(f"Error processing record: {e}")
             batch_failures.append({"itemIdentifier": record["messageId"]})
     return {"statusCode": 200, "body": "Processing complete", "batchItemFailures": batch_failures}
-
-# For testing
-
-# if __name__ == "__main__":
-#     mock_event = {
-#         "Records": [
-#             {
-#                 "messageId": "1",
-#                 "body": json.dumps({
-#                     "user_id": "user-123",
-#                     "note_id": "3fc0fa04-dfa7-4b29-a405-ff73f1d168c0",
-#                     "created_at": '2026-06-13 12:17:40.336919+00',
-#                     "raw_text": "This is a test note. TODO: Follow up with team. What is the status of the project?"
-#                 }),
-
-#             }
-#         ]
-#     }
-#     print("Testing lambda handler with mock event")
-#     result=lambda_handler(mock_event, context=None)
-#     print(f"Result: {result}")

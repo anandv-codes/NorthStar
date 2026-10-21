@@ -1,14 +1,14 @@
-"""Generate questions for persisted recall candidates (question-first flow).
+"""Generate question/answer pairs for persisted recall candidates.
 
-Only the question is produced here; the answer is generated after the user
-accepts a suggestion (see the recall API in PR8). Candidates whose question
-fails validation are marked ``rejected`` with the reason recorded.
+Both fields are produced here, before the user sees a suggestion. Only a
+question that passes validation incurs the answer-generation LLM call. Accepting
+a suggestion later copies the stored answer instead of regenerating it.
 """
 from __future__ import annotations
 
 from typing import Any
 
-from .card_generation import RecallConfig, generate_question, load_recall_config
+from .card_generation import RecallConfig, generate_answer, generate_question, load_recall_config
 
 
 def build_context(
@@ -78,19 +78,40 @@ def generate_questions(
             known,
             config,
         )
+
+        answer_result: dict[str, Any] = {"answer": None, "status": "skipped", "reason": None}
         if result["status"] == "generated":
+            answer_context = {
+                **context,
+                "candidate_text": candidate.get("text") or "",
+            }
+            answer_result = generate_answer(
+                result["question"],
+                answer_context,
+                model,
+                config,
+            )
+
+        if result["status"] == "generated" and answer_result["status"] == "generated":
             known.append(result["question"])
             updates: dict[str, Any] = {
                 "prompt": result["question"],
+                "answer": answer_result["answer"],
                 "status": "suggested",
             }
         else:
+            rationale = {
+                **(candidate.get("rationale") or {}),
+            }
+            if result["status"] != "generated":
+                rationale["question_reason"] = result["reason"]
+            else:
+                rationale["answer_reason"] = answer_result["reason"]
             updates = {
                 "status": "rejected",
-                "rationale": {
-                    **(candidate.get("rationale") or {}),
-                    "question_reason": result["reason"],
-                },
+                "prompt": result.get("question"),
+                "answer": None,
+                "rationale": rationale,
             }
 
         if candidate.get("candidate_id"):
@@ -100,7 +121,8 @@ def generate_questions(
                 "candidate_id": candidate.get("candidate_id"),
                 "status": updates["status"],
                 "question": updates.get("prompt"),
-                "reason": result["reason"],
+                "answer": updates.get("answer"),
+                "reason": result["reason"] or answer_result["reason"],
             }
         )
     return results

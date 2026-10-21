@@ -1,24 +1,11 @@
-"""Consolidated hybrid retrieval pipeline for both chat and note-ingestion.
+"""Consolidated hybrid retrieval pipeline for chat and note-ingestion.
 
-Combines BM25 (sparse) + dense embeddings + RRF fusion + optional reranking.
+Combines BM25 (sparse) + dense embeddings + exact-identifier matching + RRF
+fusion + optional reranking.
 
-EVAL COMPOSITION:
-  Individual retrieval functions are exposed as public building blocks for eval pipelines:
-  - fetch_dense_embeddings(user_id, query, embedding_provider, vector_store, k)
-  - fetch_sparse_results(user_id, query, sparse_retriever, k)
-  - apply_reranking(query, candidates, reranker, limit)
-  - fuse_candidates(candidate_lists, limit, rrf_k) [utility for combining results]
-  - summarize_top_sources(candidates, limit) [diagnostic summary]
-  
-  Eval pipeline example:
-    dense_results = fetch_dense_embeddings(user_id, query, emb_provider, vs, k=5)
-    sparse_results = fetch_sparse_results(user_id, query, bm25, k=5)
-    fused = fuse_candidates([("dense", dense_results), ("sparse", sparse_results)], limit=5)
-    final = apply_reranking(query, fused, reranker, limit=5)  # optional
-
-PRODUCTION USAGE:
-  - retrieve_query_context (chat's similarity search wrapper)
-  - fetch_related_context (note-ingestion's context-gathering wrapper)
+The production entry point is ``HybridRetriever.retrieve(RetrievalRequest)``.
+Task-specific policy (rewrite, entity expansion, stored-context reuse) belongs
+in the calling service; this module only fetches, fuses, and ranks.
 """
 from __future__ import annotations
 
@@ -26,13 +13,14 @@ import os
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from ..ports import EmbeddingProvider, VectorStore
+from .contracts import RetrievalRequest, RetrievalResult
 from .strategies.base import BaseRetrieval
 from .reranker.base import BaseReranker
 from .reranker.semantic import SentenceTransformerReranker
-from .strategies.sparse import SparseBM25Retriever
+from .utils import extract_identifiers
 from ...infrastructure.llm.prompt_logger import append_pipeline_log, elapsed_ms
 from ...infrastructure.vector.embeddings import get_embedding_provider
 from ...infrastructure.vector.vectorstore import get_vector_store
@@ -40,24 +28,33 @@ from ...infrastructure.vector.vectorstore import get_vector_store
 
 RRF_K = int(os.getenv("QUERY_RETRIEVAL_RRF_K", "60"))
 RERANKER_MODE = os.getenv("QUERY_RETRIEVAL_RERANKER", "off").strip().lower()
+CANDIDATE_MULTIPLIER = float(os.getenv("QUERY_RETRIEVAL_CANDIDATE_MULTIPLIER", "3"))
+EXACT_IDENTIFIER_WEIGHT = float(os.getenv("QUERY_RETRIEVAL_EXACT_ID_WEIGHT", "3"))
+
+
+def _clamp_limit(value: int) -> int:
+    return max(1, min(int(value), 20))
 
 
 def fuse_candidates(
     candidate_lists: Sequence[tuple[str, list[dict[str, Any]]]],
     limit: int,
     rrf_k: int = RRF_K,
+    weights: Mapping[str, float] | None = None,
 ) -> list[dict[str, Any]]:
-    """Fuse candidates from multiple retrieval sources using Reciprocal Rank Fusion (RRF)."""
+    """Fuse candidates from multiple retrieval sources using Reciprocal Rank Fusion."""
     merged: dict[str, dict[str, Any]] = {}
     scores: dict[str, float] = defaultdict(float)
+    source_weights = dict(weights or {})
 
     for source, results in candidate_lists:
+        weight = float(source_weights.get(source, 1.0))
         for rank, item in enumerate(results, start=1):
             note_id = str(item.get("note_id") or "").strip()
             if not note_id:
                 continue
 
-            scores[note_id] += 1.0 / (rrf_k + rank)
+            scores[note_id] += weight / (rrf_k + rank)
             existing = merged.setdefault(
                 note_id,
                 {
@@ -70,6 +67,8 @@ def fuse_candidates(
                     "original_rank": None,
                     "rewritten_distance": None,
                     "rewritten_rank": None,
+                    "exact_distance": None,
+                    "exact_rank": None,
                     "rrf_score": 0.0,
                     "rerank_score": None,
                     "score": 0.0,
@@ -85,6 +84,9 @@ def fuse_candidates(
             elif source == "rewritten":
                 existing["rewritten_rank"] = rank
                 existing["rewritten_distance"] = item.get("distance")
+            elif source == "exact":
+                existing["exact_rank"] = rank
+                existing["exact_distance"] = item.get("distance")
 
             if not existing.get("text"):
                 existing["text"] = item.get("text", "")
@@ -100,7 +102,13 @@ def fuse_candidates(
         merged.values(),
         key=lambda item: (
             -float(item.get("score") or 0.0),
-            -sum(1 for key in ("sparse_rank", "original_rank", "rewritten_rank") if item.get(key) is not None),
+            # An exact identifier hit wins score ties against generic channels.
+            item.get("exact_rank") if item.get("exact_rank") is not None else 9999,
+            -sum(
+                1
+                for key in ("exact_rank", "sparse_rank", "original_rank", "rewritten_rank")
+                if item.get(key) is not None
+            ),
             item.get("sparse_rank") if item.get("sparse_rank") is not None else 9999,
             item.get("original_rank") if item.get("original_rank") is not None else 9999,
             item.get("rewritten_rank") if item.get("rewritten_rank") is not None else 9999,
@@ -115,20 +123,27 @@ def _summarize_top_sources(candidates: list[dict[str, Any]], limit: int) -> str:
     top_candidates = candidates[:limit]
     bm25_backed = 0
     semantic_backed = 0
+    exact_backed = 0
     blended = 0
 
     for candidate in top_candidates:
+        has_exact = candidate.get("exact_rank") is not None
         has_bm25 = candidate.get("sparse_rank") is not None
         has_semantic = candidate.get("original_rank") is not None or candidate.get("rewritten_rank") is not None
 
-        if has_bm25 and has_semantic:
+        source_count = sum((has_exact, has_bm25, has_semantic))
+        if source_count > 1:
             blended += 1
+        elif has_exact:
+            exact_backed += 1
         elif has_bm25:
             bm25_backed += 1
         elif has_semantic:
             semantic_backed += 1
 
     parts = []
+    if exact_backed:
+        parts.append(f"{exact_backed} exact-only")
     if bm25_backed:
         parts.append(f"{bm25_backed} BM25-only")
     if semantic_backed:
@@ -153,28 +168,21 @@ def fetch_dense_embeddings(
     embedding_provider: EmbeddingProvider,
     vector_store: VectorStore,
     k: int = 5,
+    exclude_note_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    """
-    Fetch results via dense (embedding-based) semantic search.
-    
-    Args:
-        user_id: User identifier for scoped search.
-        query: Query text to embed and search.
-        embedding_provider: Provider for query embedding (e.g., SentenceTransformers).
-        vector_store: Vector store for similarity search (e.g., Chroma).
-        k: Number of results to return.
-    
-    Returns:
-        List of result dicts with note_id, text, summary, distance, etc.
-    """
+    """Fetch results via dense (embedding-based) semantic search."""
     normalized_query = str(query or "").strip()
     if not normalized_query:
         return []
-    
-    clamped_k = max(1, min(k, 20))
+
+    clamped_k = _clamp_limit(k)
     embedding = embedding_provider.embed_query(normalized_query)
-    results = vector_store.query_related_notes(user_id=user_id, embedding=embedding, k=clamped_k)
-    return results
+    return vector_store.query_related_notes(
+        user_id=user_id,
+        embedding=embedding,
+        k=clamped_k,
+        exclude_note_id=exclude_note_id,
+    )
 
 
 def fetch_sparse_results(
@@ -182,26 +190,48 @@ def fetch_sparse_results(
     query: str,
     sparse_retriever: BaseRetrieval,
     k: int = 5,
+    exclude_note_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    """
-    Fetch results via sparse (BM25) retrieval.
-    
-    Args:
-        user_id: User identifier for scoped search.
-        query: Query text for BM25 matching.
-        sparse_retriever: Sparse retriever implementation (e.g., SparseBM25Retriever).
-        k: Number of results to return.
-    
-    Returns:
-        List of result dicts with note_id, text, summary, distance, etc.
-    """
+    """Fetch results via sparse (BM25) retrieval."""
     normalized_query = str(query or "").strip()
     if not normalized_query:
         return []
-    
-    clamped_k = max(1, min(k, 20))
-    results = sparse_retriever.retrieve(query=normalized_query, user_id=user_id, limit=clamped_k)
-    return results
+
+    return sparse_retriever.retrieve(
+        query=normalized_query,
+        user_id=user_id,
+        limit=_clamp_limit(k),
+        exclude_note_id=exclude_note_id,
+    )
+
+
+def fetch_exact_results(
+    user_id: str,
+    query: str,
+    sparse_retriever: BaseRetrieval,
+    k: int = 5,
+    exclude_note_id: str | None = None,
+    identifiers: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Fetch exact identifier matches, if the sparse retriever supports them."""
+    normalized_query = str(query or "").strip()
+    if not normalized_query:
+        return []
+
+    if identifiers is None:
+        identifiers = extract_identifiers(normalized_query)
+    if not identifiers:
+        return []
+
+    retrieve_exact = getattr(sparse_retriever, "retrieve_exact_identifiers", None)
+    if not callable(retrieve_exact):
+        return []
+    return retrieve_exact(
+        query=normalized_query,
+        user_id=user_id,
+        limit=_clamp_limit(k),
+        exclude_note_id=exclude_note_id,
+    )
 
 
 def apply_reranking(
@@ -210,32 +240,15 @@ def apply_reranking(
     reranker: BaseReranker | None,
     limit: int = 5,
 ) -> list[dict[str, Any]]:
-    """
-    Optional reranking step (if reranker is provided).
-    
-    Args:
-        query: Query text for reranking context.
-        candidates: List of candidate dicts to rerank.
-        reranker: Reranker implementation (None = skip reranking).
-        limit: Maximum results to return after reranking.
-    
-    Returns:
-        List of reranked results (or input candidates if reranker is None).
-    """
+    """Optionally rerank candidates; always enforce the final limit."""
+    clamped_limit = _clamp_limit(limit)
     if reranker is None or not candidates:
-        return candidates
-    
-    clamped_limit = max(1, min(limit, 20))
+        return candidates[:clamped_limit]
     return reranker.rerank(query, candidates, limit=clamped_limit)
 
 
 class HybridRetriever:
-    """
-    Core hybrid retrieval pipeline: BM25 + dense + optional rewrite + RRF + optional rerank.
-    
-    Single responsibility: fusion/ranking only. No query-rewrite logic, no note-specific logic.
-    Used by both chat (via retrieve_query_context) and note-ingestion (via NoteContextRetriever).
-    """
+    """Core hybrid retrieval pipeline: BM25 + dense + exact IDs + RRF + rerank."""
 
     def __init__(
         self,
@@ -246,49 +259,41 @@ class HybridRetriever:
     ):
         self.embedding_provider = embedding_provider or get_embedding_provider()
         self.vector_store = vector_store or get_vector_store()
-        self.sparse_retriever = sparse_retriever or SparseBM25Retriever()
+        if sparse_retriever is None:
+            from .strategies.sparse import SparseBM25Retriever
+
+            sparse_retriever = SparseBM25Retriever()
+        self.sparse_retriever = sparse_retriever
         self.reranker = reranker or (
-            SentenceTransformerReranker() 
-            if RERANKER_MODE in {"semantic", "sentence", "cross", "local", "true", "1", "yes", "on"} 
+            SentenceTransformerReranker()
+            if RERANKER_MODE in {"semantic", "sentence", "cross", "local", "true", "1", "yes", "on"}
             else None
         )
 
-    def fetch(
-        self,
-        user_id: str,
-        query_text: str,
-        limit: int = 5,
-        alternate_query_text: str | None = None,
-    ) -> list[dict[str, Any]]:
-        """
-        Fetch ranked results via hybrid retrieval.
-        
-        Internally composes: fetch_dense_embeddings + fetch_sparse_results + fuse_candidates + apply_reranking.
-        
-        Args:
-            user_id: User identifier for scoped search.
-            query_text: Original query text (always searched).
-            limit: Maximum results to return (1-20).
-            alternate_query_text: Optional expanded/rewritten query (searched only if provided).
-        
-        Returns:
-            List of ranked result dicts with note_id, text, summary, scoring info.
-        """
-        normalized_query = str(query_text or "").strip()
+    def retrieve(self, request: RetrievalRequest) -> RetrievalResult:
+        """Retrieve and rank notes according to a task-independent request."""
+        normalized_query = str(request.query or "").strip()
         if not normalized_query:
-            return []
+            return RetrievalResult(request=request)
 
-        clamped_limit = max(1, min(limit, 20))
-        expanded_query = str(alternate_query_text or "").strip()
+        limit = request.clamped_limit
+        candidate_limit = request.candidate_depth(CANDIDATE_MULTIPLIER)
+        expanded_query = str(request.alternate_query or "").strip()
+        identifiers = (
+            extract_identifiers(normalized_query)
+            if request.include_exact_identifiers
+            else []
+        )
 
         def _fetch_dense_original() -> list[dict[str, Any]]:
             stage_start = time.perf_counter()
             results = fetch_dense_embeddings(
-                user_id=user_id,
+                user_id=request.user_id,
                 query=normalized_query,
                 embedding_provider=self.embedding_provider,
                 vector_store=self.vector_store,
-                k=clamped_limit,
+                k=candidate_limit,
+                exclude_note_id=request.exclude_note_id,
             )
             append_pipeline_log(
                 "hybrid retrieval",
@@ -302,10 +307,11 @@ class HybridRetriever:
         def _fetch_sparse() -> list[dict[str, Any]]:
             stage_start = time.perf_counter()
             results = fetch_sparse_results(
-                user_id=user_id,
+                user_id=request.user_id,
                 query=normalized_query,
                 sparse_retriever=self.sparse_retriever,
-                k=clamped_limit,
+                k=candidate_limit,
+                exclude_note_id=request.exclude_note_id,
             )
             append_pipeline_log(
                 "hybrid retrieval",
@@ -319,11 +325,12 @@ class HybridRetriever:
         def _fetch_dense_rewritten() -> list[dict[str, Any]]:
             stage_start = time.perf_counter()
             results = fetch_dense_embeddings(
-                user_id=user_id,
+                user_id=request.user_id,
                 query=expanded_query,
                 embedding_provider=self.embedding_provider,
                 vector_store=self.vector_store,
-                k=clamped_limit,
+                k=candidate_limit,
+                exclude_note_id=request.exclude_note_id,
             )
             append_pipeline_log(
                 "hybrid retrieval",
@@ -334,10 +341,7 @@ class HybridRetriever:
             )
             return results
 
-        # Dense-original, sparse (BM25), and dense-rewritten searches are
-        # mutually independent — run them concurrently instead of one after
-        # another. Exceptions still propagate via .result() below, same as
-        # the prior sequential calls would have raised.
+        # Dense-original, sparse, and dense-rewritten searches are independent.
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
                 "dense_original": executor.submit(_fetch_dense_original),
@@ -352,34 +356,56 @@ class HybridRetriever:
                 futures["rewritten"].result() if "rewritten" in futures else []
             )
 
-        # RRF fusion.
+        # Exact identifiers are a deterministic channel, not a similarity guess.
+        exact_results = fetch_exact_results(
+            user_id=request.user_id,
+            query=normalized_query,
+            sparse_retriever=self.sparse_retriever,
+            k=candidate_limit,
+            exclude_note_id=request.exclude_note_id,
+            identifiers=identifiers,
+        )
+        if identifiers:
+            append_pipeline_log(
+                "hybrid retrieval",
+                [
+                    f"exact identifier(s): {', '.join(identifiers)}",
+                    f"exact matches returned {len(exact_results)} result(s)",
+                ],
+            )
+
         stage_start = time.perf_counter()
         candidates = fuse_candidates(
             candidate_lists=[
+                ("exact", exact_results),
                 ("sparse", sparse_results),
                 ("original", dense_original_results),
                 ("rewritten", rewritten_results),
             ],
-            limit=clamped_limit,
+            limit=candidate_limit,
+            weights={"exact": EXACT_IDENTIFIER_WEIGHT},
         )
         append_pipeline_log(
             "hybrid retrieval",
             [
-                f"fusion returned {len(candidates)} candidate(s)",
-                _summarize_top_sources(candidates, clamped_limit),
+                f"fusion returned {len(candidates)} candidate(s) from depth {candidate_limit}",
+                _summarize_top_sources(candidates, candidate_limit),
                 f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
             ],
         )
 
-        # Optional reranking.
         stage_start = time.perf_counter()
-        candidates = apply_reranking(
-            query=normalized_query,
-            candidates=candidates,
-            reranker=self.reranker,
-            limit=clamped_limit,
-        )
-        if self.reranker is not None:
+        if request.rerank:
+            candidates = apply_reranking(
+                query=normalized_query,
+                candidates=candidates,
+                reranker=self.reranker,
+                limit=limit,
+            )
+        else:
+            candidates = candidates[:limit]
+
+        if self.reranker is not None and request.rerank:
             append_pipeline_log(
                 "hybrid retrieval",
                 [
@@ -389,23 +415,41 @@ class HybridRetriever:
                 ],
             )
         else:
-            append_pipeline_log(
-                "hybrid retrieval",
-                [
-                    "reranking skipped",
-                ],
-            )
+            append_pipeline_log("hybrid retrieval", ["reranking skipped"])
 
-        return candidates
+        return RetrievalResult(
+            request=request,
+            candidates=candidates,
+            source_counts={
+                "exact": len(exact_results),
+                "sparse": len(sparse_results),
+                "dense_original": len(dense_original_results),
+                "dense_rewritten": len(rewritten_results),
+            },
+            exact_identifiers=identifiers,
+        )
+
+    def fetch(
+        self,
+        user_id: str,
+        query_text: str,
+        limit: int = 5,
+        alternate_query_text: str | None = None,
+        exclude_note_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Backward-compatible list-only wrapper around :meth:`retrieve`."""
+        request = RetrievalRequest(
+            user_id=user_id,
+            query=query_text,
+            limit=limit,
+            alternate_query=alternate_query_text,
+            exclude_note_id=exclude_note_id,
+        )
+        return self.retrieve(request).candidates
 
 
 class NoteContextRetriever:
-    """
-    Thin wrapper for note-ingestion's context-gathering.
-    
-    Delegates to HybridRetriever; no rewrite logic. Used by note_processor.py to gather
-    related notes before passing to LLM extraction prompt.
-    """
+    """Thin ingestion policy: hybrid retrieval, no rewrite, exclude the note."""
 
     def __init__(self, hybrid_retriever: HybridRetriever | None = None):
         self.hybrid_retriever = hybrid_retriever or get_hybrid_retriever()
@@ -417,31 +461,16 @@ class NoteContextRetriever:
         limit: int = 3,
         exclude_note_id: str | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Fetch related notes for a new note being processed.
-        
-        Args:
-            user_id: User identifier.
-            raw_text: New note's raw text to search for related context.
-            limit: Maximum related notes to return.
-            exclude_note_id: Note ID to exclude from results (the note being processed).
-        
-        Returns:
-            List of ranked related-note dicts.
-        """
-        # No rewrite for note-ingestion; just fetch using the raw text as-is.
-        results = self.hybrid_retriever.fetch(
-            user_id=user_id,
-            query_text=raw_text,
-            limit=limit,
-            alternate_query_text=None,
+        result = self.hybrid_retriever.retrieve(
+            RetrievalRequest(
+                user_id=user_id,
+                query=raw_text,
+                limit=limit,
+                mode="note_ingestion",
+                exclude_note_id=exclude_note_id,
+            )
         )
-        
-        # Filter out self-reference if specified.
-        if exclude_note_id:
-            results = [r for r in results if str(r.get("note_id") or "") != str(exclude_note_id)]
-        
-        return results
+        return result.candidates
 
 
 # Module-level singletons.

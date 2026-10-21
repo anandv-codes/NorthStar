@@ -215,7 +215,7 @@ class HybridRetriever:
                 )
 
         # Fusion
-        from backend.app.domain.query_retrieval.services import fuse_candidates
+        from backend.app.domain.query_retrieval.hybrid_retriever import fuse_candidates
 
         candidates = fuse_candidates(
             candidate_lists=[

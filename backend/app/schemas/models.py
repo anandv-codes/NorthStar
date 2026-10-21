@@ -262,6 +262,8 @@ class QueryRetrievalCandidate(BaseModel):
     original_rank: Optional[int] = None
     rewritten_distance: Optional[float] = None
     rewritten_rank: Optional[int] = None
+    exact_distance: Optional[float] = None
+    exact_rank: Optional[int] = None
     rrf_score: Optional[float] = None
     rerank_score: Optional[float] = None
     score: float
@@ -283,6 +285,7 @@ class QueryRetrievalResponse(BaseModel):
     fallback_reason: Optional[str] = None
     rerank_used: bool = False
     rerank_strategy: Optional[str] = None
+    explicit_identifiers: List[str] = Field(default_factory=list)
     candidates: List[QueryRetrievalCandidate] = Field(default_factory=list)
 
 
@@ -533,10 +536,11 @@ class DueCardsResponse(BaseModel):
 
 
 class RecallSuggestionResponse(BaseModel):
-    """A candidate shown to the user with its question (answer hidden)."""
+    """A candidate shown to the user with its generated question/answer pair."""
 
     candidate_id: str
     question: str
+    answer: Optional[str] = None
     item_type: str
     source_note_id: Optional[str] = None
     score: Optional[float] = None
@@ -548,6 +552,28 @@ class RecallSuggestionResponse(BaseModel):
 class RecallSuggestionListResponse(BaseModel):
     suggestions: List[RecallSuggestionResponse] = Field(default_factory=list)
     total: int = 0
+
+
+class RecallSuggestionUpdateRequest(BaseModel):
+    question: Optional[str] = None
+    answer: Optional[str] = None
+
+
+class RecallBulkAcceptRequest(BaseModel):
+    candidate_ids: List[str] = Field(..., min_length=1, max_length=100)
+
+
+class RecallBulkAcceptItem(BaseModel):
+    candidate_id: str
+    status: str
+    card: Optional[RecallCardResponse] = None
+    error: Optional[str] = None
+
+
+class RecallBulkAcceptResponse(BaseModel):
+    accepted: int = 0
+    failed: int = 0
+    results: List[RecallBulkAcceptItem] = Field(default_factory=list)
 
 
 class NoteRecallToggleRequest(BaseModel):
