@@ -829,6 +829,30 @@ export async function acceptSuggestion(candidateId: string) {
   );
 }
 
+/**
+ * Generate (or fetch) a suggestion's answer on demand.
+ *
+ * Answers are no longer generated while the note is processed: the first
+ * "Show answer" (or accepting the suggestion) triggers generation.
+ */
+export async function revealSuggestionAnswer(candidateId: string) {
+  if (MOCK_MODE) {
+    const api = await loadMockApi();
+    if (typeof api.revealSuggestionAnswer === "function") {
+      return api.revealSuggestionAnswer(candidateId) as Promise<RecallSuggestion>;
+    }
+    return null;
+  }
+  return requestJson<RecallSuggestion>(
+    `${BASE_URL}/recall/candidates/${encodeURIComponent(candidateId)}/answer`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+}
+
 export async function rejectSuggestion(candidateId: string, feedback?: string) {
   if (MOCK_MODE) {
     return (await loadMockApi()).rejectSuggestion(candidateId, feedback) as Promise<RecallDecisionResponse>;

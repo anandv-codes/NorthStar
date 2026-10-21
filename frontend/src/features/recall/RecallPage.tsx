@@ -11,6 +11,7 @@ import {
   fetchDueCards,
   fetchSuggestions,
   rejectSuggestion,
+  revealSuggestionAnswer,
   reviewCard,
   updateSuggestion,
 } from "../../shared/api/httpClient";
@@ -145,6 +146,17 @@ export function RecallPage() {
       setProcessingSuggestionId(null);
       setProcessingAction(null);
     }
+  };
+
+  const handleRevealAnswer = async (suggestion: RecallSuggestion): Promise<string | null> => {
+    const updated = await revealSuggestionAnswer(suggestion.candidate_id);
+    if (!updated) return suggestion.answer ?? null;
+    setSuggestions((current) =>
+      current.map((item) =>
+        item.candidate_id === suggestion.candidate_id ? { ...item, ...updated } : item,
+      ),
+    );
+    return updated.answer ?? null;
   };
 
   const handleSelectSuggestion = (candidateId: string, selected: boolean) => {
@@ -345,6 +357,7 @@ export function RecallPage() {
               onAccept={() => void handleAcceptSuggestion(suggestion)}
               onReject={() => void handleRejectSuggestion(suggestion)}
               onSave={(question, answer) => handleSaveSuggestion(suggestion, question, answer)}
+              onRevealAnswer={() => handleRevealAnswer(suggestion)}
             />
           ))}
         </div>

@@ -1,5 +1,8 @@
 import logging
 import os
+import time
+from contextlib import asynccontextmanager
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +25,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+logger = logging.getLogger(__name__)
+
 def _cors_origins() -> list[str]:
     """Allowed browser origins, from a comma-separated ``CORS_ALLOW_ORIGINS``.
 
@@ -37,16 +42,65 @@ def _cors_origins() -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
-app = FastAPI(title="NorthStar Backend")
+def _warm_up_embeddings() -> None:
+    """Build the embedding provider and pay its first-call handshake cost."""
+    from .infrastructure.vector.embeddings import get_embeddings
+
+    embeddings = get_embeddings()
+    # One throwaway embed warms the API connection/TLS path too, so the first
+    # retrieval doesn't pay the round-trip setup.
+    embeddings.embed_query("warm up")
+
+
+def _warm_up() -> None:
+    """Build the expensive clients once, at startup, instead of per request.
+
+    Loading the embedding model / Gemini client used to add ~7-23s to the first
+    note after every restart. Failures are logged and ignored: the app should
+    still boot with an unreachable external service.
+    """
+    if os.getenv("WARMUP_ON_STARTUP", "true").strip().lower() in {"0", "false", "no", "off"}:
+        logger.info("Startup warm-up disabled (WARMUP_ON_STARTUP)")
+        return
+
+    from .infrastructure.llm.gemini_client import warm_up_llm_clients
+
+    targets = (
+        ("llm_clients", warm_up_llm_clients),
+        ("embeddings", _warm_up_embeddings),
+    )
+    for name, warm in targets:
+        started = time.perf_counter()
+        try:
+            warm()
+        except Exception as exc:  # noqa: BLE001 - startup must not hard-fail
+            logger.warning(
+                "Warm-up %s failed after %d ms: %s",
+                name,
+                (time.perf_counter() - started) * 1000,
+                exc,
+            )
+        else:
+            logger.info(
+                "Warm-up %s ready in %d ms",
+                name,
+                (time.perf_counter() - started) * 1000,
+            )
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    _warm_up()
+    yield
+
+
+app = FastAPI(title="NorthStar Backend", lifespan=lifespan)
 
 
 @app.get("/health", tags=["ops"])
 def health() -> dict[str, str]:
     """Liveness probe for Nginx/ALB health checks and uptime monitoring."""
     return {"status": "ok"}
-
-
-logger = logging.getLogger(__name__)
 
 
 @app.middleware("http")

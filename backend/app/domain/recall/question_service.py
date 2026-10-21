@@ -1,8 +1,9 @@
-"""Generate question/answer pairs for persisted recall candidates.
+"""Generate questions for persisted recall candidates.
 
-Both fields are produced here, before the user sees a suggestion. Only a
-question that passes validation incurs the answer-generation LLM call. Accepting
-a suggestion later copies the stored answer instead of regenerating it.
+Only the question is produced up front: the answer is generated on demand,
+either when the user reveals it during review or when they accept the
+suggestion into their deck. That keeps note processing cheap (no second LLM
+call per candidate) and avoids paying for answers the user never looks at.
 """
 from __future__ import annotations
 
@@ -64,7 +65,11 @@ def generate_questions(
     existing_questions: list[str] | None = None,
     config: RecallConfig | None = None,
 ) -> list[dict[str, Any]]:
-    """Generate + validate a question per candidate and persist the decision."""
+    """Generate + validate a question per candidate and persist the decision.
+
+    Answers stay empty (``None``) until the user reveals or accepts them; see
+    :func:`generate_answer_for_candidate`.
+    """
     config = config or load_recall_config()
     known = list(existing_questions or [])
     results: list[dict[str, Any]] = []
@@ -79,34 +84,18 @@ def generate_questions(
             config,
         )
 
-        answer_result: dict[str, Any] = {"answer": None, "status": "skipped", "reason": None}
         if result["status"] == "generated":
-            answer_context = {
-                **context,
-                "candidate_text": candidate.get("text") or "",
-            }
-            answer_result = generate_answer(
-                result["question"],
-                answer_context,
-                model,
-                config,
-            )
-
-        if result["status"] == "generated" and answer_result["status"] == "generated":
             known.append(result["question"])
             updates: dict[str, Any] = {
                 "prompt": result["question"],
-                "answer": answer_result["answer"],
+                "answer": None,
                 "status": "suggested",
             }
         else:
             rationale = {
                 **(candidate.get("rationale") or {}),
+                "question_reason": result["reason"],
             }
-            if result["status"] != "generated":
-                rationale["question_reason"] = result["reason"]
-            else:
-                rationale["answer_reason"] = answer_result["reason"]
             updates = {
                 "status": "rejected",
                 "prompt": result.get("question"),
@@ -122,7 +111,48 @@ def generate_questions(
                 "status": updates["status"],
                 "question": updates.get("prompt"),
                 "answer": updates.get("answer"),
-                "reason": result["reason"] or answer_result["reason"],
+                "reason": result["reason"],
             }
         )
     return results
+
+
+def generate_answer_for_candidate(
+    user_id: str,
+    candidate_id: str,
+    *,
+    model: Any,
+    repo: Any,
+    context: dict[str, Any] | None = None,
+    config: RecallConfig | None = None,
+) -> dict[str, Any]:
+    """Generate and persist an answer for one candidate (idempotent).
+
+    Called when the user reveals an answer or accepts a suggestion. Raises
+    ``LookupError`` when the candidate does not exist and ``ValueError`` when it
+    has no question or the answer fails grounding validation.
+    """
+    config = config or load_recall_config()
+    candidate = repo.get_candidate(user_id, candidate_id)
+    if candidate is None:
+        raise LookupError("candidate_not_found")
+
+    question = (candidate.get("prompt") or "").strip()
+    if not question:
+        raise ValueError("candidate_has_no_question")
+
+    existing = (candidate.get("answer") or "").strip()
+    if existing:
+        return candidate
+
+    answer_context = {
+        **(context or build_context("")),
+        "candidate_text": candidate.get("text") or "",
+    }
+    result = generate_answer(question, answer_context, model, config)
+    if result["status"] != "generated":
+        reason = result.get("reason") or "unknown"
+        raise ValueError(f"answer_generation_failed:{reason}")
+
+    updated = repo.update_candidate(user_id, candidate_id, {"answer": result["answer"]})
+    return updated or {**candidate, "answer": result["answer"]}

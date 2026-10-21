@@ -1,10 +1,15 @@
 import os
 import json
 import logging
+import time
 from datetime import datetime, timezone
 
 from ..infrastructure.db.supabase_client import get_note_item, update_note_item
-from ..infrastructure.llm.gemini_client import call_gemini_api, get_chat_model
+from ..infrastructure.llm.gemini_client import (
+    DEFAULT_GEMINI_MODEL_ID,
+    call_gemini_api,
+    get_chat_model,
+)
 from ..domain.memory.services import (
     apply_deterministic_task_resolution,
     bump_entity_mentions,
@@ -35,6 +40,24 @@ from ..domain.query_retrieval.note_context_provider import fetch_note_context
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
+class _StageTimer:
+    """Collect per-stage durations so a slow note shows up as one log line."""
+
+    def __init__(self) -> None:
+        self.timings: dict[str, float] = {}
+        self._last = time.perf_counter()
+
+    def mark(self, stage: str) -> None:
+        now = time.perf_counter()
+        self.timings[stage] = round((now - self._last) * 1000, 1)
+        self._last = now
+
+    @property
+    def total_ms(self) -> float:
+        return round(sum(self.timings.values()), 1)
+
+
 def process_sqs_message(body:dict)-> dict:
     ##Extract data & call Gemini
     ##DB update & return success
@@ -46,6 +69,7 @@ def process_sqs_message(body:dict)-> dict:
         if not note_id or not user_id or not raw_text:
             raise ValueError(f"Missing required fields")
         logger.info(f"Processing {note_id} for user {user_id}")
+        timer = _StageTimer()
 
         # Per-note opt-in: questions (the only LLM cost in the recall loop) are
         # generated only when the user enabled recall for this note. Candidates
@@ -84,6 +108,7 @@ def process_sqs_message(body:dict)-> dict:
             related_notes = []
             matched_entity_names = []
             memory_items = []
+        timer.mark("retrieval")
 
         enrichment_res = call_gemini_api(
             raw_text,
@@ -96,10 +121,11 @@ def process_sqs_message(body:dict)-> dict:
         extraction_run = create_extraction_run(
             user_id=user_id,
             note_id=note_id,
-            model_name=os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite"),
+            model_name=os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID),
             prompt_version=os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1"),
             status="completed",
         )
+        timer.mark("extraction")
 
         # Extract context note IDs from both hybrid and entity-linked retrieval.
         context_note_ids = [note.get("note_id") for note in related_notes if note.get("note_id")]
@@ -127,6 +153,7 @@ def process_sqs_message(body:dict)-> dict:
         }
         logger.info("Updating db")
         update_note_item(user_id,note_id,updates)
+        timer.mark("db_update")
 
         tasks = insert_tasks(
             user_id=user_id,
@@ -192,6 +219,7 @@ def process_sqs_message(body:dict)-> dict:
                 logger.info(f"Commitments extracted: {len(inserted_commitments)}")
         except Exception as exc:
             logger.warning(f"Commitment persistence failed; continuing: {exc}")
+        timer.mark("entities")
 
         entity_name_to_id = {
             str(entity.get("name", "")).strip().lower(): entity.get("entity_id")
@@ -230,6 +258,7 @@ def process_sqs_message(body:dict)-> dict:
                 links=links,
             )
         logger.info(f"Entity links created: {len(links)}")
+        timer.mark("entity_links")
 
         # PR6: score extracted units into recall candidates. Idempotent via
         # (user_id, dedupe_key) upsert, so re-processing a note is safe.
@@ -258,6 +287,7 @@ def process_sqs_message(body:dict)-> dict:
                 },
             )
             logger.info(f"Recall candidates created: {len(candidates)}")
+            timer.mark("candidates")
 
             # PR7: generate the question (answer comes after user acceptance).
             # Only when the user enabled recall for this note.
@@ -281,6 +311,7 @@ def process_sqs_message(body:dict)-> dict:
             else:
                 recall_status = "off"
                 logger.info("Recall disabled for note; skipping question generation")
+            timer.mark("questions")
         except Exception as exc:
             recall_status = "failed" if recall_enabled else "off"
             logger.warning(f"Candidate/question generation failed; continuing: {exc}")
@@ -294,6 +325,7 @@ def process_sqs_message(body:dict)-> dict:
             )
         except Exception as exc:
             logger.warning(f"Could not finalize note recall status: {exc}")
+        timer.mark("finalize")
 
         resolution = apply_deterministic_task_resolution(
             user_id=user_id,
@@ -310,6 +342,7 @@ def process_sqs_message(body:dict)-> dict:
             user_id=user_id,
             resolution=resolution,
         )
+        timer.mark("resolution")
 
         # RAG is always enabled: chunk + embed the note and index it in
         # pgvector for future retrieval. Done last so failed enrichment does
@@ -323,6 +356,14 @@ def process_sqs_message(body:dict)-> dict:
             logger.info(f"Indexed {chunk_count} chunk(s) for note {note_id}")
         except Exception as exc:
             logger.warning(f"Vector indexing failed; note stored without embeddings: {exc}")
+        timer.mark("indexing")
+
+        logger.info(
+            "Note %s timings (ms): %s | total=%s",
+            note_id,
+            ", ".join(f"{stage}={ms}" for stage, ms in timer.timings.items()),
+            timer.total_ms,
+        )
 
         return {
             "success": True,

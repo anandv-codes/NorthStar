@@ -6,7 +6,7 @@ import { MicButton, MicStatus } from "../../shared/ui/MicButton";
 import { appendTranscript, useSpeechDictation } from "../../shared/lib/useSpeechDictation";
 
 const POLL_INTERVAL_MS = 1500;
-const POLL_TIMEOUT_MS = 20000;
+const POLL_TIMEOUT_MS = 60000;
 
 const TERMINAL_NOTE_STATUSES = new Set(["completed", "enriched", "failed"]);
 const isTerminalStatus = (status: string) => TERMINAL_NOTE_STATUSES.has(status);

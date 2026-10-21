@@ -2,7 +2,7 @@ import uuid
 import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from ..deps import get_current_user_id
 from ...schemas.models import (
     NoteCreateRequest,
@@ -35,8 +35,35 @@ PROCESS_NOTES_INLINE = os.getenv("PROCESS_NOTES_INLINE", "false").lower() == "tr
 router = APIRouter()
 
 
+def _process_note_job(job: dict) -> None:
+    """Run the inline note pipeline after the response has been sent.
+
+    Previously this ran inside the POST handler, so the browser waited for
+    retrieval + extraction + question generation (~10-40s). Starlette runs
+    background tasks in-process right after the response, so breakpoints in
+    ``note_processor`` still hit while the client gets its 202 immediately.
+    """
+    failed_status = {"status": "failed", "recall_status": "failed"}
+    try:
+        process_sqs_message(job)
+    except Exception:
+        logger.exception(
+            "Inline note processing failed: note_id=%s user_id=%s",
+            job.get("note_id"),
+            job.get("user_id"),
+        )
+        try:
+            update_note_item(job["user_id"], job["note_id"], failed_status)
+        except Exception as exc:  # noqa: BLE001 - best-effort failure marker
+            logger.warning("Could not mark note %s as failed: %s", job.get("note_id"), exc)
+
+
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
-def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_user_id)):
+def create_note(
+    payload: NoteCreateRequest,
+    background_tasks: BackgroundTasks,
+    user_id: str = Depends(get_current_user_id),
+):
     note_id = str(uuid.uuid4())
     created_at = datetime.now(timezone.utc).isoformat()
     logger.info(f"create_note: user_id={user_id}, note_id={note_id}")
@@ -68,13 +95,16 @@ def create_note(payload: NoteCreateRequest, user_id: str = Depends(get_current_u
         )
     else:
         # Local debug helper: process in-process so breakpoints in note_processor hit reliably.
-        process_sqs_message(
+        # Queued as a background task so the POST returns immediately.
+        logger.info("Processing note in-process (background task)")
+        background_tasks.add_task(
+            _process_note_job,
             {
                 "user_id": user_id,
                 "note_id": note_id,
                 "created_at": created_at,
                 "raw_text": payload.text,
-            }
+            },
         )
 
     return {"note_id": note_id, "status": "processing"}

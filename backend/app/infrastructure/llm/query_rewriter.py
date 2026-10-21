@@ -10,6 +10,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from .prompt_logger import append_pipeline_log
 from .prompt_loader import load_prompt
 from .llm_response_utils import extract_text_from_response
+from .gemini_client import DEFAULT_GEMINI_MODEL_ID
 from .llm_config import (
     QUERY_REWRITE_TEMPERATURE,
     QUERY_REWRITE_MAX_RETRIES,
@@ -86,7 +87,7 @@ def rewrite_query_with_llm(
         )
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("QUERY_REWRITE_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite"))
+    model_id = os.getenv("QUERY_REWRITE_MODEL_ID", os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID))
     append_pipeline_log(
         "query rewrite",
         [

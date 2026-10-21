@@ -7,6 +7,13 @@ logger = logging.getLogger(__name__)
 
 from functools import lru_cache
 
+# Fallback when GEMINI_MODEL_ID is unset. Keep this in sync with the value in
+# backend/.env. ``gemini-2.5-flash`` is not available to new API keys (404
+# NOT_FOUND), ``gemini-2.5-flash-lite`` is capped at 20 requests/day on the free
+# tier, and ``gemini-3.1-flash-lite`` returns 503 under load; 3.5-flash-lite is
+# the youngest lite model that answered reliably in testing (~1-2s/call).
+DEFAULT_GEMINI_MODEL_ID = "gemini-3.5-flash-lite"
+
 from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.output_parsers import JsonOutputParser
@@ -168,20 +175,30 @@ def call_gemini_api(
         )
 
 
-def invoke_gemini(prompt_text: str) -> str:
-    """Call Gemini API with the given prompt."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY must be set")
+@lru_cache(maxsize=4)
+def _get_extraction_llm(model_id: str, api_key: str) -> ChatGoogleGenerativeAI:
+    """Process-wide singleton per model id for note extraction.
 
-    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite")
-    model = ChatGoogleGenerativeAI(
+    Building ``ChatGoogleGenerativeAI`` costs several hundred ms; without this
+    cache every note paid that cost again inside the request.
+    """
+    return ChatGoogleGenerativeAI(
         google_api_key=api_key,
         model=model_id,
         temperature=WORK_MEMORY_EXTRACTION_TEMPERATURE,
         max_retries=WORK_MEMORY_EXTRACTION_MAX_RETRIES,
         timeout=WORK_MEMORY_EXTRACTION_TIMEOUT_SECONDS,
     )
+
+
+def invoke_gemini(prompt_text: str) -> str:
+    """Call Gemini API with the given prompt."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY must be set")
+
+    model_id = os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID)
+    model = _get_extraction_llm(model_id, api_key)
 
     logger.info(f"Calling Gemini ({model_id}), prompt_chars={len(prompt_text)}")
     response = model.invoke([HumanMessage(content=prompt_text)])
@@ -252,7 +269,7 @@ def generate_chat_answer(prompt: str) -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("CHAT_MODEL_ID", os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite"))
+    model_id = os.getenv("CHAT_MODEL_ID", os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID))
     model = _get_chat_llm(model_id, api_key)
 
     response = model.invoke([HumanMessage(content=prompt)])
@@ -293,7 +310,7 @@ def generate_period_summary_narrative(prompt: str) -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite")
+    model_id = os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID)
     model = _get_period_summary_llm(model_id, api_key)
 
     response = model.invoke([HumanMessage(content=prompt)])
@@ -309,3 +326,21 @@ def get_chat_model() -> GeminiChatModel:
     if _DEFAULT_CHAT_MODEL is None:
         _DEFAULT_CHAT_MODEL = GeminiChatModel()
     return _DEFAULT_CHAT_MODEL
+
+
+def warm_up_llm_clients() -> None:
+    """Construct the cached Gemini clients ahead of the first request.
+
+    Called from the FastAPI lifespan. Client construction is a fixed cost
+    (imports + TLS setup) that otherwise lands on the first note/chat request.
+    No API call is made here, so it costs no quota.
+    """
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY must be set")
+
+    extraction_model_id = os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID)
+    chat_model_id = os.getenv("CHAT_MODEL_ID", extraction_model_id)
+    _get_extraction_llm(extraction_model_id, api_key)
+    _get_chat_llm(chat_model_id, api_key)
+    _get_period_summary_llm(extraction_model_id, api_key)

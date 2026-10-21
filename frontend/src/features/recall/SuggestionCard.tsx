@@ -10,6 +10,8 @@ interface SuggestionCardProps {
   onAccept: () => void;
   onReject: () => void;
   onSave: (question: string, answer: string) => Promise<void>;
+  /** Generate the answer on demand; resolves with the new answer text. */
+  onRevealAnswer: () => Promise<string | null>;
 }
 
 function validateQuestionField(value: string): string | null {
@@ -31,25 +33,54 @@ export function SuggestionCard({
   onAccept,
   onReject,
   onSave,
+  onRevealAnswer,
 }: SuggestionCardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draftQuestion, setDraftQuestion] = useState(suggestion.question);
   const [draftAnswer, setDraftAnswer] = useState(suggestion.answer ?? "");
+  const [answerText, setAnswerText] = useState(suggestion.answer ?? "");
+  const [revealing, setRevealing] = useState(false);
+  const [revealError, setRevealError] = useState<string | null>(null);
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [answerError, setAnswerError] = useState<string | null>(null);
   const questionErrorId = useId();
   const answerErrorId = useId();
-  const busy = processing !== null;
+  const busy = processing !== null || revealing;
 
   useEffect(() => {
     setDraftQuestion(suggestion.question);
     setDraftAnswer(suggestion.answer ?? "");
+    setAnswerText(suggestion.answer ?? "");
   }, [suggestion.question, suggestion.answer]);
+
+  const toggleAnswer = async () => {
+    if (showAnswer) {
+      setShowAnswer(false);
+      return;
+    }
+    setShowAnswer(true);
+    if (answerText.trim() || revealing) return;
+
+    setRevealing(true);
+    setRevealError(null);
+    try {
+      const generated = await onRevealAnswer();
+      if (generated) {
+        setAnswerText(generated);
+      } else {
+        setRevealError("Couldn't generate an answer for this question.");
+      }
+    } catch (err) {
+      setRevealError(err instanceof Error ? err.message : "Couldn't generate an answer.");
+    } finally {
+      setRevealing(false);
+    }
+  };
 
   const startEditing = () => {
     setDraftQuestion(suggestion.question);
-    setDraftAnswer(suggestion.answer ?? "");
+    setDraftAnswer(answerText);
     setQuestionError(null);
     setAnswerError(null);
     setShowAnswer(true);
@@ -58,7 +89,7 @@ export function SuggestionCard({
 
   const cancelEditing = () => {
     setDraftQuestion(suggestion.question);
-    setDraftAnswer(suggestion.answer ?? "");
+    setDraftAnswer(answerText);
     setQuestionError(null);
     setAnswerError(null);
     setEditing(false);
@@ -167,18 +198,31 @@ export function SuggestionCard({
                 {suggestion.question}
               </p>
               {showAnswer ? (
-                <p className="mt-2 rounded-xl bg-neutral-50 px-3 py-2 text-sm leading-relaxed text-neutral-600">
-                  {suggestion.answer || "No answer yet. Edit this suggestion to add one."}
-                </p>
+                <div
+                  aria-live="polite"
+                  className="mt-2 rounded-xl bg-neutral-50 px-3 py-2 text-sm leading-relaxed text-neutral-600"
+                >
+                  {revealing ? (
+                    <span className="inline-flex items-center gap-2 text-neutral-500">
+                      <Spinner size={14} className="animate-spin" />
+                      Generating answer…
+                    </span>
+                  ) : revealError ? (
+                    <span className="text-red-600">{revealError}</span>
+                  ) : (
+                    answerText || "No answer yet. Edit this suggestion to add one."
+                  )}
+                </div>
               ) : null}
               <div className="mt-2 flex items-center gap-3">
                 <button
                   type="button"
-                  disabled={busy}
-                  onClick={() => setShowAnswer((current) => !current)}
-                  className="text-xs font-semibold text-neutral-500 transition-colors hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={busy || revealing}
+                  onClick={() => void toggleAnswer()}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-500 transition-colors hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-expanded={showAnswer}
                 >
+                  {revealing ? <Spinner size={13} className="animate-spin" /> : null}
                   {showAnswer ? "Hide answer" : "Show answer"}
                 </button>
                 <span className="text-xs text-neutral-400">Worth remembering?</span>

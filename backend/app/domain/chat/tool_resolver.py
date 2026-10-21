@@ -17,6 +17,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import ValidationError
 
+from ...infrastructure.llm.gemini_client import DEFAULT_GEMINI_MODEL_ID
 from ...infrastructure.llm.llm_config import (
     TOOL_CALL_MAX_RETRIES,
     TOOL_CALL_TEMPERATURE,
@@ -62,7 +63,7 @@ def resolve_tool_call(user_id: str, message: str) -> ToolCallProposal | None:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY must be set")
 
-    model_id = os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash-lite")
+    model_id = os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID)
     llm = _get_tool_calling_llm(model_id, api_key)
     enabled_schemas = [
         definition.args_schema for name, definition in TOOL_REGISTRY.items() if name in ENABLED_TOOL_NAMES

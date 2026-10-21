@@ -1,8 +1,12 @@
 """Tests for the pgvector store's RPC mapping and chunk writes."""
+import pytest
+
 from backend.app.infrastructure.vector.pg_vector_store import (
     PgVectorStore,
     replace_note_chunks,
 )
+
+EMBEDDING = [0.1] * 768
 
 
 class _Response:
@@ -28,7 +32,7 @@ def test_query_related_notes_aggregates_chunks_to_best_per_note():
     ]
     store = _store(rows, captured)
 
-    results = store.query_related_notes("user-1", [0.1, 0.2], k=2)
+    results = store.query_related_notes("user-1", EMBEDDING, k=2)
 
     assert captured["name"] == "match_note_chunks"
     assert captured["params"]["match_user_id"] == "user-1"
@@ -42,7 +46,7 @@ def test_query_related_notes_passes_exclude_and_respects_k():
     rows = [{"note_id": f"n{i}", "content": "c", "distance": i / 10} for i in range(10)]
     store = _store(rows, captured)
 
-    results = store.query_related_notes("user-1", [0.0], k=3, exclude_note_id="n0")
+    results = store.query_related_notes("user-1", EMBEDDING, k=3, exclude_note_id="n0")
 
     assert captured["params"]["exclude_note_id"] == "n0"
     assert len(results) == 3
@@ -93,8 +97,8 @@ def test_replace_note_chunks_deletes_then_inserts():
         "user-1",
         "note-1",
         [
-            {"chunk_index": 0, "content": "a", "embedding": [0.1]},
-            {"chunk_index": 1, "content": "b", "embedding": [0.2]},
+            {"chunk_index": 0, "content": "a", "embedding": EMBEDDING},
+            {"chunk_index": 1, "content": "b", "embedding": EMBEDDING},
         ],
         supabase=client,
     )
@@ -113,3 +117,23 @@ def test_replace_note_chunks_clears_existing_when_empty():
     client = _FakeSupabase()
     assert replace_note_chunks("user-1", "note-1", [], supabase=client) == 0
     assert [(table, op) for table, op, _, _ in client.calls] == [("note_chunks", "delete")]
+
+
+def test_replace_note_chunks_rejects_wrong_dimensions_before_deleting():
+    client = _FakeSupabase()
+    with pytest.raises(RuntimeError, match="384 dimensions"):
+        replace_note_chunks(
+            "user-1",
+            "note-1",
+            [{"chunk_index": 0, "content": "a", "embedding": [0.1] * 384}],
+            supabase=client,
+        )
+    assert client.calls == []
+
+
+def test_query_related_notes_rejects_wrong_dimensions():
+    captured = {}
+    store = _store([], captured)
+    with pytest.raises(RuntimeError, match="384 dimensions"):
+        store.query_related_notes("user-1", [0.1] * 384)
+    assert captured == {}

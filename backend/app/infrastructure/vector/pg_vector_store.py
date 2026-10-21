@@ -17,6 +17,32 @@ from typing import Any, Callable
 NOTE_CHUNKS_TABLE = os.getenv("SUPABASE_NOTE_CHUNKS_TABLE", "note_chunks")
 NOTES_TABLE = os.getenv("SUPABASE_NOTES_TABLE", "notes")
 
+# Must match the `vector(N)` columns in backend/sql/phase4_pgvector.sql.
+DEFAULT_EMBEDDING_DIMENSIONS = 768
+
+
+def _expected_dimensions() -> int:
+    return int(os.getenv("EMBEDDING_DIMENSIONS", str(DEFAULT_EMBEDDING_DIMENSIONS)))
+
+
+def validate_embedding(embedding: list[float], *, where: str) -> None:
+    """Fail loudly on a provider/schema dimension mismatch.
+
+    A short embedding used to surface as a no-op insert plus an always-empty
+    match RPC, so RAG silently returned nothing. Raising here makes the
+    mismatch visible in logs (note processing) and to callers (retrieval).
+    """
+    expected = _expected_dimensions()
+    actual = len(embedding)
+    if actual != expected:
+        raise RuntimeError(
+            f"{where}: embedding has {actual} dimensions but pgvector columns expect "
+            f"{expected}. Use an embedding model that outputs {expected} dims "
+            "(EMBEDDING_PROVIDER=google / EMBEDDING_DIMENSIONS=768) or migrate the "
+            "vector(N) columns in backend/sql/phase4_pgvector.sql and re-embed."
+        )
+
+
 
 def _default_rpc() -> Callable[[str, dict[str, Any]], Any]:
     from ..db.supabase_client import supabase
@@ -55,6 +81,7 @@ class PgVectorStore:
         k: int = 3,
         exclude_note_id: str | None = None,
     ) -> list[dict[str, Any]]:
+        validate_embedding(embedding, where="match_note_chunks")
         response = self._rpc(
             "match_note_chunks",
             {
@@ -96,10 +123,15 @@ def replace_note_chunks(
     Returns the number of chunks written.
     """
     client = supabase or _default_supabase()
-    client.table(NOTE_CHUNKS_TABLE).delete().eq("user_id", user_id).eq("note_id", note_id).execute()
-
     if not chunks:
+        client.table(NOTE_CHUNKS_TABLE).delete().eq("user_id", user_id).eq("note_id", note_id).execute()
         return 0
+
+    # Validate before deleting so a dimension mismatch can't wipe the index.
+    for chunk in chunks:
+        validate_embedding(chunk["embedding"], where="note_chunks.embedding")
+
+    client.table(NOTE_CHUNKS_TABLE).delete().eq("user_id", user_id).eq("note_id", note_id).execute()
 
     rows = [
         {
@@ -118,6 +150,7 @@ def replace_note_chunks(
 
 def upsert_note_embedding(user_id: str, note_id: str, embedding: list[float], supabase: Any | None = None) -> None:
     """Store the note-level aggregate embedding on the note row."""
+    validate_embedding(embedding, where="notes.embedding")
     client = supabase or _default_supabase()
     client.table(NOTES_TABLE).update({"embedding": embedding}).eq("user_id", user_id).eq(
         "note_id", note_id

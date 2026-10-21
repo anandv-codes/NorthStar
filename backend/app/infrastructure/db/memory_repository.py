@@ -776,12 +776,13 @@ class SupabaseMemoryRepository:
         items = []
         # Fetch each item type separately and merge
         for item_type_config in [
-            ("tasks", TASKS_TABLE, ["task_id", "status", "description", "confidence", "created_at"]),
-            ("facts", FACTS_TABLE, ["fact_id", "content", "confidence", "created_at"]),
-            ("questions", QUESTIONS_TABLE, ["question_id", "status", "question", "confidence", "created_at"]),
-            ("decisions", DECISIONS_TABLE, ["decision_id", "decision", "confidence", "created_at"]),
-            ("risks", RISKS_TABLE, ["risk_id", "status", "risk", "confidence", "created_at"]),
-            ("concepts", CONCEPTS_TABLE, ["concept_id", "status", "label", "confidence", "created_at"]),
+            ("tasks", TASKS_TABLE, ["task_id", "source_note_id", "status", "description", "confidence", "created_at"]),
+            ("facts", FACTS_TABLE, ["fact_id", "source_note_id", "content", "confidence", "created_at"]),
+            ("questions", QUESTIONS_TABLE, ["question_id", "source_note_id", "status", "question", "confidence", "created_at"]),
+            ("decisions", DECISIONS_TABLE, ["decision_id", "source_note_id", "decision", "confidence", "created_at"]),
+            ("risks", RISKS_TABLE, ["risk_id", "source_note_id", "status", "risk", "confidence", "created_at"]),
+            # `concepts` stores the text in `concept`; there is no `label` column.
+            ("concepts", CONCEPTS_TABLE, ["concept_id", "source_note_id", "status", "concept", "confidence", "created_at"]),
         ]:
             item_type, table, fields = item_type_config
             try:
@@ -818,7 +819,7 @@ class SupabaseMemoryRepository:
                                 "item_id": list(item.values())[0],
                                 "content": item.get("question") or item.get("description") or 
                                           item.get("content") or item.get("decision") or 
-                                          item.get("risk") or item.get("label", ""),
+                                          item.get("risk") or item.get("concept") or "",
                                 "status": item.get("status"),
                                 "confidence": item.get("confidence"),
                                 "created_at": item.get("created_at"),

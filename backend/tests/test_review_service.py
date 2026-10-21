@@ -12,6 +12,7 @@ from backend.app.domain.recall.review_service import (
     review_card,
     update_suggestion,
 )
+from backend.app.domain.recall.question_service import build_context
 from backend.app.domain.recall.scheduling.scheduler import AnkiScheduler, SchedulerConfig
 from backend.tests.fakes import InMemoryRecallRepository
 
@@ -20,6 +21,16 @@ SCHED = AnkiScheduler(SchedulerConfig(learning_steps=(1, 10)))
 
 TEXT = "SQS visibility timeout controls how long a message stays hidden after retrieval."
 ANSWER = "It controls how long a message stays hidden after retrieval."
+ANSWER_JSON = '{"answer": "It controls how long a message stays hidden after retrieval."}'
+CONTEXT = build_context(TEXT)
+
+
+class FakeChatModel:
+    def __init__(self, responses):
+        self.responses = list(responses)
+
+    def generate(self, prompt):
+        return self.responses.pop(0) if self.responses else ""
 
 
 class FakeClock:
@@ -134,6 +145,52 @@ def test_accept_candidate_requires_stored_answer():
     candidate["answer"] = None
     with pytest.raises(ValueError, match="candidate_has_no_answer"):
         accept_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
+
+
+def test_accept_candidate_generates_answer_when_model_supplied():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+    candidate["answer"] = None
+    model = FakeChatModel([ANSWER_JSON])
+
+    result = accept_candidate(
+        "user-1",
+        candidate["candidate_id"],
+        repo=repo,
+        model=model,
+        context=CONTEXT,
+        now=NOW,
+    )
+
+    assert result["status"] == "carded"
+    assert result["card"]["answer"] == ANSWER
+    assert repo.get_candidate("user-1", candidate["candidate_id"])["answer"] == ANSWER
+    assert model.responses == []
+
+
+def test_accept_candidates_generates_missing_answers_per_candidate():
+    repo = InMemoryRecallRepository()
+    first = _suggested_candidate(repo, text="first")
+    second = _suggested_candidate(repo, text="second")
+    first["answer"] = None
+    second["answer"] = None
+    model = FakeChatModel([ANSWER_JSON, ANSWER_JSON])
+
+    result = accept_candidates(
+        "user-1",
+        [first["candidate_id"], second["candidate_id"]],
+        repo=repo,
+        model=model,
+        contexts={
+            first["candidate_id"]: CONTEXT,
+            second["candidate_id"]: CONTEXT,
+        },
+        now=NOW,
+    )
+
+    assert result["accepted"] == 2
+    assert result["failed"] == 0
+    assert all(item["card"]["answer"] == ANSWER for item in result["results"])
 
 
 def test_update_suggestion_edits_only_suggested_candidates():

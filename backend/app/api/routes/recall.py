@@ -15,6 +15,10 @@ from ...schemas.models import (
     RecallSuggestionUpdateRequest,
     ReviewHistoryResponse,
 )
+from ...domain.recall.question_service import (
+    build_context,
+    generate_answer_for_candidate,
+)
 from ...domain.recall.review_service import (
     accept_candidate,
     accept_candidates,
@@ -24,9 +28,34 @@ from ...domain.recall.review_service import (
     review_card,
     update_suggestion,
 )
+from ...domain.memory.services import query_entities_by_source_note
 from ...infrastructure.db.recall_repository import get_recall_repository
+from ...infrastructure.db.supabase_client import get_note_item
+from ...infrastructure.llm.gemini_client import get_chat_model
 
 router = APIRouter()
+
+
+def _suggestion_context(user_id: str, candidate: dict) -> dict:
+    """Grounding context for on-demand answer generation on a single candidate."""
+    note_text = ""
+    source_note_id = candidate.get("source_note_id")
+    if source_note_id:
+        try:
+            note = get_note_item(user_id=user_id, note_id=source_note_id) or {}
+            note_text = note.get("raw_text") or ""
+        except Exception:  # noqa: BLE001 - generation can proceed without it
+            note_text = ""
+
+    entity_names: list[str] = []
+    if source_note_id:
+        try:
+            entity_rows = query_entities_by_source_note(user_id=user_id, note_id=source_note_id)
+            entity_names = [row.get("name") for row in entity_rows if row.get("name")]
+        except Exception:  # noqa: BLE001 - context is best-effort
+            entity_names = []
+
+    return build_context(note_text, entity_names=entity_names)
 
 
 def _to_suggestion(row: dict) -> RecallSuggestionResponse:
@@ -81,10 +110,20 @@ def post_accept_candidates(
     payload: RecallBulkAcceptRequest,
     user_id: str = Depends(get_current_user_id),
 ):
+    repo = get_recall_repository()
+    candidate_ids = list(dict.fromkeys(payload.candidate_ids))
+    contexts: dict[str, dict] = {}
+    for candidate_id in candidate_ids:
+        candidate = repo.get_candidate(user_id, candidate_id)
+        if candidate:
+            contexts[candidate_id] = _suggestion_context(user_id, candidate)
+
     result = accept_candidates(
         user_id,
-        list(dict.fromkeys(payload.candidate_ids)),
-        repo=get_recall_repository(),
+        candidate_ids,
+        repo=repo,
+        model=get_chat_model(),
+        contexts=contexts,
     )
     return RecallBulkAcceptResponse(**result)
 
@@ -95,19 +134,59 @@ def post_accept_candidate(
     payload: RecallDecisionRequest | None = None,
     user_id: str = Depends(get_current_user_id),
 ):
+    repo = get_recall_repository()
     try:
+        candidate = repo.get_candidate(user_id, candidate_id)
+        if candidate is None:
+            raise LookupError("candidate_not_found")
         result = accept_candidate(
-            user_id, candidate_id, repo=get_recall_repository()
+            user_id,
+            candidate_id,
+            repo=repo,
+            model=get_chat_model(),
+            context=_suggestion_context(user_id, candidate),
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="candidate_not_found")
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
+        # Generation failures are upstream errors, not a bad request.
+        code = 502 if str(exc).startswith("answer_generation_failed") else 409
+        raise HTTPException(status_code=code, detail=str(exc))
     return RecallDecisionResponse(
         status=result["status"],
         candidate_id=candidate_id,
         card=RecallCardResponse(**result["card"]) if result.get("card") else None,
     )
+
+
+@router.post("/candidates/{candidate_id}/answer", response_model=RecallSuggestionResponse)
+def post_generate_candidate_answer(
+    candidate_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Generate (or return) a candidate's answer on demand.
+
+    Answers are no longer produced during note processing: the client calls
+    this when the user reveals the answer or accepts the suggestion.
+    """
+    repo = get_recall_repository()
+    candidate = repo.get_candidate(user_id, candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="candidate_not_found")
+
+    try:
+        row = generate_answer_for_candidate(
+            user_id,
+            candidate_id,
+            model=get_chat_model(),
+            repo=repo,
+            context=_suggestion_context(user_id, candidate),
+        )
+    except LookupError:
+        raise HTTPException(status_code=404, detail="candidate_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return _to_suggestion(row)
 
 
 @router.post("/candidates/{candidate_id}/reject", response_model=RecallDecisionResponse)

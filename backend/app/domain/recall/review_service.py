@@ -1,8 +1,10 @@
 """Review service: candidate decisions and card review.
 
-Flow: a ``suggested`` candidate is accepted -> its stored question/answer pair
-is copied to a scheduled card. Reviews grade the card and persist both the new
-scheduling state and an immutable history entry.
+Flow: a ``suggested`` candidate is accepted -> its question/answer pair is
+copied to a scheduled card. Answers are generated on demand: if the candidate
+has no stored answer, acceptance generates one when a model is supplied.
+Reviews grade the card and persist both the new scheduling state and an
+immutable history entry.
 """
 from __future__ import annotations
 
@@ -10,6 +12,7 @@ from datetime import datetime
 from typing import Any
 
 from .card_generation import RecallConfig, load_recall_config, validate_answer_edit, validate_question
+from .question_service import generate_answer_for_candidate
 from .scheduling import AnkiScheduler, SystemClock, initial_card_state, load_scheduler_config
 
 
@@ -30,9 +33,16 @@ def accept_candidate(
     candidate_id: str,
     *,
     repo: Any,
+    model: Any | None = None,
+    context: dict[str, Any] | None = None,
+    recall_config: RecallConfig | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Copy the stored Q/A into a scheduled card and mark the candidate accepted."""
+    """Copy the question/answer into a scheduled card and mark the candidate accepted.
+
+    When the candidate has no answer yet, one is generated on acceptance
+    (``model`` is required in that case).
+    """
     now = now or SystemClock().now()
 
     candidate = repo.get_candidate(user_id, candidate_id)
@@ -46,7 +56,19 @@ def accept_candidate(
         raise ValueError("candidate_has_no_question")
     answer = (candidate.get("answer") or "").strip()
     if not answer:
-        raise ValueError("candidate_has_no_answer")
+        if model is None:
+            raise ValueError("candidate_has_no_answer")
+        candidate = generate_answer_for_candidate(
+            user_id,
+            candidate_id,
+            model=model,
+            repo=repo,
+            context=context,
+            config=recall_config,
+        )
+        answer = (candidate.get("answer") or "").strip()
+        if not answer:
+            raise ValueError("candidate_has_no_answer")
 
     state = initial_card_state(now=now)
     card = repo.create_card(
@@ -167,9 +189,16 @@ def accept_candidates(
     candidate_ids: list[str],
     *,
     repo: Any,
+    model: Any | None = None,
+    contexts: dict[str, dict[str, Any]] | None = None,
+    recall_config: RecallConfig | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Accept multiple suggestions, returning per-candidate outcomes."""
+    """Accept multiple suggestions, returning per-candidate outcomes.
+
+    ``contexts`` maps candidate id -> answer-generation context so each card is
+    grounded in its own source note.
+    """
     now = now or SystemClock().now()
     results: list[dict[str, Any]] = []
     accepted = 0
@@ -177,7 +206,15 @@ def accept_candidates(
 
     for candidate_id in candidate_ids:
         try:
-            result = accept_candidate(user_id, candidate_id, repo=repo, now=now)
+            result = accept_candidate(
+                user_id,
+                candidate_id,
+                repo=repo,
+                model=model,
+                context=(contexts or {}).get(candidate_id),
+                recall_config=recall_config,
+                now=now,
+            )
         except LookupError:
             failed += 1
             results.append(
