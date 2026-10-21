@@ -7,6 +7,9 @@ from typing import Any, Callable, Dict, List, Optional
 import httpx
 from postgrest import APIError
 from supabase import create_client, Client
+from supabase.lib.client_options import SyncClientOptions
+
+from .supabase_http_client import DEFAULT_RETRIES, SupabaseHttpClient
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +18,20 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_NOTES_TABLE = os.getenv("SUPABASE_NOTES_TABLE", "notes")
 CHAT_THREADS_TABLE = os.getenv("SUPABASE_CHAT_THREADS_TABLE", "chat_threads")
 CHAT_MESSAGES_TABLE = os.getenv("SUPABASE_CHAT_MESSAGES_TABLE", "chat_messages")
+SUPABASE_HTTP_RETRIES = int(os.getenv("SUPABASE_HTTP_RETRIES", str(DEFAULT_RETRIES)))
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in the environment")
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Share one resilient client across PostgREST/auth/storage: a stale pooled
+# connection used to surface as an unhandled 500 from plain `.execute()` calls.
+supabase: Client = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    options=SyncClientOptions(
+        httpx_client=SupabaseHttpClient(retries=SUPABASE_HTTP_RETRIES)
+    ),
+)
 
 
 def _execute_with_retry(build_request: Callable[[], Any], retries: int = 1) -> Any:
