@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..deps import get_current_user_id
@@ -6,8 +8,9 @@ from ...schemas.models import (
     RecallBulkAcceptRequest,
     RecallBulkAcceptResponse,
     RecallBulkDeckAssignRequest,
-    RecallCardDeckUpdateRequest,
+    RecallCardBulkUpdateRequest,
     RecallCardListResponse,
+    RecallCardUpdateRequest,
     RecallCardResponse,
     RecallDecisionRequest,
     RecallDecisionResponse,
@@ -25,6 +28,11 @@ from ...schemas.models import (
 from ...domain.recall.question_service import (
     build_context,
     generate_answer_for_candidate,
+)
+from ...domain.recall.card_library import (
+    browse_cards,
+    bulk_update_cards,
+    update_card,
 )
 from ...domain.recall.deck_service import (
     archive_deck,
@@ -351,21 +359,62 @@ def post_assign_candidates_deck(
 def get_cards(
     deck_id: str | None = Query(default=None),
     include_not_due: bool = Query(default=False),
-    status: str = Query(default="active"),
-    limit: int = Query(default=200, ge=1, le=500),
+    status: str | None = Query(default="active"),
+    state: str | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=100),
+    due: Literal["due", "not_due"] | None = Query(default=None),
+    source_note_id: str | None = Query(default=None),
+    sort: Literal["due", "newest", "reviews", "lapses"] = Query(default="due"),
+    limit: int = Query(default=200, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     user_id: str = Depends(get_current_user_id),
 ):
+    effective_due = due
+    if effective_due is None and not include_not_due:
+        effective_due = "due"
     try:
-        cards = list_cards(
+        result = browse_cards(
             user_id,
             repo=get_recall_repository(),
             deck_id=deck_id,
-            include_not_due=include_not_due,
-            status=status,
+            status=None if status in (None, "all") else status,
+            state=state,
+            q=q,
+            due=effective_due,
+            source_note_id=source_note_id,
+            sort=sort,
             limit=limit,
+            offset=offset,
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="deck_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return RecallCardListResponse(
+        cards=[RecallCardResponse(**card) for card in result["cards"]],
+        total=result["total"],
+    )
+
+
+@router.patch("/cards/bulk", response_model=RecallCardListResponse)
+def patch_cards_bulk(
+    payload: RecallCardBulkUpdateRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    repo = get_recall_repository()
+    try:
+        cards = bulk_update_cards(
+            user_id,
+            list(payload.card_ids),
+            repo=repo,
+            deck_id=payload.deck_id,
+            deck_provided="deck_id" in payload.model_fields_set,
+            status=payload.status,
+        )
+    except LookupError:
+        raise HTTPException(status_code=404, detail="deck_not_found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     return RecallCardListResponse(
         cards=[RecallCardResponse(**card) for card in cards],
         total=len(cards),
@@ -375,13 +424,18 @@ def get_cards(
 @router.patch("/cards/{card_id}", response_model=RecallCardResponse)
 def patch_card(
     card_id: str,
-    payload: RecallCardDeckUpdateRequest,
+    payload: RecallCardUpdateRequest,
     user_id: str = Depends(get_current_user_id),
 ):
-    repo = get_recall_repository()
     try:
-        get_active_deck(user_id, payload.deck_id, repo=repo)
-        card = move_card_to_deck(user_id, card_id, payload.deck_id, repo=repo)
+        card = update_card(
+            user_id,
+            card_id,
+            repo=get_recall_repository(),
+            deck_id=payload.deck_id,
+            deck_provided="deck_id" in payload.model_fields_set,
+            status=payload.status,
+        )
     except LookupError:
         raise HTTPException(status_code=404, detail="card_or_deck_not_found")
     except ValueError as exc:

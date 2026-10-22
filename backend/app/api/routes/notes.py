@@ -2,16 +2,23 @@ import uuid
 import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from typing import Literal
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from ..deps import get_current_user_id
 from ...schemas.models import (
     NoteCreateRequest,
+    NoteListResponse,
     NoteStatusResponse,
     NoteMemoryResponse,
     NoteRecallToggleRequest,
     NoteRecallToggleResponse,
 )
-from ...infrastructure.db.supabase_client import put_note_item, get_note_item, update_note_item
+from ...infrastructure.db.supabase_client import (
+    get_note_item,
+    get_note_repository,
+    put_note_item,
+    update_note_item,
+)
 from ...infrastructure.db.recall_repository import get_recall_repository
 from ...infrastructure.llm.gemini_client import get_chat_model
 from ...domain.recall.question_service import build_context, generate_questions_for_note
@@ -108,6 +115,32 @@ def create_note(
         )
 
     return {"note_id": note_id, "status": "processing"}
+
+
+@router.get("", response_model=NoteListResponse)
+def list_notes(
+    q: str | None = Query(default=None, max_length=100),
+    recall: Literal["on", "off"] | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    created_after: str | None = Query(default=None),
+    created_before: str | None = Query(default=None),
+    sort: Literal["newest", "oldest"] = Query(default="newest"),
+    limit: int = Query(default=20, ge=1, le=50),
+    offset: int = Query(default=0, ge=0),
+    user_id: str = Depends(get_current_user_id),
+):
+    """Paginated note library with server-side search and filters."""
+    return get_note_repository().query_notes_page(
+        user_id,
+        status=status_filter,
+        recall=recall,
+        q=q,
+        created_after=created_after,
+        created_before=created_before,
+        sort=sort,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/{note_id}", response_model=NoteStatusResponse)

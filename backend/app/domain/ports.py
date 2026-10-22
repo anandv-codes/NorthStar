@@ -230,6 +230,22 @@ class RecallRepository(Protocol):
         deck_id: str | None = None,
     ) -> list[dict[str, Any]]: ...
 
+    def query_cards_page(
+        self,
+        user_id: str,
+        *,
+        deck_id: str | None = None,
+        status: str | None = None,
+        state: str | None = None,
+        q: str | None = None,
+        due_before: str | None = None,
+        due_after: str | None = None,
+        source_note_id: str | None = None,
+        sort: str = "due",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]: ...
+
     def update_card(self, user_id: str, card_id: str, updates: dict[str, Any]) -> dict[str, Any]: ...
 
     def insert_review_history(self, user_id: str, entry: dict[str, Any]) -> dict[str, Any]: ...
@@ -286,6 +302,20 @@ class NoteRepository(Protocol):
     """Read access to raw notes, used by the sparse (BM25) retriever."""
 
     def query_notes_for_user(self, user_id: str, status: str | None = None) -> list[dict[str, Any]]: ...
+
+    def query_notes_page(
+        self,
+        user_id: str,
+        *,
+        status: str | None = None,
+        recall: str | None = None,
+        q: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
+        sort: str = "newest",
+        limit: int = 20,
+        offset: int = 0,
+    ) -> dict[str, Any]: ...
 
 
 class ChatRepository(Protocol):

@@ -152,11 +152,11 @@ export function StudyPage() {
     <div className="mx-auto max-w-2xl">
       <header className="mb-6">
         <Link
-          to={deckId === "all" ? "/app/recall" : `/app/recall/decks/${deckId}`}
+          to={deckId === "all" ? "/app/library/recall" : `/app/library/recall/${deckId}`}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-950"
         >
           <ArrowLeft size={14} />
-          Back to recall
+          Back to library
         </Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <div>

@@ -45,6 +45,13 @@ export interface NoteStatus {
   recall_status?: string;
 }
 
+export interface NoteListResponse {
+  notes: NoteStatus[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface ExtractionRun {
   extraction_run_id: string;
   note_id: string;
@@ -137,6 +144,7 @@ export interface NoteMemoryResponse {
   questions: MemoryQuestion[];
   decisions: MemoryDecision[];
   risks: MemoryRisk[];
+  concepts: MemoryConcept[];
   entities: MemoryEntity[];
 }
 
@@ -300,6 +308,17 @@ export interface DueCardsResponse {
 export interface RecallCardList {
   cards: RecallCard[];
   total: number;
+}
+
+export interface RecallCardUpdate {
+  deck_id?: string | null;
+  status?: "active" | "suspended";
+}
+
+export interface RecallCardBulkUpdate {
+  card_ids: string[];
+  deck_id?: string | null;
+  status?: "active" | "suspended";
 }
 
 export interface RecallDecisionResponse {
@@ -600,6 +619,34 @@ export async function fetchCurrentUser() {
   return requestJson<UserProfile>(`${BASE_URL}/auth/me`);
 }
 
+export interface FetchNotesOptions {
+  q?: string;
+  recall?: "on" | "off";
+  status?: string;
+  createdAfter?: string;
+  createdBefore?: string;
+  sort?: "newest" | "oldest";
+  limit?: number;
+  offset?: number;
+}
+
+export async function fetchNotes(options: FetchNotesOptions = {}) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).fetchNotes(options) as Promise<NoteListResponse>;
+  }
+  const params = new URLSearchParams({
+    sort: options.sort ?? "newest",
+    limit: String(options.limit ?? 20),
+    offset: String(options.offset ?? 0),
+  });
+  if (options.q) params.set("q", options.q);
+  if (options.recall) params.set("recall", options.recall);
+  if (options.status) params.set("status", options.status);
+  if (options.createdAfter) params.set("created_after", options.createdAfter);
+  if (options.createdBefore) params.set("created_before", options.createdBefore);
+  return requestJson<NoteListResponse>(`${BASE_URL}/notes?${params}`);
+}
+
 export async function createNote(payload: CreateNotePayload) {
   if (MOCK_MODE) {
     return (await loadMockApi()).createNote(payload) as Promise<{ note_id: string; status: string }>;
@@ -881,30 +928,73 @@ export async function restoreRecallDeck(deckId: string) {
   );
 }
 
-export async function fetchRecallCards(options: {
+export interface FetchRecallCardsOptions {
   deckId?: string | null;
   includeNotDue?: boolean;
   status?: string;
+  state?: string;
+  q?: string;
+  due?: "due" | "not_due";
+  sourceNoteId?: string;
+  sort?: "due" | "newest" | "reviews" | "lapses";
   limit?: number;
-} = {}) {
-  const { deckId, includeNotDue = false, status = "active", limit = 200 } = options;
+  offset?: number;
+}
+
+export async function fetchRecallCards(options: FetchRecallCardsOptions = {}) {
+  const {
+    deckId,
+    includeNotDue = false,
+    status = "active",
+    state,
+    q,
+    due,
+    sourceNoteId,
+    sort = "due",
+    limit = 200,
+    offset = 0,
+  } = options;
   if (MOCK_MODE) {
     return (await loadMockApi()).fetchRecallCards(options) as Promise<RecallCardList>;
   }
-  const params = new URLSearchParams({ status, limit: String(limit) });
+  const params = new URLSearchParams({
+    status,
+    sort,
+    limit: String(limit),
+    offset: String(offset),
+  });
   if (deckId) params.set("deck_id", deckId);
   if (includeNotDue) params.set("include_not_due", "true");
+  if (state) params.set("state", state);
+  if (q) params.set("q", q);
+  if (due) params.set("due", due);
+  if (sourceNoteId) params.set("source_note_id", sourceNoteId);
   return requestJson<RecallCardList>(`${BASE_URL}/recall/cards?${params}`);
 }
 
-export async function moveRecallCard(cardId: string, deckId: string) {
+export async function updateRecallCard(cardId: string, payload: RecallCardUpdate) {
   if (MOCK_MODE) {
-    return (await loadMockApi()).moveRecallCard(cardId, deckId) as Promise<RecallCard>;
+    return (await loadMockApi()).updateRecallCard(cardId, payload) as Promise<RecallCard>;
   }
   return requestJson<RecallCard>(`${BASE_URL}/recall/cards/${encodeURIComponent(cardId)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deck_id: deckId }),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function moveRecallCard(cardId: string, deckId: string) {
+  return updateRecallCard(cardId, { deck_id: deckId });
+}
+
+export async function bulkUpdateRecallCards(payload: RecallCardBulkUpdate) {
+  if (MOCK_MODE) {
+    return (await loadMockApi()).bulkUpdateRecallCards(payload) as Promise<RecallCardList>;
+  }
+  return requestJson<RecallCardList>(`${BASE_URL}/recall/cards/bulk`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 }
 

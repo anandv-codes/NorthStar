@@ -225,6 +225,70 @@ class SupabaseRecallRepository:
             query = query.eq("deck_id", deck_id)
         return _run(query.order("next_due", desc=False).limit(max(1, limit)))
 
+    def query_cards_page(
+        self,
+        user_id: str,
+        *,
+        deck_id: str | None = None,
+        status: str | None = None,
+        state: str | None = None,
+        q: str | None = None,
+        due_before: str | None = None,
+        due_after: str | None = None,
+        source_note_id: str | None = None,
+        sort: str = "due",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        search = str(q or "").strip()[:100]
+        for char in ',%_()*"\\':
+            search = search.replace(char, " ")
+        search = " ".join(search.split())
+        page_limit = max(1, min(int(limit), 100))
+        page_offset = max(0, int(offset))
+
+        query = (
+            supabase.table(RECALL_CARDS_TABLE)
+            .select("*", count="exact")
+            .eq("user_id", user_id)
+        )
+        if deck_id:
+            query = query.eq("deck_id", deck_id)
+        if status:
+            query = query.eq("status", status)
+        if state:
+            query = query.eq("state", state)
+        if due_before:
+            query = query.lte("next_due", due_before)
+        if due_after:
+            query = query.gt("next_due", due_after)
+        if source_note_id:
+            query = query.contains("source_note_ids", [source_note_id])
+        if search:
+            query = query.or_(f"question.ilike.%{search}%,answer.ilike.%{search}%")
+
+        if sort == "newest":
+            query = query.order("created_at", desc=True)
+        elif sort == "reviews":
+            query = query.order("review_count", desc=True)
+        elif sort == "lapses":
+            query = query.order("lapses", desc=True)
+        else:
+            query = query.order("next_due", desc=False)
+
+        try:
+            response = query.range(page_offset, page_offset + page_limit - 1).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        rows = response.data if isinstance(response.data, list) else []
+        total = int(response.count) if response.count is not None else page_offset + len(rows)
+        return {
+            "cards": rows,
+            "total": total,
+            "limit": page_limit,
+            "offset": page_offset,
+        }
+
     def update_card(self, user_id: str, card_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         payload = {**updates, "updated_at": _utc_now()}
         rows = _run(

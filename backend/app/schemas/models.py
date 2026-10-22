@@ -25,6 +25,12 @@ class NoteStatusResponse(BaseModel):
     recall_enabled: bool = False
     recall_status: str = "off"
 
+class NoteListResponse(BaseModel):
+    notes: List[NoteStatusResponse] = Field(default_factory=list)
+    total: int = 0
+    limit: int = 20
+    offset: int = 0
+
 
 TaskStatus = Literal["open", "in_progress", "completed", "archived"]
 QuestionStatus = Literal["open", "answered", "archived"]
@@ -471,8 +477,15 @@ class RecallBulkDeckAssignRequest(BaseModel):
     deck_id: str = Field(..., min_length=1)
 
 
-class RecallCardDeckUpdateRequest(BaseModel):
-    deck_id: str = Field(..., min_length=1)
+class RecallCardUpdateRequest(BaseModel):
+    deck_id: Optional[str] = Field(default=None, min_length=1)
+    status: Optional[RecallCardStatus] = None
+
+
+class RecallCardBulkUpdateRequest(BaseModel):
+    card_ids: List[str] = Field(..., min_length=1, max_length=200)
+    deck_id: Optional[str] = Field(default=None, min_length=1)
+    status: Optional[RecallCardStatus] = None
 
 
 class NoteEntityLink(BaseModel):

@@ -247,8 +247,13 @@ export function NoteTakerPage() {
           </p>
           <ul className="space-y-3">
             {history.slice(1).map((item) => (
-              <li key={item.note_id} className="rounded-xl border border-neutral-100 p-4 text-sm text-neutral-600">
-                {item.enriched_summary || item.raw_text}
+              <li key={item.note_id}>
+                <Link
+                  to={`/app/library/notes/${item.note_id}`}
+                  className="block rounded-xl border border-neutral-100 p-4 text-sm text-neutral-600 transition-colors hover:border-neutral-200 hover:bg-white hover:text-neutral-950"
+                >
+                  {item.enriched_summary || item.raw_text}
+                </Link>
               </li>
             ))}
           </ul>

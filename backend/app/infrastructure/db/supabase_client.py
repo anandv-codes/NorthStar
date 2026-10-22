@@ -125,6 +125,65 @@ class SupabaseNoteRepository:
     def query_notes_for_user(self, user_id: str, status: str | None = None) -> List[Dict[str, Any]]:
         return query_notes_for_user(user_id=user_id, status=status)
 
+    def query_notes_page(
+        self,
+        user_id: str,
+        *,
+        status: str | None = None,
+        recall: str | None = None,
+        q: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
+        sort: str = "newest",
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """Return one page of notes plus the exact total for the active filters."""
+        search = str(q or "").strip()[:100]
+        for char in ',%_()*"\\':
+            search = search.replace(char, " ")
+        search = " ".join(search.split())
+        page_limit = max(1, min(int(limit), 100))
+        page_offset = max(0, int(offset))
+
+        def build_query():
+            query = (
+                supabase.table(SUPABASE_NOTES_TABLE)
+                .select("*", count="exact")
+                .eq("user_id", user_id)
+            )
+            if status == "ready":
+                query = query.in_("status", ["completed", "enriched"])
+            elif status:
+                query = query.eq("status", status)
+            if recall == "on":
+                query = query.eq("recall_enabled", True)
+            elif recall == "off":
+                query = query.eq("recall_enabled", False)
+            if search:
+                query = query.or_(
+                    f"raw_text.ilike.%{search}%,enriched_summary.ilike.%{search}%"
+                )
+            if created_after:
+                query = query.gte("created_at", created_after)
+            if created_before:
+                query = query.lt("created_at", created_before)
+            query = query.order("created_at", desc=(sort != "oldest"))
+            return query.range(page_offset, page_offset + page_limit - 1)
+
+        try:
+            response = _execute_with_retry(build_query)
+        except APIError as e:
+            raise RuntimeError(str(e))
+        rows = response.data if isinstance(response.data, list) else []
+        total = int(response.count) if response.count is not None else len(rows)
+        return {
+            "notes": rows,
+            "total": total,
+            "limit": page_limit,
+            "offset": page_offset,
+        }
+
 
 _DEFAULT_NOTE_REPOSITORY: SupabaseNoteRepository | None = None
 

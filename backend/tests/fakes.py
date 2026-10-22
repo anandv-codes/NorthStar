@@ -199,6 +199,65 @@ class InMemoryRecallRepository:
         rows.sort(key=lambda row: row.get("next_due") or "")
         return rows[:limit]
 
+    def query_cards_page(
+        self,
+        user_id: str,
+        *,
+        deck_id: str | None = None,
+        status: str | None = None,
+        state: str | None = None,
+        q: str | None = None,
+        due_before: str | None = None,
+        due_after: str | None = None,
+        source_note_id: str | None = None,
+        sort: str = "due",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        search = str(q or "").strip().lower()
+        rows = [
+            row
+            for row in self.cards.values()
+            if row["user_id"] == user_id
+            and (deck_id is None or row.get("deck_id") == deck_id)
+            and (status is None or row.get("status") == status)
+            and (state is None or row.get("state") == state)
+            and (
+                due_before is None
+                or (row.get("next_due") is not None and row["next_due"] <= due_before)
+            )
+            and (
+                due_after is None
+                or row.get("next_due") is None
+                or row["next_due"] > due_after
+            )
+            and (
+                source_note_id is None
+                or source_note_id in (row.get("source_note_ids") or [])
+            )
+            and (
+                not search
+                or search in str(row.get("question") or "").lower()
+                or search in str(row.get("answer") or "").lower()
+            )
+        ]
+        if sort == "newest":
+            rows.sort(key=lambda row: row.get("created_at") or "", reverse=True)
+        elif sort == "reviews":
+            rows.sort(key=lambda row: row.get("review_count") or 0, reverse=True)
+        elif sort == "lapses":
+            rows.sort(key=lambda row: row.get("lapses") or 0, reverse=True)
+        else:
+            rows.sort(key=lambda row: row.get("next_due") or "")
+        total = len(rows)
+        page = rows[max(0, offset) : max(0, offset) + max(1, limit)]
+        return {
+            "cards": page,
+            "total": total,
+            "limit": max(1, limit),
+            "offset": max(0, offset),
+        }
+
     def update_card(self, user_id: str, card_id: str, updates: dict[str, Any]) -> dict[str, Any]:
         row = self.get_card(user_id, card_id)
         if row is None:

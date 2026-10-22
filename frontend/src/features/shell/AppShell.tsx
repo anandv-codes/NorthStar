@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
+  Books,
   ChatCircleDots,
   ClockCounterClockwise,
   List,
@@ -16,6 +17,7 @@ import { LogoMark } from "../../shared/ui/Logo";
 
 const NAV_ITEMS = [
   { to: "/app/dashboard", label: "Dashboard", icon: SquaresFour },
+  { to: "/app/library", label: "Library", icon: Books },
   { to: "/app/recall", label: "Recall", icon: ClockCounterClockwise },
   { to: "/app/notes", label: "Note Taker", icon: NotePencil },
   { to: "/app/chat", label: "Ask", icon: ChatCircleDots },

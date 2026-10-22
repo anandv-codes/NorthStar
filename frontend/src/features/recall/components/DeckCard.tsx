@@ -67,7 +67,7 @@ export function DeckCard({ deck, onEdit }: DeckCardProps) {
             <ArrowRight size={14} weight="bold" />
           </Link>
           <Link
-            to={`/app/recall/decks/${deck.deck_id}`}
+            to={`/app/library/recall/${deck.deck_id}`}
             className="inline-flex h-9 items-center justify-center rounded-lg border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
           >
             Manage
