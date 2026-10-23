@@ -81,6 +81,23 @@ class SupabaseRecallRepository:
             .limit(1)
         )
 
+    def get_candidates_by_ids(
+        self, user_id: str, candidate_ids: list[str]
+    ) -> list[dict[str, Any]]:
+        """Fetch many candidates in one round trip (batch accept).
+
+        The route caps the request at 100 ids, so a single ``in_`` filter stays
+        well inside PostgREST's URL limits.
+        """
+        if not candidate_ids:
+            return []
+        return _run(
+            supabase.table(RECALL_CANDIDATES_TABLE)
+            .select("*")
+            .eq("user_id", user_id)
+            .in_("candidate_id", candidate_ids)
+        )
+
     def query_candidates(
         self,
         user_id: str,
@@ -104,8 +121,58 @@ class SupabaseRecallRepository:
             .update(payload)
             .eq("user_id", user_id)
             .eq("candidate_id", candidate_id)
+            .select("*")
         )
         return rows[0] if rows else {}
+
+    def update_candidate_if_status(
+        self,
+        user_id: str,
+        candidate_id: str,
+        expected_status: str,
+        updates: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Compare-and-set write used by the async generator.
+
+        Returns the updated row, or ``{}`` when another writer already moved the
+        candidate out of ``expected_status``.
+        """
+        payload = {**updates, "updated_at": _utc_now()}
+        rows = _run(
+            supabase.table(RECALL_CANDIDATES_TABLE)
+            .update(payload)
+            .eq("user_id", user_id)
+            .eq("candidate_id", candidate_id)
+            .eq("status", expected_status)
+            .select("*")
+        )
+        return rows[0] if rows else {}
+
+    def accept_candidate_atomic(
+        self,
+        user_id: str,
+        candidate_id: str,
+        card: dict[str, Any],
+        now: str,
+    ) -> dict[str, Any]:
+        """Insert the card and mark the candidate carded in one transaction.
+
+        The SQL function locks the candidate row and returns the existing card
+        on a retry, so concurrent/double accepts cannot create duplicates.
+        """
+        try:
+            response = supabase.rpc(
+                "accept_recall_candidate",
+                {
+                    "p_user_id": user_id,
+                    "p_candidate_id": candidate_id,
+                    "p_card": card,
+                    "p_now": now,
+                },
+            ).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return response.data if isinstance(response.data, dict) else {}
 
     def assign_candidates_to_deck(
         self, user_id: str, candidate_ids: list[str], deck_id: str | None
@@ -205,6 +272,18 @@ class SupabaseRecallRepository:
             .select("*")
             .eq("user_id", user_id)
             .eq("card_id", card_id)
+            .limit(1)
+        )
+
+    def get_card_by_candidate(
+        self, user_id: str, candidate_id: str
+    ) -> dict[str, Any] | None:
+        """The card created for a candidate, if any (unique per user)."""
+        return _first(
+            supabase.table(RECALL_CARDS_TABLE)
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("candidate_id", candidate_id)
             .limit(1)
         )
 

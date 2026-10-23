@@ -1,8 +1,11 @@
 """Question/answer card generation with validation and de-duplication.
 
-Flow (product decision): a candidate's **question** is generated first; only a
-validated question incurs an **answer** call. The pair is queued for the user,
-and accepting it copies both fields onto a card (see ``review_service``).
+Flow (product decision): a candidate's question and answer are generated in a
+single LLM call, then validated independently. The pair is persisted together,
+so a suggestion is only visible with its answer. If the question is valid but
+the answer is not grounded, the question is kept and the answer is regenerated
+on demand (reveal/accept). Accepting a suggestion copies both fields onto a card
+(see ``review_service``).
 
 The LLM is injected as a ``ChatModel`` so generation logic is testable with a
 fake. All validation is deterministic and lives here, not in the prompt.
@@ -22,6 +25,7 @@ from .text_utils import jaccard_similarity, normalize_text, token_overlap_ratio
 PROMPT_VERSION = os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1")
 QUESTION_PROMPT_FILENAME = "03-recall-question_prompt.txt"
 ANSWER_PROMPT_FILENAME = "04-recall-answer_prompt.txt"
+QUESTION_ANSWER_PROMPT_FILENAME = "05-recall-question-answer_prompt.txt"
 
 GENERIC_QUESTIONS = {
     "what does this note say",
@@ -92,6 +96,32 @@ def build_answer_prompt(question: str, context: dict[str, Any]) -> str:
             "entity_names": _format_names(context.get("entity_names")),
         },
     )
+
+
+def build_question_answer_prompt(
+    candidate_text: str,
+    item_type: str,
+    context: dict[str, Any],
+    stricter: bool = False,
+) -> str:
+    template = load_prompt(PROMPT_VERSION, QUESTION_ANSWER_PROMPT_FILENAME)
+    rendered = render_prompt_template(
+        template,
+        {
+            "item_type": item_type,
+            "candidate_text": candidate_text,
+            "source_note_text": _as_text(context.get("source_note_text")),
+            "related_snippets": _format_snippets(context.get("related_snippets")),
+            "entity_names": _format_names(context.get("entity_names")),
+        },
+    )
+    if stricter:
+        rendered += (
+            "\n\nYour previous question/answer pair was rejected. Ask a more "
+            "specific, single-idea question and answer it only from the "
+            "supplied notes."
+        )
+    return rendered
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +204,71 @@ def generate_question(
     return {"question": None, "status": "rejected", "reason": last_reason}
 
 
+def generate_question_with_answer(
+    candidate_text: str,
+    item_type: str,
+    context: dict[str, Any],
+    model: Any,
+    existing_questions: list[str] | None = None,
+    config: RecallConfig | None = None,
+) -> dict[str, Any]:
+    """Generate a validated question+answer pair in one LLM call.
+
+    Both fields are validated independently. A pair is only returned as
+    ``generated`` when both pass. If every attempt yields a valid question but
+    an ungrounded answer, the last valid question is returned as
+    ``generated_without_answer`` with ``answer=None``; the caller persists the
+    question and the answer is regenerated on demand.
+    """
+    config = config or load_recall_config()
+    context_text = _context_text({**context, "candidate_text": candidate_text})
+    last_question_reason = "generation_failed"
+    last_answer_reason: str | None = None
+    best_question: str | None = None
+
+    for attempt in range(max(1, config.max_attempts)):
+        raw = model.generate(
+            build_question_answer_prompt(
+                candidate_text, item_type, context, stricter=attempt > 0
+            )
+        )
+        question, answer = _extract_pair(raw)
+        question_ok, question_reason = validate_question(
+            question, existing_questions, config
+        )
+        if not question_ok:
+            last_question_reason = question_reason or last_question_reason
+            continue
+
+        best_question = question.strip()
+        if normalize_text(answer) == normalize_text(best_question):
+            answer_ok, answer_reason = False, "answer_echoes_question"
+        else:
+            answer_ok, answer_reason = validate_answer(answer, context_text, config)
+        if answer_ok:
+            return {
+                "question": best_question,
+                "answer": answer.strip(),
+                "status": "generated",
+                "reason": None,
+            }
+        last_answer_reason = answer_reason or last_answer_reason
+
+    if best_question:
+        return {
+            "question": best_question,
+            "answer": None,
+            "status": "generated_without_answer",
+            "reason": last_answer_reason,
+        }
+    return {
+        "question": None,
+        "answer": None,
+        "status": "rejected",
+        "reason": last_question_reason,
+    }
+
+
 def generate_answer(
     question: str,
     context: dict[str, Any],
@@ -181,13 +276,7 @@ def generate_answer(
     config: RecallConfig | None = None,
 ) -> dict[str, Any]:
     config = config or load_recall_config()
-    context_text = " ".join(
-        [
-            _as_text(context.get("candidate_text")),
-            _as_text(context.get("source_note_text")),
-            " ".join(context.get("related_snippets") or []),
-        ]
-    )
+    context_text = _context_text(context)
     last_reason = "generation_failed"
     for attempt in range(max(1, config.max_attempts)):
         raw = model.generate(build_answer_prompt(question, context))
@@ -204,25 +293,50 @@ def generate_answer(
 # ---------------------------------------------------------------------------
 
 def _extract_field(raw: str, field: str) -> str:
+    parsed = _parse_json_object(raw)
+    if isinstance(parsed, dict) and isinstance(parsed.get(field), str):
+        return parsed[field]
+    # Fall back to the raw text (models sometimes ignore the JSON wrapper).
+    return str(raw or "").strip()
+
+
+def _extract_pair(raw: str) -> tuple[str, str]:
+    """Extract both fields only from JSON; a raw string cannot be split safely."""
+    parsed = _parse_json_object(raw)
+    if not isinstance(parsed, dict):
+        return "", ""
+    return str(parsed.get("question") or ""), str(parsed.get("answer") or "")
+
+
+def _parse_json_object(raw: str) -> dict[str, Any] | None:
     text = str(raw or "").strip()
     if not text:
-        return ""
+        return None
     try:
         parsed = json.loads(text)
-        if isinstance(parsed, dict) and isinstance(parsed.get(field), str):
-            return parsed[field]
+        if isinstance(parsed, dict):
+            return parsed
     except (json.JSONDecodeError, TypeError):
         pass
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
         try:
             parsed = json.loads(match.group(0))
-            if isinstance(parsed, dict) and isinstance(parsed.get(field), str):
-                return parsed[field]
+            if isinstance(parsed, dict):
+                return parsed
         except (json.JSONDecodeError, TypeError):
             pass
-    # Fall back to the raw text (models sometimes ignore the JSON wrapper).
-    return text
+    return None
+
+
+def _context_text(context: dict[str, Any]) -> str:
+    return " ".join(
+        [
+            _as_text(context.get("candidate_text")),
+            _as_text(context.get("source_note_text")),
+            " ".join(context.get("related_snippets") or []),
+        ]
+    )
 
 
 def _as_text(value: Any) -> str:

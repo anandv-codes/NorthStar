@@ -2,9 +2,11 @@
 from backend.app.domain.recall.card_generation import (
     RecallConfig,
     build_answer_prompt,
+    build_question_answer_prompt,
     build_question_prompt,
     generate_answer,
     generate_question,
+    generate_question_with_answer,
     validate_answer,
     validate_question,
 )
@@ -42,6 +44,15 @@ def test_answer_prompt_renders_cleanly():
     assert "SQS visibility timeout" in prompt
     assert "{question}" not in prompt
     assert "{candidate_text}" not in prompt
+
+
+def test_question_answer_prompt_renders_cleanly():
+    prompt = build_question_answer_prompt("SQS visibility timeout", "fact", CONTEXT)
+    assert "SQS visibility timeout" in prompt
+    assert "SQS" in prompt
+    assert "{candidate_text}" not in prompt
+    assert "{question}" not in prompt
+    assert "{answer}" not in prompt
 
 
 def test_validate_question_rules():
@@ -112,3 +123,66 @@ def test_generate_answer_grounding_and_rejection():
     result = generate_answer("What does it control?", CONTEXT, model, config=CONFIG)
     assert result["status"] == "rejected"
     assert result["reason"] == "answer_not_grounded"
+
+
+def test_generate_question_with_answer_returns_both():
+    model = FakeChatModel(
+        [
+            '{"question": "What does SQS visibility timeout control?", '
+            '"answer": "It controls how long a message stays hidden after retrieval."}'
+        ]
+    )
+    result = generate_question_with_answer(
+        "SQS visibility timeout", "fact", CONTEXT, model, config=CONFIG
+    )
+
+    assert result["status"] == "generated"
+    assert result["question"].endswith("?")
+    assert result["answer"].startswith("It controls")
+    assert len(model.prompts) == 1
+
+
+def test_generate_question_with_answer_keeps_question_when_answer_fails():
+    model = FakeChatModel(
+        [
+            '{"question": "What does SQS visibility timeout control?", '
+            '"answer": "Bananas are yellow and grow in the tropics."}',
+            '{"question": "What does SQS visibility timeout control?", '
+            '"answer": "Bananas are yellow and grow in the tropics."}',
+        ]
+    )
+    result = generate_question_with_answer(
+        "SQS visibility timeout", "fact", CONTEXT, model, config=CONFIG
+    )
+
+    assert result["status"] == "generated_without_answer"
+    assert result["question"].endswith("?")
+    assert result["answer"] is None
+    assert result["reason"] == "answer_not_grounded"
+
+
+def test_generate_question_with_answer_rejects_raw_text():
+    # A raw string cannot be split into a question and an answer, so it must
+    # not be accepted just because the text happens to end with "?".
+    model = FakeChatModel(["What does SQS visibility timeout control?"])
+    result = generate_question_with_answer(
+        "SQS visibility timeout", "fact", CONTEXT, model, config=CONFIG
+    )
+
+    assert result["status"] == "rejected"
+    assert result["reason"] == "not_a_question"
+
+
+def test_generate_question_with_answer_rejects_echo():
+    model = FakeChatModel(
+        [
+            '{"question": "What does SQS visibility timeout control?", '
+            '"answer": "What does SQS visibility timeout control?"}'
+        ]
+    )
+    result = generate_question_with_answer(
+        "SQS visibility timeout", "fact", CONTEXT, model, config=CONFIG
+    )
+
+    assert result["status"] == "generated_without_answer"
+    assert result["reason"] == "answer_echoes_question"

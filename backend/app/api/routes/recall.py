@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from ..deps import get_current_user_id
 from ...schemas.models import (
@@ -41,18 +41,17 @@ from ...domain.recall.deck_service import (
     get_active_deck,
     list_cards,
     list_decks_with_stats,
-    move_card_to_deck,
     restore_deck,
     update_deck,
 )
 from ...domain.recall.review_service import (
     accept_candidate,
     accept_candidates,
-    list_suggestions,
     reject_candidate,
     review_card,
     update_suggestion,
 )
+from ...domain.recall.scheduling import SystemClock
 from ...domain.memory.services import query_entities_by_source_note
 from ...infrastructure.db.recall_repository import get_recall_repository
 from ...infrastructure.db.supabase_client import get_note_item
@@ -63,8 +62,15 @@ router = APIRouter()
 
 def _suggestion_context(user_id: str, candidate: dict) -> dict:
     """Grounding context for on-demand answer generation on a single candidate."""
+    return _context_for_note(user_id, candidate.get("source_note_id"))
+
+
+def _context_for_note(user_id: str, source_note_id: str | None) -> dict:
+    """Grounding context for one source note.
+
+    Batch accept calls this once per distinct note, not once per candidate.
+    """
     note_text = ""
-    source_note_id = candidate.get("source_note_id")
     if source_note_id:
         try:
             note = get_note_item(user_id=user_id, note_id=source_note_id) or {}
@@ -135,27 +141,67 @@ def patch_suggestion(
     return _to_suggestion(row)
 
 
-@router.post("/candidates/accept-batch", response_model=RecallBulkAcceptResponse)
+@router.post(
+    "/candidates/accept-batch",
+    response_model=RecallBulkAcceptResponse,
+    responses={
+        207: {
+            "model": RecallBulkAcceptResponse,
+            "description": "At least one candidate failed; results contains every outcome",
+        }
+    },
+)
 def post_accept_candidates(
     payload: RecallBulkAcceptRequest,
+    response: Response,
     user_id: str = Depends(get_current_user_id),
 ):
+    """Accept candidates best-effort, in one bulk read and per-item writes.
+
+    Returns ``207 Multi-Status`` when at least one candidate failed, so clients
+    that only inspect the status code do not mistake a partial batch for a full
+    success. The body always carries one outcome per requested candidate.
+    """
     repo = get_recall_repository()
     candidate_ids = list(dict.fromkeys(payload.candidate_ids))
+    candidates = {
+        row["candidate_id"]: row
+        for row in repo.get_candidates_by_ids(user_id, candidate_ids)
+    }
+
+    # Candidates from the same note share one grounding context. Only candidates
+    # without a stored answer need one, so a batch of already-revealed
+    # suggestions skips note/entity reads and model initialisation entirely.
+    missing_answer_ids = {
+        candidate_id
+        for candidate_id, candidate in candidates.items()
+        if not (candidate.get("answer") or "").strip()
+    }
+    note_contexts: dict[str, dict] = {}
     contexts: dict[str, dict] = {}
     for candidate_id in candidate_ids:
-        candidate = repo.get_candidate(user_id, candidate_id)
-        if candidate:
+        if candidate_id not in missing_answer_ids:
+            continue
+        candidate = candidates[candidate_id]
+        source_note_id = candidate.get("source_note_id")
+        if not source_note_id:
             contexts[candidate_id] = _suggestion_context(user_id, candidate)
+            continue
+        if source_note_id not in note_contexts:
+            note_contexts[source_note_id] = _context_for_note(user_id, source_note_id)
+        contexts[candidate_id] = note_contexts[source_note_id]
 
     result = accept_candidates(
         user_id,
         candidate_ids,
         repo=repo,
-        model=get_chat_model(),
+        model=get_chat_model() if missing_answer_ids else None,
         contexts=contexts,
+        candidates=candidates,
         deck_id=payload.deck_id,
     )
+    if result["failed"]:
+        response.status_code = 207
     return RecallBulkAcceptResponse(**result)
 
 
@@ -170,12 +216,14 @@ def post_accept_candidate(
         candidate = repo.get_candidate(user_id, candidate_id)
         if candidate is None:
             raise LookupError("candidate_not_found")
+        needs_answer = not (candidate.get("answer") or "").strip()
         result = accept_candidate(
             user_id,
             candidate_id,
             repo=repo,
-            model=get_chat_model(),
-            context=_suggestion_context(user_id, candidate),
+            model=get_chat_model() if needs_answer else None,
+            context=_suggestion_context(user_id, candidate) if needs_answer else None,
+            candidate=candidate,
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="candidate_not_found")
@@ -195,15 +243,21 @@ def post_generate_candidate_answer(
     candidate_id: str,
     user_id: str = Depends(get_current_user_id),
 ):
-    """Generate (or return) a candidate's answer on demand.
+    """Return a candidate's cached answer, or generate it on demand.
 
-    Answers are no longer produced during note processing: the client calls
-    this when the user reveals the answer or accepts the suggestion.
+    Answers are normally generated with the question in the async note worker,
+    so this is usually a cache hit. If the answer is missing (combined
+    generation produced a valid question but an ungrounded answer, or a question
+    was edited), generate it synchronously: the user's request outranks
+    background work.
     """
     repo = get_recall_repository()
     candidate = repo.get_candidate(user_id, candidate_id)
     if candidate is None:
         raise HTTPException(status_code=404, detail="candidate_not_found")
+
+    if (candidate.get("answer") or "").strip():
+        return _to_suggestion(candidate)
 
     try:
         row = generate_answer_for_candidate(
@@ -212,6 +266,7 @@ def post_generate_candidate_answer(
             model=get_chat_model(),
             repo=repo,
             context=_suggestion_context(user_id, candidate),
+            candidate=candidate,
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="candidate_not_found")
@@ -449,20 +504,34 @@ def get_due_cards(
     limit: int = Query(default=50, ge=1, le=200),
     user_id: str = Depends(get_current_user_id),
 ):
+    repo = get_recall_repository()
+    clock = SystemClock()
+    now = clock.now()
     try:
         cards = list_cards(
             user_id,
-            repo=get_recall_repository(),
+            repo=repo,
             deck_id=deck_id,
             include_not_due=False,
             status="active",
+            clock=clock,
             limit=limit,
         )
     except LookupError:
         raise HTTPException(status_code=404, detail="deck_not_found")
+
+    # The page is capped at `limit`; ask the database for the real backlog size
+    # instead of reporting the number of rows that happened to fit on the page.
+    total_due = repo.query_cards_page(
+        user_id,
+        deck_id=deck_id,
+        status="active",
+        due_before=now.isoformat(),
+        limit=1,
+    )["total"]
     return DueCardsResponse(
         cards=[RecallCardResponse(**card) for card in cards],
-        total_due=len(cards),
+        total_due=total_due,
     )
 
 

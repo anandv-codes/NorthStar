@@ -214,6 +214,38 @@ def test_update_suggestion_edits_only_suggested_candidates():
         update_suggestion("user-1", candidate["candidate_id"], repo=repo, answer="x")
 
 
+def test_update_suggestion_clears_stale_answer_when_question_changes():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+
+    updated = update_suggestion(
+        "user-1",
+        candidate["candidate_id"],
+        repo=repo,
+        question="Which SQS setting prevents duplicate processing?",
+        now=NOW,
+    )
+
+    assert updated["prompt"] == "Which SQS setting prevents duplicate processing?"
+    assert updated["answer"] is None
+
+
+def test_update_suggestion_keeps_new_answer_when_both_are_edited():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+
+    updated = update_suggestion(
+        "user-1",
+        candidate["candidate_id"],
+        repo=repo,
+        question="Which SQS setting prevents duplicate processing?",
+        answer="The visibility timeout.",
+        now=NOW,
+    )
+
+    assert updated["answer"] == "The visibility timeout."
+
+
 def test_accept_candidates_reports_partial_failures():
     repo = InMemoryRecallRepository()
     first = _suggested_candidate(repo, text="first")
@@ -234,3 +266,50 @@ def test_accept_candidates_reports_partial_failures():
         second["candidate_id"],
         "missing",
     }
+
+
+def test_accept_candidate_is_idempotent_on_retry():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+
+    first = accept_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
+    second = accept_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
+
+    assert second["status"] == "carded"
+    assert second["card"]["card_id"] == first["card"]["card_id"]
+    assert len(repo.cards) == 1
+
+
+def test_accept_candidate_resolves_a_lost_insert_race():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+    # A concurrent accept inserted the card but has not yet flipped the
+    # candidate status, so this attempt reaches the unique-index conflict.
+    existing = repo.create_card(
+        "user-1",
+        {
+            "candidate_id": candidate["candidate_id"],
+            "question": candidate["prompt"],
+            "answer": ANSWER,
+        },
+    )
+
+    result = accept_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
+
+    assert result["card"]["card_id"] == existing["card_id"]
+    assert repo.get_candidate("user-1", candidate["candidate_id"])["status"] == "carded"
+    assert len(repo.cards) == 1
+
+
+def test_accept_candidates_counts_a_retry_as_success():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+
+    accept_candidates("user-1", [candidate["candidate_id"]], repo=repo, now=NOW)
+    retried = accept_candidates(
+        "user-1", [candidate["candidate_id"]], repo=repo, now=NOW
+    )
+
+    assert retried["accepted"] == 1
+    assert retried["failed"] == 0
+    assert len(repo.cards) == 1

@@ -71,9 +71,9 @@ def process_sqs_message(body:dict)-> dict:
         logger.info(f"Processing {note_id} for user {user_id}")
         timer = _StageTimer()
 
-        # Per-note opt-in: questions (the only LLM cost in the recall loop) are
-        # generated only when the user enabled recall for this note. Candidates
-        # are still scored so toggling ON later is instant.
+        # Per-note opt-in: question+answer pairs (the LLM cost in the recall
+        # loop) are generated only when the user enabled recall for this note.
+        # Candidates are still scored so toggling ON later is instant.
         try:
             note_row = get_note_item(user_id=user_id, note_id=note_id) or {}
         except Exception as exc:
@@ -289,8 +289,9 @@ def process_sqs_message(body:dict)-> dict:
             logger.info(f"Recall candidates created: {len(candidates)}")
             timer.mark("candidates")
 
-            # PR7: generate the question (answer comes after user acceptance).
-            # Only when the user enabled recall for this note.
+            # PR7: generate the question and answer together (one LLM call per
+            # candidate) in this async worker. Only when the user enabled
+            # recall for this note.
             if recall_enabled:
                 related_snippets = [
                     (note.get("summary") or note.get("raw_text") or "").strip()

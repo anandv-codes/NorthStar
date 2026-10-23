@@ -15,10 +15,9 @@ Apply in this exact order on a fresh database:
 | 3 | `phase3_work_memory.sql` | `notes`, `entities`, tasks/facts/questions/decisions/risks/concepts, extraction runs, summaries |
 | 4 | `phase4_recall.sql` | per-note recall opt-in, `note_entities`, `commitments`, `recall_candidates`, `recall_cards`, `review_history` |
 | 5 | `phase4_recall_scheduler.sql` | Anki scheduler columns (`state`, `learning_step`) on `recall_cards` |
-| 6 | `phase4_pgvector.sql` | `vector` extension, `note_chunks`, embedding columns, `match_*` RPCs |
-
-`phase3_phase_a_entity_queries.sql` is documentation/reference queries only
-(all DDL is commented out) — nothing to run.
+| 6 | `phase4_recall_decks.sql` | `recall_decks`, `deck_id` on candidates/cards, General deck backfill |
+| 7 | `phase4_recall_accept.sql` | `accept_recall_candidate` RPC: atomic, idempotent accept |
+| 8 | `phase4_pgvector.sql` | `vector` extension, `note_chunks`, embedding columns, `match_*` RPCs |
 
 ## Option A — Supabase SQL editor
 

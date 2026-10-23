@@ -23,6 +23,8 @@ FILES=(
   phase3_work_memory.sql
   phase4_recall.sql
   phase4_recall_scheduler.sql
+  phase4_recall_decks.sql
+  phase4_recall_accept.sql
   phase4_pgvector.sql
 )
 

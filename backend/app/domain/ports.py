@@ -185,6 +185,10 @@ class RecallRepository(Protocol):
 
     def get_candidate(self, user_id: str, candidate_id: str) -> dict[str, Any] | None: ...
 
+    def get_candidates_by_ids(
+        self, user_id: str, candidate_ids: list[str]
+    ) -> list[dict[str, Any]]: ...
+
     def query_candidates(
         self,
         user_id: str,
@@ -195,6 +199,22 @@ class RecallRepository(Protocol):
 
     def update_candidate(
         self, user_id: str, candidate_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]: ...
+
+    def update_candidate_if_status(
+        self,
+        user_id: str,
+        candidate_id: str,
+        expected_status: str,
+        updates: dict[str, Any],
+    ) -> dict[str, Any]: ...
+
+    def accept_candidate_atomic(
+        self,
+        user_id: str,
+        candidate_id: str,
+        card: dict[str, Any],
+        now: str,
     ) -> dict[str, Any]: ...
 
     def assign_candidates_to_deck(
@@ -220,6 +240,10 @@ class RecallRepository(Protocol):
     def create_card(self, user_id: str, card: dict[str, Any]) -> dict[str, Any]: ...
 
     def get_card(self, user_id: str, card_id: str) -> dict[str, Any] | None: ...
+
+    def get_card_by_candidate(
+        self, user_id: str, candidate_id: str
+    ) -> dict[str, Any] | None: ...
 
     def query_cards(
         self,

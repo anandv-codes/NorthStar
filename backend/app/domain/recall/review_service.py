@@ -39,18 +39,30 @@ def accept_candidate(
     recall_config: RecallConfig | None = None,
     now: datetime | None = None,
     deck_id: str | None = None,
+    candidate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Copy the question/answer into a scheduled card and mark the candidate accepted.
 
     When the candidate has no answer yet, one is generated on acceptance
     (``model`` is required in that case).
+
+    Idempotent: accepting a candidate that was already carded returns its
+    existing card instead of raising. The card insert and candidate update go
+    through the ``accept_recall_candidate`` RPC, which locks the candidate row
+    and returns the existing card on a retry. Callers that already fetched the
+    candidate (batch accept) can pass it via ``candidate`` to avoid a second
+    query.
     """
     now = now or SystemClock().now()
 
-    candidate = repo.get_candidate(user_id, candidate_id)
+    candidate = candidate or repo.get_candidate(user_id, candidate_id)
     if candidate is None:
         raise LookupError("candidate_not_found")
     if candidate.get("status") == "carded":
+        existing_card = repo.get_card_by_candidate(user_id, candidate_id)
+        if existing_card is not None:
+            return {"status": "carded", "card": existing_card, "candidate": candidate}
+        # A carded candidate without a card is inconsistent data, not a retry.
         raise ValueError("candidate_already_carded")
 
     question = (candidate.get("prompt") or "").strip()
@@ -67,6 +79,7 @@ def accept_candidate(
             repo=repo,
             context=context,
             config=recall_config,
+            candidate=candidate,
         )
         answer = (candidate.get("answer") or "").strip()
         if not answer:
@@ -83,29 +96,40 @@ def accept_candidate(
         resolved_deck_id = ensure_default_deck(user_id, repo=repo, now=now)["deck_id"]
 
     state = initial_card_state(now=now)
-    card = repo.create_card(
-        user_id,
-        {
-            "candidate_id": candidate_id,
-            "deck_id": resolved_deck_id,
-            "question": question,
-            "answer": answer,
-            "source_note_ids": [candidate["source_note_id"]] if candidate.get("source_note_id") else [],
-            "status": "active",
-            **{k: v for k, v in state.items() if v is not None},
-            "next_due": now.isoformat(),
-        },
-    )
-    updated = repo.update_candidate(
+    card_payload = {
+        "candidate_id": candidate_id,
+        "deck_id": resolved_deck_id,
+        "question": question,
+        "answer": answer,
+        "source_note_ids": [candidate["source_note_id"]] if candidate.get("source_note_id") else [],
+        "status": "active",
+        **{k: v for k, v in state.items() if v is not None},
+        "next_due": now.isoformat(),
+    }
+    outcome = repo.accept_candidate_atomic(
         user_id,
         candidate_id,
-        {
-            "status": "carded",
-            "deck_id": resolved_deck_id,
-            "decided_at": now.isoformat(),
-        },
+        card_payload,
+        now.isoformat(),
     )
-    return {"status": "carded", "card": card, "candidate": updated or candidate}
+    outcome_status = outcome.get("status")
+    if outcome_status == "not_found":
+        raise LookupError("candidate_not_found")
+    if outcome_status == "already_carded":
+        raise ValueError("candidate_already_carded")
+
+    card = outcome.get("card")
+    if outcome_status != "carded" or not isinstance(card, dict):
+        raise RuntimeError("accept_candidate_failed")
+    return {
+        "status": "carded",
+        "card": card,
+        "candidate": {
+            **candidate,
+            "status": "carded",
+            "deck_id": card.get("deck_id", resolved_deck_id),
+        },
+    }
 
 
 def update_suggestion(
@@ -138,6 +162,10 @@ def update_suggestion(
         if not ok:
             raise ValueError(f"invalid_question:{reason}")
         updates["prompt"] = normalized_question
+        if normalized_question != (candidate.get("prompt") or "").strip():
+            # The stored answer belongs to the old question; regenerate it on
+            # the next reveal/accept unless the caller supplies a new answer.
+            updates["answer"] = None
     if answer is not None:
         normalized_answer = str(answer).strip()
         ok, reason = validate_answer_edit(normalized_answer, recall_config)
@@ -212,6 +240,7 @@ def accept_candidates(
     repo: Any,
     model: Any | None = None,
     contexts: dict[str, dict[str, Any]] | None = None,
+    candidates: dict[str, dict[str, Any]] | None = None,
     recall_config: RecallConfig | None = None,
     now: datetime | None = None,
     deck_id: str | None = None,
@@ -219,7 +248,9 @@ def accept_candidates(
     """Accept multiple suggestions, returning per-candidate outcomes.
 
     ``contexts`` maps candidate id -> answer-generation context so each card is
-    grounded in its own source note.
+    grounded in its own source note. ``candidates`` is an optional
+    candidate_id -> row map from a bulk fetch; passing it avoids re-reading
+    each candidate.
     """
     now = now or SystemClock().now()
     results: list[dict[str, Any]] = []
@@ -234,6 +265,7 @@ def accept_candidates(
                 repo=repo,
                 model=model,
                 context=(contexts or {}).get(candidate_id),
+                candidate=(candidates or {}).get(candidate_id),
                 recall_config=recall_config,
                 now=now,
                 deck_id=deck_id,

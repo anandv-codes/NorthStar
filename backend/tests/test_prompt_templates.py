@@ -17,7 +17,6 @@ EXPECTED_PLACEHOLDERS = {
     "00-gemini_extraction_prompt.txt": {
         "note_text",
         "related_notes_context",
-        "structured_items_context",
     },
     "01-query_rewrite_prompt.txt": {"user_query", "memory_context"},
     "02-chat_prompt.txt": {
@@ -39,6 +38,13 @@ EXPECTED_PLACEHOLDERS = {
     },
     "04-recall-answer_prompt.txt": {
         "question",
+        "candidate_text",
+        "source_note_text",
+        "related_snippets",
+        "entity_names",
+    },
+    "05-recall-question-answer_prompt.txt": {
+        "item_type",
         "candidate_text",
         "source_note_text",
         "related_snippets",

@@ -1,15 +1,21 @@
-"""Generate questions for persisted recall candidates.
+"""Generate question/answer pairs for persisted recall candidates.
 
-Only the question is produced up front: the answer is generated on demand,
-either when the user reveals it during review or when they accept the
-suggestion into their deck. That keeps note processing cheap (no second LLM
-call per candidate) and avoids paying for answers the user never looks at.
+A candidate's question and answer are produced together in one LLM call inside
+the asynchronous note worker, and both are persisted at once. A suggestion is
+therefore only visible with its answer, and revealing a card is a cache hit in
+the common case. If the answer fails validation while the question passes, the
+question is kept and the answer is generated on demand (reveal/accept).
 """
 from __future__ import annotations
 
 from typing import Any
 
-from .card_generation import RecallConfig, generate_answer, generate_question, load_recall_config
+from .card_generation import (
+    RecallConfig,
+    generate_answer,
+    generate_question_with_answer,
+    load_recall_config,
+)
 
 
 def build_context(
@@ -65,17 +71,20 @@ def generate_questions(
     existing_questions: list[str] | None = None,
     config: RecallConfig | None = None,
 ) -> list[dict[str, Any]]:
-    """Generate + validate a question per candidate and persist the decision.
+    """Generate a validated question+answer pair per candidate and persist it.
 
-    Answers stay empty (``None``) until the user reveals or accepts them; see
-    :func:`generate_answer_for_candidate`.
+    The write is conditional on the candidate still being ``eligible`` so a
+    duplicate worker delivery (or a synchronous reveal that won the candidate)
+    cannot overwrite a pair that was already written. If the question is valid
+    but the answer is not, the question is kept with ``answer=None`` and the
+    answer is regenerated on reveal/accept.
     """
     config = config or load_recall_config()
     known = list(existing_questions or [])
     results: list[dict[str, Any]] = []
 
     for candidate in candidates:
-        result = generate_question(
+        result = generate_question_with_answer(
             candidate.get("text") or "",
             candidate.get("item_type") or "fact",
             context,
@@ -84,13 +93,17 @@ def generate_questions(
             config,
         )
 
-        if result["status"] == "generated":
-            known.append(result["question"])
+        if result["status"] in ("generated", "generated_without_answer"):
             updates: dict[str, Any] = {
                 "prompt": result["question"],
-                "answer": None,
+                "answer": result.get("answer"),
                 "status": "suggested",
             }
+            if result["status"] == "generated_without_answer":
+                updates["rationale"] = {
+                    **(candidate.get("rationale") or {}),
+                    "answer_reason": result["reason"],
+                }
         else:
             rationale = {
                 **(candidate.get("rationale") or {}),
@@ -104,7 +117,29 @@ def generate_questions(
             }
 
         if candidate.get("candidate_id"):
-            repo.update_candidate(candidate["user_id"], candidate["candidate_id"], updates)
+            updated = repo.update_candidate_if_status(
+                candidate["user_id"],
+                candidate["candidate_id"],
+                "eligible",
+                updates,
+            )
+            if not updated:
+                # Another worker/request already decided this candidate;
+                # do not report a write we did not make.
+                results.append(
+                    {
+                        "candidate_id": candidate.get("candidate_id"),
+                        "status": "skipped",
+                        "question": None,
+                        "answer": None,
+                        "reason": "candidate_already_decided",
+                    }
+                )
+                continue
+        if result["status"] in ("generated", "generated_without_answer"):
+            # Only reserve the question for in-note dedupe after it is actually
+            # persisted; a skipped write belongs to another writer.
+            known.append(result["question"])
         results.append(
             {
                 "candidate_id": candidate.get("candidate_id"),
@@ -125,15 +160,17 @@ def generate_answer_for_candidate(
     repo: Any,
     context: dict[str, Any] | None = None,
     config: RecallConfig | None = None,
+    candidate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Generate and persist an answer for one candidate (idempotent).
 
     Called when the user reveals an answer or accepts a suggestion. Raises
     ``LookupError`` when the candidate does not exist and ``ValueError`` when it
-    has no question or the answer fails grounding validation.
+    has no question or the answer fails grounding validation. Callers that
+    already hold the row can pass ``candidate`` to skip a read.
     """
     config = config or load_recall_config()
-    candidate = repo.get_candidate(user_id, candidate_id)
+    candidate = candidate or repo.get_candidate(user_id, candidate_id)
     if candidate is None:
         raise LookupError("candidate_not_found")
 

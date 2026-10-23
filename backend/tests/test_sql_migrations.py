@@ -74,6 +74,17 @@ def test_scheduler_migration_adds_state_and_learning_step():
     assert "add column if not exists learning_step" in text
 
 
+def test_accept_rpc_is_idempotent_and_user_scoped():
+    text = (SQL_DIR / "phase4_recall_accept.sql").read_text(encoding="utf-8").lower()
+    assert "create or replace function accept_recall_candidate" in text
+    assert "p_user_id" in text
+    assert "for update" in text
+    assert "insert into recall_cards" in text
+    # A retry must return the existing card rather than hitting the unique index.
+    assert "from recall_cards" in text
+    assert "'carded'" in text
+
+
 def test_pgvector_migration_defines_chunks_indexes_and_match_functions():
     text = (SQL_DIR / "phase4_pgvector.sql").read_text(encoding="utf-8").lower()
     assert "create extension if not exists vector" in text
@@ -86,3 +97,13 @@ def test_pgvector_migration_defines_chunks_indexes_and_match_functions():
 def test_match_functions_are_user_scoped():
     text = (SQL_DIR / "phase4_pgvector.sql").read_text(encoding="utf-8").lower()
     assert text.count("match_user_id") >= 6
+
+
+def test_apply_script_runs_every_migration():
+    """A migration that the script skips silently leaves the schema incomplete."""
+    script = (Path(__file__).resolve().parents[1] / "scripts" / "apply_migrations.sh").read_text(
+        encoding="utf-8"
+    )
+    listed = set(re.findall(r"[\w-]+\.sql", script))
+    expected = {path.name for path in SQL_FILES}
+    assert expected <= listed, f"apply_migrations.sh is missing: {sorted(expected - listed)}"

@@ -57,6 +57,16 @@ class InMemoryRecallRepository:
         row = self.candidates.get(candidate_id)
         return row if row and row["user_id"] == user_id else None
 
+    def get_candidates_by_ids(
+        self, user_id: str, candidate_ids: list[str]
+    ) -> list[dict[str, Any]]:
+        wanted = set(candidate_ids)
+        return [
+            row
+            for row in self.candidates.values()
+            if row["user_id"] == user_id and row["candidate_id"] in wanted
+        ]
+
     def query_candidates(
         self,
         user_id: str,
@@ -82,6 +92,57 @@ class InMemoryRecallRepository:
             return {}
         row.update({**updates, "updated_at": _now()})
         return row
+
+    def update_candidate_if_status(
+        self,
+        user_id: str,
+        candidate_id: str,
+        expected_status: str,
+        updates: dict[str, Any],
+    ) -> dict[str, Any]:
+        row = self.get_candidate(user_id, candidate_id)
+        if row is None or row.get("status") != expected_status:
+            return {}
+        row.update({**updates, "updated_at": _now()})
+        return row
+
+    def accept_candidate_atomic(
+        self,
+        user_id: str,
+        candidate_id: str,
+        card: dict[str, Any],
+        now: str,
+    ) -> dict[str, Any]:
+        """Mirror the SQL RPC: lock-by-key, return an existing card, else insert."""
+        candidate = self.get_candidate(user_id, candidate_id)
+        if candidate is None:
+            return {"status": "not_found"}
+
+        existing = self.get_card_by_candidate(user_id, candidate_id)
+        if existing is not None:
+            candidate.update(
+                {
+                    "status": "carded",
+                    "deck_id": existing.get("deck_id"),
+                    "decided_at": candidate.get("decided_at") or now,
+                    "updated_at": _now(),
+                }
+            )
+            return {"status": "carded", "card": existing}
+
+        if candidate.get("status") == "carded":
+            return {"status": "already_carded"}
+
+        row = self.create_card(user_id, card)
+        candidate.update(
+            {
+                "status": "carded",
+                "deck_id": row.get("deck_id"),
+                "decided_at": now,
+                "updated_at": _now(),
+            }
+        )
+        return {"status": "carded", "card": row}
 
     def assign_candidates_to_deck(
         self, user_id: str, candidate_ids: list[str], deck_id: str | None
@@ -164,6 +225,13 @@ class InMemoryRecallRepository:
 
     def create_card(self, user_id: str, card: dict[str, Any]) -> dict[str, Any]:
         card_id = card.get("card_id") or str(uuid.uuid4())
+        candidate_id = card.get("candidate_id")
+        if candidate_id and any(
+            row["user_id"] == user_id and row.get("candidate_id") == candidate_id
+            for row in self.cards.values()
+        ):
+            # Mirrors idx_recall_cards_user_candidate in phase4_recall.sql.
+            raise RuntimeError("duplicate key value violates unique constraint")
         row = {
             "status": "active",
             **card,
@@ -178,6 +246,14 @@ class InMemoryRecallRepository:
     def get_card(self, user_id: str, card_id: str) -> dict[str, Any] | None:
         row = self.cards.get(card_id)
         return row if row and row["user_id"] == user_id else None
+
+    def get_card_by_candidate(
+        self, user_id: str, candidate_id: str
+    ) -> dict[str, Any] | None:
+        for row in self.cards.values():
+            if row["user_id"] == user_id and row.get("candidate_id") == candidate_id:
+                return row
+        return None
 
     def query_cards(
         self,

@@ -44,20 +44,25 @@ def _candidate(repo, text="SQS visibility timeout"):
     return row
 
 
-def test_generate_questions_marks_suggested():
+def test_generate_questions_marks_suggested_with_answer():
     repo = InMemoryRecallRepository()
     candidate = _candidate(repo)
-    model = FakeChatModel(['{"question": "What does SQS visibility timeout control?"}'])
+    model = FakeChatModel(
+        [
+            '{"question": "What does SQS visibility timeout control?", '
+            '"answer": "It controls how long a message stays hidden after retrieval."}'
+        ]
+    )
 
     results = generate_questions([candidate], CONTEXT, model=model, repo=repo, config=CONFIG)
 
     assert results[0]["status"] == "suggested"
+    assert results[0]["answer"].startswith("It controls")
     stored = repo.get_candidate("user-1", candidate["candidate_id"])
     assert stored["status"] == "suggested"
     assert stored["prompt"].endswith("?")
-    # Answers are generated on demand, not during note processing.
-    assert stored["answer"] is None
-    assert results[0]["answer"] is None
+    # The pair is written together, so a visible suggestion always has an answer.
+    assert stored["answer"].startswith("It controls")
     assert model.responses == []
 
 
@@ -97,6 +102,45 @@ def test_generate_questions_for_note_only_eligible_of_that_note():
     assert repo.get_candidate("user-1", suggested["candidate_id"])["status"] == "suggested"
 
 
+def test_generate_questions_keeps_question_when_answer_fails():
+    repo = InMemoryRecallRepository()
+    candidate = _candidate(repo)
+    model = FakeChatModel(
+        [
+            '{"question": "What does SQS visibility timeout control?", '
+            '"answer": "Bananas are yellow and grow in the tropics."}'
+        ]
+    )
+
+    results = generate_questions([candidate], CONTEXT, model=model, repo=repo, config=CONFIG)
+
+    assert results[0]["status"] == "suggested"
+    assert results[0]["answer"] is None
+    stored = repo.get_candidate("user-1", candidate["candidate_id"])
+    assert stored["prompt"].endswith("?")
+    assert stored["answer"] is None
+    assert stored["rationale"]["answer_reason"] == "answer_not_grounded"
+
+
+def test_generate_questions_skips_candidate_changed_by_another_writer():
+    repo = InMemoryRecallRepository()
+    candidate = _candidate(repo)
+    # Simulate a concurrent worker/request that already decided this candidate.
+    repo.update_candidate("user-1", candidate["candidate_id"], {"status": "suggested"})
+    model = FakeChatModel(
+        [
+            '{"question": "What does SQS visibility timeout control?", '
+            '"answer": "It controls how long a message stays hidden after retrieval."}'
+        ]
+    )
+
+    results = generate_questions([candidate], CONTEXT, model=model, repo=repo, config=CONFIG)
+
+    assert results[0]["status"] == "skipped"
+    stored = repo.get_candidate("user-1", candidate["candidate_id"])
+    assert stored.get("prompt") is None
+
+
 def test_generate_questions_dedupes_with_existing():
     repo = InMemoryRecallRepository()
     candidate = _candidate(repo)
@@ -115,13 +159,14 @@ def test_generate_questions_dedupes_with_existing():
     assert results[0]["reason"] == "duplicate_question"
 
 
-def test_answer_generation_is_deferred_until_requested():
+def test_answer_generation_backfills_missing_answer():
     repo = InMemoryRecallRepository()
     candidate = _candidate(repo)
     model = FakeChatModel(['{"question": "What does SQS visibility timeout control?"}'])
 
     generate_questions([candidate], CONTEXT, model=model, repo=repo, config=CONFIG)
-    assert model.responses == []  # no second (answer) call
+    assert model.responses == []  # one combined call only
+    assert repo.get_candidate("user-1", candidate["candidate_id"])["answer"] is None
 
     model.responses.append(ANSWER)
     updated = generate_answer_for_candidate(
