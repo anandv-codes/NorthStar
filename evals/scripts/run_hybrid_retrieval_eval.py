@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -26,14 +27,16 @@ from evals.scripts.run_retrieval_eval import (
 DEFAULT_CASES_PATH = WORKSPACE_ROOT / "evals" / "datasets" / "northstar_rag_v1.jsonl"
 DEFAULT_CORPUS_PATH = WORKSPACE_ROOT / "evals" / "datasets" / "northstar_rag_v1_corpus.jsonl"
 DEFAULT_REWRITE_CACHE_PATH = WORKSPACE_ROOT / "evals" / "cache" / "northstar_rag_v1_rewrites.json"
+DEFAULT_RERANKER_MODEL = "ms-marco-MiniLM-L-6-v2"
+DEFAULT_CANDIDATE_MULTIPLIER = 3.0
 
 
-def _default_output_path(mode: str) -> Path:
-    return WORKSPACE_ROOT / "evals" / "results" / f"northstar_rag_v1_{mode}.json"
+def _default_output_path(cases_path: Path, mode: str) -> Path:
+    return WORKSPACE_ROOT / "evals" / "results" / f"{cases_path.stem}_{mode}.json"
 
 
-def _collection_name(mode: str) -> str:
-    return f"northstar_rag_v1_{mode}_eval"
+def _collection_name(cases_path: Path, mode: str) -> str:
+    return f"{cases_path.stem}_{mode}_eval"
 
 
 def _display_path(path: Path) -> str:
@@ -41,6 +44,23 @@ def _display_path(path: Path) -> str:
         return str(path.relative_to(WORKSPACE_ROOT))
     except ValueError:
         return str(path)
+
+
+def _retry_call(fn: Any, *args: Any, retries: int = 6, base_backoff: float = 2.0, **kwargs: Any) -> Any:
+    """Retry embedding calls that fail on provider rate limits or quota windows."""
+    last_error: Exception | None = None
+    for attempt in range(retries):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as error:  # noqa: BLE001 - provider errors are string-typed
+            last_error = error
+            message = str(error).lower()
+            if not any(token in message for token in ("429", "rate", "quota", "limit", "resource_exhausted")):
+                raise
+            time.sleep(base_backoff * (2 ** attempt))
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Retry helper exhausted without an exception")
 
 
 def _load_rewrite_cache(path: Path) -> dict[str, dict[str, Any]]:
@@ -153,7 +173,7 @@ def _query_dense_notes(
     limit: int,
 ) -> list[dict[str, Any]]:
     result = collection.query(
-        query_embeddings=[embeddings.embed_query(query)],
+        query_embeddings=[_retry_call(embeddings.embed_query, query)],
         n_results=limit,
         where={"user_id": user_id},
         include=["metadatas", "documents", "distances"],
@@ -183,6 +203,8 @@ class HybridRetriever:
         reranker: Any = None,
         rewrite_query_fn: Any = None,
         rewrite_tools: dict[str, Any] | None = None,
+        candidate_limit: int | None = None,
+        strict_rerank: bool = False,
     ):
         self.sparse_indexes = sparse_indexes
         self.collection = collection
@@ -190,15 +212,24 @@ class HybridRetriever:
         self.reranker = reranker
         self.rewrite_query_fn = rewrite_query_fn
         self.rewrite_tools = rewrite_tools
+        self.candidate_limit = candidate_limit
+        self.strict_rerank = strict_rerank
         self.rewrite_audits: dict[str, dict[str, Any]] = {}
 
     def retrieve(self, query: str, user_id: str, limit: int) -> list[dict[str, Any]]:
-        """Retrieve and rerank candidates using hybrid approach."""
+        """Retrieve and rerank candidates using hybrid approach.
+
+        Candidate channels are fetched at ``candidate_limit`` (production uses
+        ``k * QUERY_RETRIEVAL_CANDIDATE_MULTIPLIER``) so the optional reranker
+        can promote notes that fusion placed below the final cutoff.
+        """
+        depth = max(limit, int(self.candidate_limit or limit))
+
         # Sparse retrieval
-        sparse_results = self.sparse_indexes[user_id].search(query, limit=limit, k1=1.5, b=0.75)
+        sparse_results = self.sparse_indexes[user_id].search(query, limit=depth, k1=1.5, b=0.75)
 
         # Dense retrieval
-        dense_results = _query_dense_notes(self.collection, self.embeddings, query, user_id, limit)
+        dense_results = _query_dense_notes(self.collection, self.embeddings, query, user_id, depth)
 
         # Query rewriting (optional)
         rewritten_results: list[dict[str, Any]] = []
@@ -211,7 +242,7 @@ class HybridRetriever:
             self.rewrite_audits[query] = rewrite_audit
             if rewrite_audit["rewrite_used"]:
                 rewritten_results = _query_dense_notes(
-                    self.collection, self.embeddings, expanded_query, user_id, limit
+                    self.collection, self.embeddings, expanded_query, user_id, depth
                 )
 
         # Fusion
@@ -223,26 +254,57 @@ class HybridRetriever:
                 ("original", dense_results),
                 ("rewritten", rewritten_results),
             ],
-            limit=limit,
+            limit=depth,
         )
 
         # Reranking (optional)
         if self.reranker is not None:
-            return self.reranker.rerank(query, candidates, limit=limit)
+            reranked = self.reranker.rerank(query, candidates, limit=limit)
+            if self.strict_rerank:
+                unscored = [
+                    candidate.get("note_id")
+                    for candidate in reranked
+                    if candidate.get("rerank_score") is None
+                ]
+                if unscored:
+                    raise RuntimeError(
+                        "Reranker returned unscored candidates for note ids "
+                        f"{unscored}. The production reranker falls back to its input "
+                        "order on failure, so this run cannot be reported as a "
+                        "reranked result. Check the reranker model and logs."
+                    )
+            return reranked
 
-        return candidates
+        return candidates[:limit]
 
 
 def _setup_chroma_collection(
     corpus: list[dict[str, Any]],
-    mode: str,
+    collection_name: str,
     chroma_path: Path,
     chromadb_module: Any,
     embeddings: Any,
+    reuse: bool = False,
 ) -> Any:
-    """Initialize and populate Chroma collection for a given mode."""
+    """Initialize and populate the isolated Chroma collection for an evaluation run."""
     client = chromadb_module.PersistentClient(path=str(chroma_path))
-    collection_name = _collection_name(mode)
+
+    if reuse:
+        try:
+            existing = client.get_collection(collection_name)
+        except Exception:
+            existing = None
+        if existing is not None:
+            try:
+                existing_count = int(existing.count())
+            except Exception:
+                existing_count = 0
+            if existing_count == len(corpus):
+                print(
+                    f"Reusing collection '{collection_name}' with {existing_count} notes; skipping re-embed.",
+                    flush=True,
+                )
+                return existing
 
     # Delete existing collection to start fresh
     try:
@@ -251,9 +313,13 @@ def _setup_chroma_collection(
         pass
 
     collection = client.get_or_create_collection(collection_name)
-    collection.add(
+    _retry_call(
+        collection.add,
         ids=[f"{note['user_id']}:{note['note_id']}" for note in corpus],
-        embeddings=embeddings.embed_documents([str(note["raw_text"]) for note in corpus]),
+        embeddings=_retry_call(
+            embeddings.embed_documents,
+            [str(note["raw_text"]) for note in corpus],
+        ),
         metadatas=[
             {
                 "user_id": str(note["user_id"]),
@@ -289,6 +355,13 @@ def run_hybrid_evaluation(
     rewrite_cache_path: Path | None = None,
     rewrite_latency_seconds: float = 0.0,
     refresh_rewrite_cache: bool = False,
+    collection_name: str | None = None,
+    candidate_multiplier: float = DEFAULT_CANDIDATE_MULTIPLIER,
+    reranker_model: str = DEFAULT_RERANKER_MODEL,
+    reuse_collection: bool = False,
+    strict_rerank: bool = False,
+    cases_path: Path | None = None,
+    corpus_path: Path | None = None,
 ) -> dict[str, Any]:
     """
     Run hybrid retrieval evaluation with optional query rewriting and reranking.
@@ -302,11 +375,20 @@ def run_hybrid_evaluation(
         rewrite_cache_path: Optional cache for LLM rewrite results
         rewrite_latency_seconds: Minimum seconds between rewrite requests
         refresh_rewrite_cache: Force refresh cached rewrite results
+        collection_name: Chroma collection name; derived from the cases file when omitted
+        candidate_multiplier: Per-channel fetch and fusion depth as a multiple of k
+        reranker_model: Cross-encoder model id used for the "rerank" mode
+        reuse_collection: Reuse an existing collection holding the full corpus
+        strict_rerank: Fail when the reranker returns unscored candidates
+        cases_path: Optional cases file used for report provenance
+        corpus_path: Optional corpus file used for report provenance
     
     Returns:
         Evaluation report with metrics, configuration, and per-case results
     """
-    _validate_isolated_target(chroma_path, _collection_name(mode))
+    resolved_collection = collection_name or _collection_name(cases_path or DEFAULT_CASES_PATH, mode)
+    _validate_isolated_target(chroma_path, resolved_collection)
+    chroma_path = chroma_path.resolve()
     chromadb, embeddings, embedding_model = _load_dense_dependencies()
 
     # Import production retrieval components
@@ -320,7 +402,14 @@ def run_hybrid_evaluation(
 
     # Setup infrastructure
     chroma_path.mkdir(parents=True, exist_ok=True)
-    collection = _setup_chroma_collection(corpus, mode, chroma_path, chromadb, embeddings)
+    collection = _setup_chroma_collection(
+        corpus,
+        resolved_collection,
+        chroma_path,
+        chromadb,
+        embeddings,
+        reuse=reuse_collection,
+    )
     notes_by_user, sparse_indexes = _setup_bm25_indexes(corpus)
 
     # Configure query rewriting (for "rewrite" mode)
@@ -349,7 +438,17 @@ def run_hybrid_evaluation(
         }
 
     # Instantiate reranker (for "rerank" mode)
-    reranker = SentenceTransformerReranker() if mode == "rerank" else None
+    reranker = None
+    if mode == "rerank":
+        reranker = SentenceTransformerReranker(model_name=reranker_model)
+        try:
+            reranker.model.predict([["reranker preflight", "reranker preflight"]])
+        except Exception as error:
+            raise DenseEvaluationPrerequisiteError(
+                f"Reranker model '{reranker_model}' failed a preflight scoring call: {error}"
+            ) from error
+
+    candidate_limit = max(k, int(round(k * candidate_multiplier)))
 
     # Create unified retriever
     retriever = HybridRetriever(
@@ -359,6 +458,8 @@ def run_hybrid_evaluation(
         reranker=reranker,
         rewrite_query_fn=rewrite_query_fn,
         rewrite_tools=rewrite_tools,
+        candidate_limit=candidate_limit,
+        strict_rerank=strict_rerank,
     )
 
     # Run evaluation
@@ -393,11 +494,21 @@ def run_hybrid_evaluation(
         "configuration": {
             "k": k,
             "mode": mode,
+            "dataset": {
+                "cases": _display_path(cases_path) if cases_path else None,
+                "corpus": _display_path(corpus_path) if corpus_path else None,
+            },
+            "embedding_provider": os.getenv("EMBEDDING_PROVIDER", "google").strip().lower(),
             "embedding_model": embedding_model,
-            "collection": _collection_name(mode),
-            "storage_path": str(chroma_path.relative_to(WORKSPACE_ROOT)),
+            "collection": resolved_collection,
+            "storage_path": _display_path(chroma_path),
+            "reuse_collection": bool(reuse_collection),
             "fusion": "production_rrf",
+            "candidate_multiplier": candidate_multiplier,
+            "candidate_limit": candidate_limit,
             "reranker": reranker_name,
+            "reranker_model": reranker_model if reranker is not None else None,
+            "strict_rerank": bool(strict_rerank) if reranker is not None else False,
             "rewrite": "production_guarded_rewrite_with_empty_synthetic_memory" if mode == "rewrite" else "off",
             "rewrite_cache": _display_path(rewrite_cache_path) if rewrite_cache_path else "off",
             "rewrite_latency_seconds": rewrite_latency_seconds if mode == "rewrite" else 0.0,
@@ -444,11 +555,42 @@ def main() -> None:
         action="store_true",
         help="Ignore cached rewrite entries, call Gemini again, and overwrite cache entries.",
     )
+    parser.add_argument(
+        "--collection",
+        default=None,
+        help="Chroma collection name. Defaults to '<cases-stem>_<mode>_eval'.",
+    )
+    parser.add_argument(
+        "--candidate-multiplier",
+        type=float,
+        default=DEFAULT_CANDIDATE_MULTIPLIER,
+        help=(
+            "Per-channel fetch and fusion depth as a multiple of --k, matching "
+            "QUERY_RETRIEVAL_CANDIDATE_MULTIPLIER. Default: 3."
+        ),
+    )
+    parser.add_argument(
+        "--reranker-model",
+        default=DEFAULT_RERANKER_MODEL,
+        help="Cross-encoder model id for --mode rerank. Default: ms-marco-MiniLM-L-6-v2.",
+    )
+    parser.add_argument(
+        "--reuse-collection",
+        action="store_true",
+        help="Reuse an existing collection that already holds the full corpus (skips re-embedding).",
+    )
+    parser.add_argument(
+        "--strict-rerank",
+        action="store_true",
+        help="Fail when the reranker returns unscored candidates instead of silently keeping fusion order.",
+    )
     parser.add_argument("--k", type=int, default=5)
     args = parser.parse_args()
 
     if args.k <= 0:
         parser.error("--k must be greater than zero")
+    if args.candidate_multiplier < 1:
+        parser.error("--candidate-multiplier must be greater than or equal to 1")
     if args.rewrite_latency is not None and args.rewrite_latency < 0:
         parser.error("--rewrite-latency must be greater than or equal to zero")
     if args.rewrite_requests_per_minute <= 0:
@@ -475,11 +617,18 @@ def main() -> None:
             rewrite_cache_path=rewrite_cache_path,
             rewrite_latency_seconds=rewrite_latency_seconds,
             refresh_rewrite_cache=args.refresh_rewrite_cache,
+            collection_name=args.collection,
+            candidate_multiplier=args.candidate_multiplier,
+            reranker_model=args.reranker_model,
+            reuse_collection=args.reuse_collection,
+            strict_rerank=args.strict_rerank,
+            cases_path=args.cases,
+            corpus_path=args.corpus,
         )
     except (DenseEvaluationPrerequisiteError, ValueError) as error:
         parser.error(str(error))
 
-    output = args.output or _default_output_path(args.mode)
+    output = args.output or _default_output_path(args.cases, args.mode)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     markdown_output = args.markdown_output or output.with_suffix(".md")

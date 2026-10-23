@@ -181,11 +181,27 @@ python -m evals.scripts.run_dense_retrieval_eval
 # Dense plus sparse Reciprocal Rank Fusion (RRF)
 python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf
 
-# RRF followed by the production token-overlap reranker
-python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank
+# RRF followed by the production cross-encoder reranker
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank --strict-rerank
 
 # RRF plus the guarded production query rewrite
 python -m evals.scripts.run_hybrid_retrieval_eval --mode rewrite
+```
+
+Run the V4 hybrid baselines with an explicitly shared collection so the 63-note corpus is embedded once:
+
+```powershell
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf `
+  --cases evals/datasets/northstar_rag_v4.jsonl `
+  --corpus evals/datasets/northstar_rag_v4_corpus.jsonl `
+  --collection northstar_rag_v4_rrf_eval
+
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank --strict-rerank `
+  --cases evals/datasets/northstar_rag_v4.jsonl `
+  --corpus evals/datasets/northstar_rag_v4_corpus.jsonl `
+  --collection northstar_rag_v4_rrf_eval --reuse-collection `
+  --candidate-multiplier 3 `
+  --reranker-model cross-encoder/ms-marco-MiniLM-L-6-v2
 ```
 
 The guarded rewrite run uses an empty synthetic recent-memory input and records query quality, rewrite confidence, risk flags, and guard decisions for each case. It can make up to one Gemini request for each eligible v1 scenario.
@@ -196,10 +212,12 @@ The guarded rewrite run uses an empty synthetic recent-memory input and records 
 | --- | --- | --- |
 | v0 sparse smoke | `evals/results/northstar_rag_v0_smoke_bm25.json` | `evals/results/northstar_rag_v0_smoke_bm25.md` |
 | v4 focused sparse BM25 | `evals/results/northstar_rag_v4_bm25.json` | `evals/results/northstar_rag_v4_bm25.md` |
+| v4 hybrid RRF | `evals/results/northstar_rag_v4_rrf.json` | `evals/results/northstar_rag_v4_rrf.md` |
+| v4 hybrid RRF plus cross-encoder | `evals/results/northstar_rag_v4_rerank.json` | `evals/results/northstar_rag_v4_rerank.md` |
 | v1 sparse BM25 | `evals/results/northstar_rag_v1_bm25.json` | `evals/results/northstar_rag_v1_bm25.md` |
 | v1 dense Chroma | `evals/results/northstar_rag_v1_dense.json` | `evals/results/northstar_rag_v1_dense.md` |
 | v1 RRF | `evals/results/northstar_rag_v1_rrf.json` | `evals/results/northstar_rag_v1_rrf.md` |
-| v1 RRF plus reranker | `evals/results/northstar_rag_v1_rerank.json` | `evals/results/northstar_rag_v1_rerank.md` |
+| v1 RRF plus reranker (stale, pre-cross-encoder) | `evals/results/northstar_rag_v1_rerank.json` | `evals/results/northstar_rag_v1_rerank.md` |
 | v1 guarded rewrite | `evals/results/northstar_rag_v1_rewrite.json` | `evals/results/northstar_rag_v1_rewrite.md` |
 
 Each report records Precision@5, Recall@5, MRR@5, isolation failures, no-context behavior, conflict-evidence completeness, retrieval configuration, and source revision. Compare modes only after every configuration has been run against the same regenerated fixture. Use v4 for focused semantic retrieval and v1 for conflict coverage.
@@ -209,7 +227,7 @@ Each report records Precision@5, Recall@5, MRR@5, isolation failures, no-context
 [`.github/workflows/rag-eval.yml`](.github/workflows/rag-eval.yml) automates the retrieval suite:
 
 - Qualifying pull requests run fixture validation plus v0, v4, and v1 sparse BM25 baselines.
-- Qualifying pushes to `main` additionally run dense Chroma, RRF, and RRF-plus-reranker baselines.
+- Qualifying pushes to `main` additionally run dense Chroma, RRF, RRF-plus-reranker, and the V4 hybrid/reranker baselines.
 - Manual dispatch offers `run_dense` for dense/RRF/reranker and `run_rewrite` for the cost-bearing guarded-rewrite benchmark.
 
 Set `GEMINI_API_KEY` as a GitHub repository or organization Actions secret before running secret-backed modes in GitHub Actions. The workflow currently publishes reports and artifacts but does not enforce metric thresholds as merge gates.

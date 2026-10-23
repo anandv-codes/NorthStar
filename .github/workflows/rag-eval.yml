@@ -161,6 +161,11 @@ jobs:
           python -m evals.scripts.build_rag_v1_expanded_dataset
           python -m evals.scripts.validate_rag_v1_dataset
 
+      - name: Rebuild and validate v4 focused dataset
+        run: |
+          python -m evals.scripts.build_rag_v4_focused_dataset
+          python -m evals.scripts.validate_rag_v4_dataset
+
       - name: Run v1 dense retrieval baseline
         if: github.event_name == 'push' || inputs.run_dense == true
         run: python -m evals.scripts.run_dense_retrieval_eval
@@ -171,7 +176,27 @@ jobs:
 
       - name: Run v1 RRF plus reranker baseline
         if: github.event_name == 'push' || inputs.run_dense == true
-        run: python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank
+        run: python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank --strict-rerank
+
+      - name: Run v4 hybrid RRF baseline
+        if: github.event_name == 'push' || inputs.run_dense == true
+        run: >
+          python -m evals.scripts.run_hybrid_retrieval_eval
+          --mode rrf
+          --cases evals/datasets/northstar_rag_v4.jsonl
+          --corpus evals/datasets/northstar_rag_v4_corpus.jsonl
+          --collection northstar_rag_v4_ci_eval
+
+      - name: Run v4 hybrid plus cross-encoder reranker baseline
+        if: github.event_name == 'push' || inputs.run_dense == true
+        run: >
+          python -m evals.scripts.run_hybrid_retrieval_eval
+          --mode rerank --strict-rerank
+          --cases evals/datasets/northstar_rag_v4.jsonl
+          --corpus evals/datasets/northstar_rag_v4_corpus.jsonl
+          --collection northstar_rag_v4_ci_eval --reuse-collection
+          --candidate-multiplier 3
+          --reranker-model cross-encoder/ms-marco-MiniLM-L-6-v2
 
       - name: Run v1 guarded-rewrite baseline
         if: github.event_name == 'workflow_dispatch' && inputs.run_rewrite == true
@@ -180,7 +205,7 @@ jobs:
       - name: Publish job summary
         if: always()
         run: |
-          for report in evals/results/northstar_rag_v1_dense.md evals/results/northstar_rag_v1_rrf.md evals/results/northstar_rag_v1_rerank.md; do
+          for report in evals/results/northstar_rag_v1_dense.md evals/results/northstar_rag_v1_rrf.md evals/results/northstar_rag_v1_rerank.md evals/results/northstar_rag_v4_rrf.md evals/results/northstar_rag_v4_rerank.md; do
             if [ -f "$report" ]; then
               cat "$report" >> "$GITHUB_STEP_SUMMARY"
               echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -201,4 +226,8 @@ jobs:
             evals/results/northstar_rag_v1_rerank.md
             evals/results/northstar_rag_v1_rewrite.json
             evals/results/northstar_rag_v1_rewrite.md
+            evals/results/northstar_rag_v4_rrf.json
+            evals/results/northstar_rag_v4_rrf.md
+            evals/results/northstar_rag_v4_rerank.json
+            evals/results/northstar_rag_v4_rerank.md
           retention-days: 30

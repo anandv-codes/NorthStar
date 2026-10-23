@@ -189,3 +189,35 @@ Install `backend/requirements.txt` in the selected Python environment, configure
 ### Next Experiment
 
 Run the unchanged V4 fixture through isolated dense and hybrid retrieval, preserving all case IDs and gold note references. Compare category failures and no-context behavior against this sparse baseline before tuning candidate depth, fusion, or rewriting. Do not treat the V4 result as answer-quality evidence.
+
+## 2026-10-24: V4 Hybrid and Cross-Encoder Reranker
+
+**Artifacts:** `evals/results/northstar_rag_v4_rrf.json`, `evals/results/northstar_rag_v4_rrf.md`, `evals/results/northstar_rag_v4_rerank.json`, and `evals/results/northstar_rag_v4_rerank.md`.
+
+Both runs use the unchanged V4 fixture (50 cases over 63 notes), `gemini-embedding-001`, one shared Chroma collection (`northstar_rag_v4_rrf_eval`, corpus embedded once and reused), `k=5`, and a candidate depth of 15 per channel (`candidate_multiplier=3`) before truncation or reranking. The reranker is the production `SentenceTransformerReranker` (`cross-encoder/ms-marco-MiniLM-L-6-v2`) with `--strict-rerank`, so an unranked fallback would fail the run instead of silently reporting fusion order.
+
+| Configuration | Precision@5 | Recall@5 | MRR@5 | Isolation failures | No-context |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sparse BM25 | 0.233 | 0.733 | 0.598 | 0 | 0/7 |
+| Hybrid RRF | 0.223 | 0.953 | 0.818 | 0 | 0/7 |
+| Hybrid RRF + cross-encoder | 0.200 | 0.884 | 0.809 | 0 | 0/7 |
+
+Per-tag Recall/MRR for the answerable cases:
+
+| Tag | n | BM25 | RRF | RRF + reranker |
+| --- | ---: | --- | --- | --- |
+| Software work | 17 | 0.647 / 0.569 | 0.912 / 0.725 | 0.735 / 0.678 |
+| SDE interview prep | 16 | 0.781 / 0.611 | 0.969 / 0.833 | 0.969 / 0.891 |
+| MBA | 10 | 0.800 / 0.625 | 1.000 / 0.950 | 1.000 / 0.900 |
+| Synthesis | 8 | 0.562 / 0.542 | 0.875 / 0.771 | 0.625 / 0.604 |
+| All semantic (`v4`) | 43 | 0.733 / 0.598 | 0.953 / 0.818 | 0.884 / 0.809 |
+
+### Learning
+
+- Hybrid RRF closes the semantic gap the sparse baseline exposed: Recall@5 rises from 0.733 to 0.953 and MRR@5 from 0.598 to 0.818, recovering 10 of the 11 cases where BM25 retrieved no gold note at all. Precision@5 slips slightly (0.233 to 0.223) because top-five context stays noisy; fusion buys coverage, not cleanliness.
+- The cross-encoder reranker does **not** pay for itself on V4. It improves ranking on 5 cases (notably `v4-swe-pricing-rollback-01` — the single remaining RRF miss — which it promoted to rank 1) but regresses 10, and it drops gold notes out of the top five entirely on 5 cases. Net effect: Recall@5 0.953 to 0.884 and MRR@5 0.818 to 0.809.
+- The regression is concentrated in software-work and synthesis queries, where the gold note is a short factual update and ms-marco favours longer, topical passages. Interview-prep and behavioral cases are the opposite: MRR improves (interview 0.833 to 0.891, behavioral 0.778 to 1.000), because those gold notes read like explanatory prose.
+- RRF recall is now high enough that the reranker mostly has room to demote, not promote. Re-testing the reranker makes sense on a fixture with more headroom, a depth sweep, or a reranker trained on short notes; it does not make sense to enable `QUERY_RETRIEVAL_RERANKER` on this evidence. It remains `off` by default.
+- No-context stays 0/7 for every retrieval configuration: all three return five positive-ranking notes for near-miss questions. Abstention must be enforced by grounding, not by retrieval.
+- The checked-in `northstar_rag_v1_rerank.*` artifact predates the cross-encoder and reports the retired token-overlap reranker. It must be re-run before any V1 reranker comparison.
+

@@ -1,0 +1,5164 @@
+{
+  "runner": "bm25_smoke",
+  "code_revision": "8718447",
+  "configuration": {
+    "k": 5,
+    "k1": 1.5,
+    "b": 0.75
+  },
+  "case_count": 228,
+  "summary": {
+    "precision_at_k": 0.173943661971831,
+    "recall_at_k": 0.6467136150234741,
+    "mean_reciprocal_rank_at_k": 0.6126760563380281,
+    "isolation_failure_count": 0,
+    "no_context_pass_count": 1,
+    "no_context_case_count": 15,
+    "conflict_retrieval_pass_count": 15,
+    "conflict_case_count": 15
+  },
+  "cases": [
+    {
+      "id": "v2-semantic-revision-01",
+      "query": "What should I revise for longest substring without repeating characters?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-sliding-window-longest-substring",
+        "v3-paraphrase-billing-etl",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-sliding-window-longest-substring"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-02",
+      "query": "What should I revise for topological sort?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-graph-topological-sort",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-graph-topological-sort"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-03",
+      "query": "What should I revise for sql window functions?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-sql-window-functions",
+        "quiz-computer-science-date",
+        "synonym-revision-backlog",
+        "study-revise-sliding-window-longest-substring",
+        "quiz-biology-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-sql-window-functions"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-04",
+      "query": "What should I revise for react usememo?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-react-usememo",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-react-usememo"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-05",
+      "query": "What should I revise for cache invalidation notes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-redis-cache",
+        "study-revise-system-design-cache",
+        "topic-prompt-caching-plan",
+        "near-miss-dockerfile",
+        "near-miss-github-actions-cache"
+      ],
+      "relevant_note_ids": [
+        "study-revise-system-design-cache"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-06",
+      "query": "What should I revise for bayes theorem questions?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-probability-bayes",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-probability-bayes"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-07",
+      "query": "What should I revise for deadlock detection?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-os-deadlock",
+        "v3-trap-distractor-fraud-model",
+        "study-revise-graph-topological-sort",
+        "quiz-biology-date",
+        "quiz-chemistry-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-os-deadlock"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-08",
+      "query": "What should I revise for dns resolution flow?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-networking-dns",
+        "v3-trap-distractor-onboarding-flow",
+        "synonym-revision-backlog",
+        "v3-synthesis-checkout-design-review-a",
+        "topic-jwt-refresh-done"
+      ],
+      "relevant_note_ids": [
+        "study-revise-networking-dns"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-09",
+      "query": "What should I revise for database indexing?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-db-indexing",
+        "v3-synthesis-migration-rehearsal-b",
+        "v3-synthesis-migration-rehearsal-a",
+        "v3-paraphrase-staging-creds",
+        "v3-paraphrase-checkout-latency"
+      ],
+      "relevant_note_ids": [
+        "study-revise-db-indexing"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-10",
+      "query": "What should I revise for python generators?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-python-generators",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-python-generators"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-11",
+      "query": "What should I revise for 0/1 knapsack dp?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-dp-knapsack",
+        "conflict-04-b",
+        "synonym-revision-backlog",
+        "learning-01",
+        "v3-vocab-read-model"
+      ],
+      "relevant_note_ids": [
+        "study-revise-dp-knapsack"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-revision-12",
+      "query": "What should I revise for regularization notes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-ml-regularization",
+        "study-revise-system-design-cache",
+        "v3-trap-distractor-billing-reconciliation",
+        "quiz-biology-date",
+        "quiz-chemistry-date"
+      ],
+      "relevant_note_ids": [
+        "study-revise-ml-regularization"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-01",
+      "query": "Where does my portfolio website stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-portfolio-site-status",
+        "life-internship-application-status",
+        "v3-paraphrase-async-standup",
+        "v3-synthesis-training-backfill-b",
+        "v3-paraphrase-feedback-board"
+      ],
+      "relevant_note_ids": [
+        "project-portfolio-site-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-02",
+      "query": "Where does my robotics demo stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-robotics-demo-status",
+        "latest-mini-project-demo-new",
+        "latest-mini-project-demo-old",
+        "v3-paraphrase-async-standup",
+        "life-internship-application-status"
+      ],
+      "relevant_note_ids": [
+        "project-robotics-demo-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-03",
+      "query": "Where does my college project stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-college-project-status",
+        "college-project-jun12-status",
+        "isolation-primary-semantic-02",
+        "synonym-teacher-review",
+        "v3-paraphrase-async-standup"
+      ],
+      "relevant_note_ids": [
+        "project-college-project-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-04",
+      "query": "Where does my ML mini project stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-ml-mini-project-status",
+        "latest-mini-project-demo-new",
+        "latest-mini-project-demo-old",
+        "v3-paraphrase-async-standup",
+        "life-internship-application-status"
+      ],
+      "relevant_note_ids": [
+        "project-ml-mini-project-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-05",
+      "query": "Where does my DBMS report stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-dbms-report-status",
+        "v3-paraphrase-async-standup",
+        "v3-synthesis-ledger-reconciliation-b",
+        "latest-dbms-viva-old",
+        "latest-dbms-viva-new"
+      ],
+      "relevant_note_ids": [
+        "project-dbms-report-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-06",
+      "query": "Where does my mobile prototype stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-mobile-prototype-status",
+        "v3-paraphrase-crash-sdk",
+        "v3-trap-distractor-mobile-crash-fix",
+        "v3-paraphrase-async-standup",
+        "life-internship-application-status"
+      ],
+      "relevant_note_ids": [
+        "project-mobile-prototype-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-07",
+      "query": "Where does my IoT dashboard stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-iot-dashboard-status",
+        "v3-paraphrase-async-standup",
+        "life-internship-application-status",
+        "v3-paraphrase-dashboard-sunset",
+        "v3-vocab-read-model"
+      ],
+      "relevant_note_ids": [
+        "project-iot-dashboard-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-08",
+      "query": "Where does my compiler assignment stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-compiler-assignment-status",
+        "v3-paraphrase-async-standup",
+        "life-internship-application-status",
+        "v3-synthesis-training-backfill-b",
+        "v3-paraphrase-feedback-board"
+      ],
+      "relevant_note_ids": [
+        "project-compiler-assignment-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-09",
+      "query": "Where does my economics presentation stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-economics-presentation-status",
+        "v3-paraphrase-async-standup",
+        "quiz-economics-date",
+        "life-internship-application-status",
+        "v3-synthesis-training-backfill-b"
+      ],
+      "relevant_note_ids": [
+        "project-economics-presentation-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-project-status-10",
+      "query": "Where does my capstone proposal stand and when did I last update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "project-capstone-proposal-status",
+        "v3-paraphrase-async-standup",
+        "life-internship-application-status",
+        "v3-synthesis-training-backfill-b",
+        "v3-paraphrase-feedback-board"
+      ],
+      "relevant_note_ids": [
+        "project-capstone-proposal-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-01",
+      "query": "What is my status on RRF?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-05",
+        "topic-rrf-done",
+        "retrieval-rrf-regression",
+        "synonym-fusion-summary",
+        "topic-rrf-plan"
+      ],
+      "relevant_note_ids": [
+        "topic-rrf-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-01",
+      "query": "Did I just plan RRF or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-05",
+        "topic-rrf-done",
+        "v3-trap-distractor-onboarding-flow",
+        "retrieval-rrf-regression",
+        "synonym-fusion-summary"
+      ],
+      "relevant_note_ids": [
+        "topic-rrf-plan",
+        "topic-rrf-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-02",
+      "query": "What is my status on reranking?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-reranking-done",
+        "topic-reranking-plan",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort"
+      ],
+      "relevant_note_ids": [
+        "topic-reranking-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-02",
+      "query": "Did I just plan reranking or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-reranking-done",
+        "topic-reranking-plan",
+        "v3-trap-distractor-onboarding-flow",
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "topic-reranking-plan",
+        "topic-reranking-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-03",
+      "query": "What is my status on BM25?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-bm25-done",
+        "topic-bm25-plan",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort"
+      ],
+      "relevant_note_ids": [
+        "topic-bm25-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-03",
+      "query": "Did I just plan BM25 or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-bm25-done",
+        "v3-trap-distractor-onboarding-flow",
+        "topic-bm25-plan",
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "topic-bm25-plan",
+        "topic-bm25-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-04",
+      "query": "What is my status on vector search?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-vector-search-done",
+        "topic-vector-search-plan",
+        "latest-hackathon-team-old",
+        "v3-trap-distractor-search-index",
+        "v3-trap-distractor-search-relevance"
+      ],
+      "relevant_note_ids": [
+        "topic-vector-search-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-04",
+      "query": "Did I just plan vector search or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-vector-search-done",
+        "topic-vector-search-plan",
+        "latest-hackathon-team-old",
+        "v3-trap-distractor-onboarding-flow",
+        "v3-trap-distractor-search-index"
+      ],
+      "relevant_note_ids": [
+        "topic-vector-search-plan",
+        "topic-vector-search-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-05",
+      "query": "What is my status on prompt caching?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-prompt-caching-done",
+        "topic-prompt-caching-plan",
+        "v3-trap-distractor-caching-layer",
+        "near-miss-github-actions-cache",
+        "v3-synthesis-harbor-cache-b"
+      ],
+      "relevant_note_ids": [
+        "topic-prompt-caching-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-05",
+      "query": "Did I just plan prompt caching or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-prompt-caching-done",
+        "v3-trap-distractor-caching-layer",
+        "topic-prompt-caching-plan",
+        "conflict-14-a",
+        "v3-trap-distractor-onboarding-flow"
+      ],
+      "relevant_note_ids": [
+        "topic-prompt-caching-plan",
+        "topic-prompt-caching-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-06",
+      "query": "What is my status on AWS SQS?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-sqs-done",
+        "isolation-primary-semantic-04",
+        "near-miss-aws-sqs",
+        "topic-sqs-plan",
+        "aws-sqs-notes"
+      ],
+      "relevant_note_ids": [
+        "topic-sqs-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-06",
+      "query": "Did I just plan AWS SQS or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-04",
+        "topic-sqs-done",
+        "topic-sqs-plan",
+        "near-miss-aws-sqs",
+        "aws-sqs-notes"
+      ],
+      "relevant_note_ids": [
+        "topic-sqs-plan",
+        "topic-sqs-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-07",
+      "query": "What is my status on JWT refresh flow?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-jwt-refresh-done",
+        "topic-jwt-refresh-plan",
+        "near-miss-jwt-refresh",
+        "v3-trap-distractor-onboarding-flow",
+        "study-revise-networking-dns"
+      ],
+      "relevant_note_ids": [
+        "topic-jwt-refresh-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-07",
+      "query": "Did I just plan JWT refresh flow or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-jwt-refresh-done",
+        "topic-jwt-refresh-plan",
+        "v3-trap-distractor-onboarding-flow",
+        "near-miss-jwt-refresh",
+        "conflict-11-a"
+      ],
+      "relevant_note_ids": [
+        "topic-jwt-refresh-plan",
+        "topic-jwt-refresh-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-08",
+      "query": "What is my status on Chroma persistence?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-chroma-done",
+        "topic-chroma-plan",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort"
+      ],
+      "relevant_note_ids": [
+        "topic-chroma-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-08",
+      "query": "Did I just plan Chroma persistence or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-chroma-done",
+        "topic-chroma-plan",
+        "v3-trap-distractor-onboarding-flow",
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "topic-chroma-plan",
+        "topic-chroma-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-09",
+      "query": "What is my status on FastAPI auth?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-fastapi-auth-done",
+        "topic-fastapi-auth-plan",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort"
+      ],
+      "relevant_note_ids": [
+        "topic-fastapi-auth-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-09",
+      "query": "Did I just plan FastAPI auth or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-fastapi-auth-done",
+        "topic-fastapi-auth-plan",
+        "v3-trap-distractor-onboarding-flow",
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "topic-fastapi-auth-plan",
+        "topic-fastapi-auth-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-status-10",
+      "query": "What is my status on Supabase RLS?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-supabase-rls-done",
+        "topic-supabase-rls-plan",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort"
+      ],
+      "relevant_note_ids": [
+        "topic-supabase-rls-done"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-topic-history-10",
+      "query": "Did I just plan Supabase RLS or finish it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-supabase-rls-done",
+        "topic-supabase-rls-plan",
+        "v3-trap-distractor-onboarding-flow",
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "topic-supabase-rls-plan",
+        "topic-supabase-rls-done"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-01",
+      "query": "When is my geo quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-geography-date"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-02",
+      "query": "When is my chem quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-chemistry-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-03",
+      "query": "When is my history quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "quiz-history-date",
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-history-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-04",
+      "query": "When is my physics quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "quiz-physics-date",
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-physics-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-05",
+      "query": "When is my math quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-maths-date"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-06",
+      "query": "When is my english quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "quiz-english-date",
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-english-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-07",
+      "query": "When is my eco quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-economics-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.2,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-08",
+      "query": "When is my civics quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "quiz-civics-date",
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-civics-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-09",
+      "query": "When is my bio quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-biology-date"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-quiz-date-10",
+      "query": "When is my cs quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date",
+        "quiz-economics-date"
+      ],
+      "relevant_note_ids": [
+        "quiz-computer-science-date"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-01",
+      "query": "What is the status of my AWS Lambda work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-aws-sqs",
+        "distractor-004-aws",
+        "distractor-014-aws",
+        "distractor-024-aws",
+        "distractor-034-aws"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-02",
+      "query": "What is the status of my Docker Compose work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-dockerfile",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-03",
+      "query": "What is the status of my Kubernetes ingress work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-kubernetes-pods",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-04",
+      "query": "What is the status of my Stripe refunds work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-stripe-webhooks",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-05",
+      "query": "What is the status of my Vercel env vars work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-vercel-deploy",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-06",
+      "query": "What is the status of my Postgres backups work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-postgres-indexes",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-07",
+      "query": "What is the status of my Redis streams work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-redis-cache",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-08",
+      "query": "What is the status of my OAuth consent screen work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-jwt-refresh",
+        "v3-trap-target-login-redesign",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-09",
+      "query": "What is the status of my Terraform state work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-cloudformation",
+        "study-revise-python-generators",
+        "study-dsa-buy-sell-stock",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-no-context-near-miss-10",
+      "query": "What is the status of my GitHub Actions secrets work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-github-actions-cache",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-01",
+      "query": "What is pending for my passport renewal, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-passport-renewal-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "v3-paraphrase-vendor-renewal",
+        "v3-synthesis-vendor-finance-a"
+      ],
+      "relevant_note_ids": [
+        "life-passport-renewal-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-02",
+      "query": "What is pending for my bike service, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-bike-service-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "v3-synthesis-beacon-permissions-a",
+        "v3-synthesis-beacon-permissions-b"
+      ],
+      "relevant_note_ids": [
+        "life-bike-service-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-03",
+      "query": "What is pending for my bank KYC, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-bank-kyc-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "conflict-01-a",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "life-bank-kyc-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-04",
+      "query": "What is pending for my hostel form, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-hostel-form-status",
+        "conflict-06-a",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "v3-paraphrase-travel-form"
+      ],
+      "relevant_note_ids": [
+        "life-hostel-form-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-05",
+      "query": "What is pending for my library dues, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-library-dues-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "v3-paraphrase-refund-macros",
+        "conflict-01-a"
+      ],
+      "relevant_note_ids": [
+        "life-library-dues-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-06",
+      "query": "What is pending for my internship application, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-internship-application-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "v3-vocab-tls-termination",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "life-internship-application-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-07",
+      "query": "What is pending for my driving license, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-driving-license-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "conflict-01-a",
+        "conflict-03-a"
+      ],
+      "relevant_note_ids": [
+        "life-driving-license-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-08",
+      "query": "What is pending for my scholarship form, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-scholarship-form-status",
+        "conflict-06-a",
+        "life-hostel-form-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old"
+      ],
+      "relevant_note_ids": [
+        "life-scholarship-form-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-09",
+      "query": "What is pending for my lab record, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "latest-lab-exam-new",
+        "latest-lab-exam-old",
+        "life-lab-record-status"
+      ],
+      "relevant_note_ids": [
+        "life-lab-record-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.2,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-life-status-10",
+      "query": "What is pending for my club event plan, and when did I update it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-club-event-status",
+        "latest-dbms-viva-old",
+        "latest-placement-aptitude-old",
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "life-club-event-status"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-isolation-01",
+      "query": "What do my notes say about DSA revision queue?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "study-revise-ml-regularization",
+        "isolation-primary-semantic-01",
+        "study-revise-system-design-cache",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-01"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-isolation-02",
+      "query": "What do my notes say about college project review?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-02",
+        "synonym-teacher-review",
+        "project-college-project-status",
+        "college-project-jun12-status",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-02"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-isolation-03",
+      "query": "What do my notes say about geography quiz?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "quiz-geography-date",
+        "geo-quiz-date",
+        "synonym-exam-energy",
+        "geo-quiz-reschedule"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-03"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-isolation-04",
+      "query": "What do my notes say about AWS SQS notes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-04",
+        "topic-sqs-done",
+        "near-miss-aws-sqs",
+        "topic-sqs-plan",
+        "aws-sqs-notes"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-04"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-isolation-05",
+      "query": "What do my notes say about RRF status?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-rrf-plan",
+        "retrieval-rrf-learn",
+        "isolation-primary-semantic-05",
+        "topic-rrf-done",
+        "retrieval-rrf-complete"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-05"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-01",
+      "query": "What is the latest update on my resume polish?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-resume-polish-new",
+        "latest-resume-polish-old",
+        "life-internship-application-status",
+        "project-economics-presentation-status",
+        "project-mobile-prototype-status"
+      ],
+      "relevant_note_ids": [
+        "latest-resume-polish-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-02",
+      "query": "What is the latest update on my mock interview prep?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-mock-interview-new",
+        "latest-mock-interview-old",
+        "latest-lab-exam-new",
+        "latest-placement-aptitude-new",
+        "latest-dbms-viva-new"
+      ],
+      "relevant_note_ids": [
+        "latest-mock-interview-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-03",
+      "query": "What is the latest update on my placement aptitude prep?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-placement-aptitude-new",
+        "latest-placement-aptitude-old",
+        "latest-lab-exam-new",
+        "latest-dbms-viva-new",
+        "latest-mock-interview-new"
+      ],
+      "relevant_note_ids": [
+        "latest-placement-aptitude-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-04",
+      "query": "What is the latest update on my open-source PR?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-open-source-pr-new",
+        "latest-open-source-pr-old",
+        "latest-hackathon-team-old",
+        "project-economics-presentation-status",
+        "project-mobile-prototype-status"
+      ],
+      "relevant_note_ids": [
+        "latest-open-source-pr-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-05",
+      "query": "What is the latest update on my hackathon team plan?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old",
+        "project-economics-presentation-status",
+        "project-mobile-prototype-status",
+        "project-capstone-proposal-status"
+      ],
+      "relevant_note_ids": [
+        "latest-hackathon-team-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-06",
+      "query": "What is the latest update on my DBMS viva prep?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-dbms-viva-new",
+        "latest-dbms-viva-old",
+        "project-dbms-report-status",
+        "latest-lab-exam-new",
+        "latest-placement-aptitude-new"
+      ],
+      "relevant_note_ids": [
+        "latest-dbms-viva-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-07",
+      "query": "What is the latest update on my mini project demo?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-mini-project-demo-new",
+        "latest-mini-project-demo-old",
+        "project-ml-mini-project-status",
+        "project-robotics-demo-status",
+        "project-college-project-status"
+      ],
+      "relevant_note_ids": [
+        "latest-mini-project-demo-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-08",
+      "query": "What is the latest update on my LeetCode streak?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-leetcode-streak-new",
+        "latest-leetcode-streak-old",
+        "project-economics-presentation-status",
+        "project-mobile-prototype-status",
+        "project-capstone-proposal-status"
+      ],
+      "relevant_note_ids": [
+        "latest-leetcode-streak-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-09",
+      "query": "What is the latest update on my teacher feedback?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-teacher-feedback-new",
+        "latest-teacher-feedback-old",
+        "project-ml-mini-project-status",
+        "project-college-project-status",
+        "college-project-jul20-update"
+      ],
+      "relevant_note_ids": [
+        "latest-teacher-feedback-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-latest-status-10",
+      "query": "What is the latest update on my lab exam prep?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-lab-exam-new",
+        "latest-lab-exam-old",
+        "latest-placement-aptitude-new",
+        "latest-dbms-viva-new",
+        "latest-mock-interview-new"
+      ],
+      "relevant_note_ids": [
+        "latest-lab-exam-new"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-synonym-01",
+      "query": "What notes mention feeling low about easy coding mistakes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "synonym-confidence-slump",
+        "v3-trap-distractor-billing-reconciliation",
+        "topic-reranking-plan",
+        "topic-chroma-plan",
+        "topic-fastapi-auth-plan"
+      ],
+      "relevant_note_ids": [
+        "synonym-confidence-slump"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-synonym-02",
+      "query": "Where did I say I studied without distractions?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-billing-etl",
+        "distractor-009-rrf",
+        "distractor-019-rrf",
+        "distractor-029-rrf",
+        "distractor-039-rrf"
+      ],
+      "relevant_note_ids": [
+        "synonym-focus-sprint"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-synonym-03",
+      "query": "Which note says someone else still has to check my college work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-chroma-done",
+        "study-revise-react-usememo",
+        "isolation-primary-semantic-03",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort"
+      ],
+      "relevant_note_ids": [
+        "synonym-teacher-review"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-synonym-04",
+      "query": "What weak areas did I collect for later study?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "synonym-revision-backlog",
+        "study-dsa-buy-sell-stock",
+        "topic-bm25-plan",
+        "synonym-focus-sprint",
+        "distractor-007-project"
+      ],
+      "relevant_note_ids": [
+        "synonym-revision-backlog"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-synonym-05",
+      "query": "How did my map practice go and what geography part needs work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "quiz-geography-date",
+        "geo-quiz-date",
+        "synonym-exam-energy",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack"
+      ],
+      "relevant_note_ids": [
+        "synonym-exam-energy"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-synonym-06",
+      "query": "What queue concept clicked after I drew the retry flow?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-sqs-done",
+        "v3-trap-target-data-pipeline",
+        "v3-trap-target-checkout-redesign",
+        "v3-trap-distractor-onboarding-flow",
+        "synonym-queue-learning"
+      ],
+      "relevant_note_ids": [
+        "synonym-queue-learning"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.2,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-semantic-synonym-07",
+      "query": "What was my takeaway about combining lexical and vector search?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-vector-search-plan",
+        "topic-vector-search-done",
+        "topic-bm25-plan",
+        "v3-synthesis-search-revert-a",
+        "synonym-fusion-summary"
+      ],
+      "relevant_note_ids": [
+        "synonym-fusion-summary"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.2,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-01",
+      "query": "Which items are currently at risk or blocked and who owns them? Synthesize across multiple items.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "datafix-dfx-7205",
+        "datafix-dfx-7210",
+        "datafix-dfx-7215",
+        "latest-leetcode-streak-old",
+        "v3-trap-target-fraud-model"
+      ],
+      "relevant_note_ids": [
+        "item-item-4102",
+        "item-item-4104",
+        "item-item-4109",
+        "item-item-4112",
+        "item-item-4114",
+        "item-item-4119"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-02",
+      "query": "What is the distribution of item statuses across the portfolio? Which status represents the most risk?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-leetcode-streak-old",
+        "progress-03-baseline",
+        "progress-08-baseline",
+        "progress-01-baseline",
+        "progress-02-baseline"
+      ],
+      "relevant_note_ids": [
+        "item-item-4101",
+        "item-item-4102",
+        "item-item-4103",
+        "item-item-4104",
+        "item-item-4105",
+        "item-item-4106",
+        "item-item-4107",
+        "item-item-4108",
+        "item-item-4109",
+        "item-item-4110"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-03",
+      "query": "Who owns the most items? What does ownership concentration tell you about team capacity?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-rate-limit",
+        "topic-reranking-plan",
+        "topic-chroma-plan",
+        "topic-fastapi-auth-plan",
+        "topic-vector-search-plan"
+      ],
+      "relevant_note_ids": [
+        "item-item-4101",
+        "item-item-4109",
+        "item-item-4117",
+        "item-item-4102",
+        "item-item-4110",
+        "item-item-4118"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-04",
+      "query": "What is the relationship between item status and target date? Are blocked items also soonest to complete?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-15-b",
+        "v3-trap-target-billing-reconciliation",
+        "conflict-15-a",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "item-item-4104",
+        "item-item-4109",
+        "item-item-4114",
+        "item-item-4119",
+        "item-item-4102",
+        "item-item-4107",
+        "item-item-4112",
+        "item-item-4117"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-05",
+      "query": "Which items are on-track or ready for review? Summarize their owners and timelines.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-dbms-viva-new",
+        "datafix-dfx-7205",
+        "datafix-dfx-7210",
+        "datafix-dfx-7215",
+        "context-primary-004"
+      ],
+      "relevant_note_ids": [
+        "item-item-4101",
+        "item-item-4103",
+        "item-item-4105",
+        "item-item-4106",
+        "item-item-4108",
+        "item-item-4110",
+        "item-item-4111",
+        "item-item-4113",
+        "item-item-4115",
+        "item-item-4116",
+        "item-item-4118",
+        "item-item-4120"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-06",
+      "query": "How many items target completion within the next 7 days (before Sept 17)? What escalation is needed?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-07-baseline",
+        "progress-07-current",
+        "isolation-primary-02",
+        "progress-03-baseline",
+        "progress-08-baseline"
+      ],
+      "relevant_note_ids": [
+        "item-item-4101",
+        "item-item-4102",
+        "item-item-4103",
+        "item-item-4104",
+        "item-item-4105",
+        "item-item-4106",
+        "item-item-4107"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-07",
+      "query": "Is there a pattern where items closer to target date are more likely to be blocked or at-risk?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-printer-move",
+        "v3-trap-distractor-data-pipeline",
+        "v3-vocab-pessimistic-ui",
+        "v3-vocab-schema-migration",
+        "progress-03-baseline"
+      ],
+      "relevant_note_ids": [
+        "item-item-4102",
+        "item-item-4104",
+        "item-item-4107",
+        "item-item-4109",
+        "item-item-4112",
+        "item-item-4114",
+        "item-item-4117",
+        "item-item-4119"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-08",
+      "query": "If intervention capacity is limited, how would you prioritize items for leadership focus?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-rate-limit",
+        "v3-paraphrase-billing-etl",
+        "datafix-dfx-7205",
+        "datafix-dfx-7210",
+        "datafix-dfx-7215"
+      ],
+      "relevant_note_ids": [
+        "item-item-4104",
+        "item-item-4109",
+        "item-item-4114",
+        "item-item-4119",
+        "item-item-4102",
+        "item-item-4107",
+        "item-item-4112",
+        "item-item-4117"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-09",
+      "query": "Which team member carries the highest risk load (most at-risk plus blocked items)? Is this a capacity concern?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-03-baseline",
+        "progress-08-baseline",
+        "progress-01-baseline",
+        "progress-02-baseline",
+        "progress-04-baseline"
+      ],
+      "relevant_note_ids": [
+        "item-item-4102",
+        "item-item-4104",
+        "item-item-4107",
+        "item-item-4109",
+        "item-item-4112",
+        "item-item-4114",
+        "item-item-4117",
+        "item-item-4119"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-item-synthesis-10",
+      "query": "Provide a steering committee update: overall portfolio health, critical gaps, and top 3 action items.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-beacon-permissions-b",
+        "v3-synthesis-security-audit-a",
+        "learning-08",
+        "progress-03-current",
+        "learning-03"
+      ],
+      "relevant_note_ids": [
+        "item-item-4101",
+        "item-item-4102",
+        "item-item-4104",
+        "item-item-4109",
+        "item-item-4110",
+        "item-item-4114",
+        "item-item-4119"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-datafix-synthesis-01",
+      "query": "What is the total scope of rows corrected across all datafixes? Aggregate the impact.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-harbor-cache-b",
+        "v3-synthesis-staging-unstable-b",
+        "v3-trap-target-onboarding-flow",
+        "conflict-12-a",
+        "v3-trap-target-atlas-migration"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7201",
+        "datafix-dfx-7202",
+        "datafix-dfx-7203",
+        "datafix-dfx-7204",
+        "datafix-dfx-7205",
+        "datafix-dfx-7206",
+        "datafix-dfx-7207",
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-datafix-synthesis-02",
+      "query": "Which record sets were most frequently affected by datafixes? What does this pattern suggest?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-pessimistic-ui",
+        "v3-vocab-schema-migration",
+        "context-primary-001",
+        "context-primary-002",
+        "context-primary-003"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7201",
+        "datafix-dfx-7202",
+        "datafix-dfx-7203",
+        "datafix-dfx-7204",
+        "datafix-dfx-7205",
+        "datafix-dfx-7206",
+        "datafix-dfx-7207",
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-datafix-synthesis-03",
+      "query": "What is the average correction scope per datafix operation? Is there a trend?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-05",
+        "conflict-08-a",
+        "conflict-08-b",
+        "datafix-dfx-7201",
+        "datafix-dfx-7202"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7201",
+        "datafix-dfx-7202",
+        "datafix-dfx-7203",
+        "datafix-dfx-7204",
+        "datafix-dfx-7205",
+        "datafix-dfx-7206",
+        "datafix-dfx-7207",
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 0.25,
+      "reciprocal_rank_at_k": 0.25,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-datafix-synthesis-04",
+      "query": "Which single datafix had the highest impact and what does it reveal?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-10-a",
+        "learning-10",
+        "conflict-08-a",
+        "conflict-08-b",
+        "datafix-dfx-7201"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-datafix-synthesis-05",
+      "query": "What data quality issues do these datafixes reveal about system health?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-color-tokens",
+        "v3-synthesis-relay-legal-b",
+        "v3-trap-distractor-data-pipeline",
+        "v3-synthesis-training-backfill-a",
+        "topic-reranking-plan"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7201",
+        "datafix-dfx-7202",
+        "datafix-dfx-7203",
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-datafix-synthesis-06",
+      "query": "Rank the observed datafixes by severity: scope \u00d7 record-set-criticality.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-rrf-plan",
+        "conflict-10-a",
+        "retrieval-rrf-learn",
+        "conflict-10-b",
+        "geo-quiz-reschedule"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7206",
+        "datafix-dfx-7207",
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-datafix-synthesis-07",
+      "query": "How does observed datafix activity compare to system baseline? Are these typical or exceptional?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-color-tokens",
+        "progress-03-baseline",
+        "progress-08-baseline",
+        "progress-01-baseline",
+        "progress-02-baseline"
+      ],
+      "relevant_note_ids": [
+        "datafix-dfx-7201",
+        "datafix-dfx-7208"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-01",
+      "query": "Summarize the current progress and blocker for Atlas checkpoint 1.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-01-current",
+        "progress-06-current",
+        "progress-01-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-01-baseline",
+        "progress-01-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-02",
+      "query": "Summarize the current progress and blocker for Relay checkpoint 2.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-02-current",
+        "progress-07-current",
+        "progress-02-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-02-baseline",
+        "progress-02-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-03",
+      "query": "Summarize the current progress and blocker for Ledger checkpoint 3.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-03-current",
+        "progress-08-current",
+        "progress-03-baseline",
+        "progress-01-current",
+        "progress-02-current"
+      ],
+      "relevant_note_ids": [
+        "progress-03-baseline",
+        "progress-03-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-04",
+      "query": "Summarize the current progress and blocker for Beacon checkpoint 4.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-04-current",
+        "progress-09-current",
+        "progress-04-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-04-baseline",
+        "progress-04-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-05",
+      "query": "Summarize the current progress and blocker for Harbor checkpoint 5.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-05-current",
+        "progress-10-current",
+        "progress-05-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-05-baseline",
+        "progress-05-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-06",
+      "query": "Summarize the current progress and blocker for Atlas checkpoint 6.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-06-current",
+        "progress-01-current",
+        "progress-06-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-06-baseline",
+        "progress-06-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-07",
+      "query": "Summarize the current progress and blocker for Relay checkpoint 7.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-07-current",
+        "progress-02-current",
+        "progress-07-baseline",
+        "distractor-007-project",
+        "progress-03-current"
+      ],
+      "relevant_note_ids": [
+        "progress-07-baseline",
+        "progress-07-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-08",
+      "query": "Summarize the current progress and blocker for Ledger checkpoint 8.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-08-current",
+        "progress-03-current",
+        "progress-08-baseline",
+        "progress-01-current",
+        "progress-02-current"
+      ],
+      "relevant_note_ids": [
+        "progress-08-baseline",
+        "progress-08-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-09",
+      "query": "Summarize the current progress and blocker for Beacon checkpoint 9.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-09-current",
+        "progress-04-current",
+        "progress-09-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-09-baseline",
+        "progress-09-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-progress-summary-10",
+      "query": "Summarize the current progress and blocker for Harbor checkpoint 10.",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-10-current",
+        "progress-05-current",
+        "progress-10-baseline",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "progress-10-baseline",
+        "progress-10-current"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-01",
+      "query": "What did the team learn about handling retry storms?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "near-miss-stripe-webhooks",
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "learning-01",
+        "topic-rrf-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-01"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.25,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-02",
+      "query": "What did the team learn about handling unowned alerts?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-02",
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-02"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-03",
+      "query": "What did the team learn about handling prompt exports?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-prompt-caching-plan",
+        "learning-03",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-03"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-04",
+      "query": "What did the team learn about handling stale embeddings?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-04",
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-04"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-05",
+      "query": "What did the team learn about handling silent data fixes?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-05",
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-05"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-06",
+      "query": "What did the team learn about handling ambiguous status reports?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-06",
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-06"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-07",
+      "query": "What did the team learn about handling retrieval noise?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "retrieval-rrf-learn",
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-07"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-08",
+      "query": "What did the team learn about handling handoff gaps?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan",
+        "topic-reranking-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-08"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-09",
+      "query": "What did the team learn about handling schema drift?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan",
+        "topic-reranking-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-09"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-learning-paraphrase-10",
+      "query": "What did the team learn about handling incident summaries?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-10",
+        "topic-prompt-caching-plan",
+        "topic-sqs-plan",
+        "topic-rrf-plan",
+        "topic-supabase-rls-plan"
+      ],
+      "relevant_note_ids": [
+        "learning-10"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-dependency-semantic-01",
+      "query": "What rollout dependencies form a critical path? Which block multiple downstream items?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "life-hostel-form-status",
+        "v3-synthesis-beacon-permissions-b",
+        "v3-synthesis-security-audit-a",
+        "v3-paraphrase-travel-form",
+        "life-scholarship-form-status"
+      ],
+      "relevant_note_ids": [
+        "multi-09-scope",
+        "multi-09-dependency",
+        "multi-10-scope",
+        "multi-10-dependency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-dependency-semantic-02",
+      "query": "Which dependencies block highest-risk items? What is the impact if they fail?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-10-a",
+        "learning-10",
+        "datafix-dfx-7205",
+        "datafix-dfx-7210",
+        "datafix-dfx-7215"
+      ],
+      "relevant_note_ids": [
+        "multi-10-dependency",
+        "multi-11-dependency",
+        "multi-12-dependency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-dependency-semantic-03",
+      "query": "Are there circular or conflicting dependencies in the rollout plan?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "latest-hackathon-team-new",
+        "latest-hackathon-team-old",
+        "v3-trap-distractor-caching-layer",
+        "life-club-event-status",
+        "v3-trap-distractor-api-rate-limit"
+      ],
+      "relevant_note_ids": [
+        "multi-11-scope",
+        "multi-11-dependency",
+        "multi-09-scope",
+        "multi-09-dependency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-dependency-semantic-04",
+      "query": "Which teams or people have overlapping dependency ownership?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "multi-01-dependency",
+        "multi-02-dependency",
+        "multi-03-dependency",
+        "multi-04-dependency",
+        "multi-05-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-12-scope",
+        "multi-13-scope",
+        "multi-14-scope"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-dependency-semantic-05",
+      "query": "What would parallel execution windows look like? Can any items roll out concurrently?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-ledger-reconciliation-a",
+        "v3-synthesis-marco-approver-a",
+        "v3-trap-target-mobile-crash-fix",
+        "v3-paraphrase-travel-form",
+        "v3-synthesis-harbor-cache-a"
+      ],
+      "relevant_note_ids": [
+        "multi-09-dependency",
+        "multi-10-dependency",
+        "multi-11-dependency",
+        "multi-12-dependency",
+        "multi-13-dependency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-dependency-semantic-06",
+      "query": "What happens if a single dependency is delayed? How does that cascade?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "progress-02-baseline",
+        "progress-07-baseline",
+        "progress-02-current",
+        "progress-07-current",
+        "multi-01-dependency"
+      ],
+      "relevant_note_ids": [
+        "multi-14-dependency",
+        "multi-15-dependency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-dependency-semantic-07",
+      "query": "What is the minimum time to complete all rollouts given dependency constraints?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-wal-archiving",
+        "v3-synthesis-harbor-cache-b",
+        "v3-synthesis-staging-unstable-b",
+        "v3-trap-target-onboarding-flow",
+        "v3-trap-target-atlas-migration"
+      ],
+      "relevant_note_ids": [
+        "multi-09-dependency",
+        "multi-10-dependency",
+        "multi-14-dependency",
+        "multi-15-dependency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-ambiguous-conflict-01",
+      "query": "What is the agreed decision for the production rollout window?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-01-a",
+        "conflict-01-b",
+        "v3-trap-target-api-rate-limit",
+        "v3-paraphrase-hiring-freeze",
+        "v3-trap-distractor-api-rate-limit"
+      ],
+      "relevant_note_ids": [
+        "conflict-01-a",
+        "conflict-01-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-02",
+      "query": "What is the agreed decision for the customer export retention period?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-02-a",
+        "conflict-02-b",
+        "progress-02-current",
+        "progress-07-current",
+        "v3-paraphrase-hiring-freeze"
+      ],
+      "relevant_note_ids": [
+        "conflict-02-a",
+        "conflict-02-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-03",
+      "query": "What is the agreed decision for the Relay notification fallback?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-03-a",
+        "conflict-03-b",
+        "v3-trap-distractor-notification-bug",
+        "progress-02-current",
+        "progress-07-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-03-a",
+        "conflict-03-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-04",
+      "query": "What is the agreed decision for the Ledger reconciliation threshold?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-04-a",
+        "conflict-04-b",
+        "v3-synthesis-ledger-reconciliation-a",
+        "v3-trap-distractor-billing-reconciliation",
+        "v3-synthesis-ledger-reconciliation-b"
+      ],
+      "relevant_note_ids": [
+        "conflict-04-a",
+        "conflict-04-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-05",
+      "query": "What is the agreed decision for the Atlas migration cohort?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-05-b",
+        "v3-trap-distractor-atlas-migration",
+        "conflict-05-a",
+        "v3-synthesis-migration-rehearsal-a",
+        "multi-01-scope"
+      ],
+      "relevant_note_ids": [
+        "conflict-05-a",
+        "conflict-05-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-06",
+      "query": "What is the agreed decision for the Beacon audit evidence format?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-06-b",
+        "conflict-06-a",
+        "progress-04-current",
+        "progress-09-current",
+        "v3-paraphrase-hiring-freeze"
+      ],
+      "relevant_note_ids": [
+        "conflict-06-a",
+        "conflict-06-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-07",
+      "query": "What is the agreed decision for the Harbor support escalation route?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-07-a",
+        "conflict-07-b",
+        "progress-05-current",
+        "progress-10-current",
+        "v3-paraphrase-hiring-freeze"
+      ],
+      "relevant_note_ids": [
+        "conflict-07-a",
+        "conflict-07-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-08",
+      "query": "What is the agreed decision for the datafix approval owner?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-08-a",
+        "conflict-08-b",
+        "progress-04-current",
+        "progress-09-current",
+        "learning-08"
+      ],
+      "relevant_note_ids": [
+        "conflict-08-a",
+        "conflict-08-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-09",
+      "query": "What is the agreed decision for the work-item completion definition?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-09-a",
+        "conflict-09-b",
+        "v3-paraphrase-hiring-freeze",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-09-a",
+        "conflict-09-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-10",
+      "query": "What is the agreed decision for the incident severity threshold?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-10-a",
+        "conflict-10-b",
+        "v3-paraphrase-checkout-postmortem",
+        "learning-10",
+        "v3-vocab-sla-threshold"
+      ],
+      "relevant_note_ids": [
+        "conflict-10-a",
+        "conflict-10-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-11",
+      "query": "What is the agreed decision for the embedding refresh cadence?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-11-a",
+        "conflict-11-b",
+        "topic-jwt-refresh-done",
+        "topic-jwt-refresh-plan",
+        "topic-vector-search-plan"
+      ],
+      "relevant_note_ids": [
+        "conflict-11-a",
+        "conflict-11-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-12",
+      "query": "What is the agreed decision for the model-cost reporting method?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-12-a",
+        "conflict-12-b",
+        "v3-trap-distractor-fraud-model",
+        "v3-synthesis-reporting-double-count-a",
+        "v3-paraphrase-dashboard-sunset"
+      ],
+      "relevant_note_ids": [
+        "conflict-12-a",
+        "conflict-12-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-13",
+      "query": "What is the agreed decision for the release-readiness checklist?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-13-a",
+        "conflict-13-b",
+        "v3-synthesis-mobile-release-a",
+        "v3-synthesis-staging-unstable-b",
+        "v3-trap-target-mobile-crash-fix"
+      ],
+      "relevant_note_ids": [
+        "conflict-13-a",
+        "conflict-13-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-14",
+      "query": "What is the agreed decision for the prompt-log retention policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-14-a",
+        "conflict-14-b",
+        "topic-prompt-caching-done",
+        "v3-vocab-wal-archiving",
+        "topic-supabase-rls-done"
+      ],
+      "relevant_note_ids": [
+        "conflict-14-a",
+        "conflict-14-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-ambiguous-conflict-15",
+      "query": "What is the agreed decision for the partner contract review date?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-15-a",
+        "conflict-15-b",
+        "learning-08",
+        "progress-02-current",
+        "progress-07-current"
+      ],
+      "relevant_note_ids": [
+        "conflict-15-a",
+        "conflict-15-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": true
+    },
+    {
+      "id": "v2-no-context-01",
+      "query": "What is the office parking reimbursement policy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-printer-move",
+        "v3-paraphrase-travel-form",
+        "topic-supabase-rls-done",
+        "v3-paraphrase-staging-creds",
+        "near-miss-kubernetes-pods"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-no-context-02",
+      "query": "Which dental insurer covers contractor dependents?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": true,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-no-context-03",
+      "query": "What was the keynote speaker's travel itinerary?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-travel-form",
+        "v3-synthesis-audit-compliance-a",
+        "v3-trap-target-invoice-export",
+        "v3-paraphrase-color-tokens",
+        "v3-paraphrase-dashboard-sunset"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-no-context-04",
+      "query": "When does the company cafeteria close on Fridays?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-ledger-reconciliation-a",
+        "context-primary-001",
+        "context-primary-002",
+        "context-primary-003",
+        "context-primary-005"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v2-no-context-05",
+      "query": "What is the corporate holiday gift budget?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-hiring-freeze",
+        "v3-paraphrase-oncall-exempt"
+      ],
+      "relevant_note_ids": [],
+      "precision_at_k": null,
+      "recall_at_k": null,
+      "reciprocal_rank_at_k": null,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": false,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-01",
+      "query": "Did anyone have to step in and fix the overnight billing sync job?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-billing-reconciliation",
+        "v3-trap-distractor-mobile-crash-fix",
+        "v3-trap-target-search-index",
+        "v3-paraphrase-oncall-exempt",
+        "v3-trap-target-invoice-export"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-billing-etl"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-02",
+      "query": "Has the write-up explaining what caused the checkout downtime gone out yet?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-mobile-release-b",
+        "v3-vocab-blue-green",
+        "v3-trap-distractor-checkout-redesign",
+        "v3-synthesis-marco-approver-a",
+        "v3-vocab-wal-archiving"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-checkout-postmortem"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-03",
+      "query": "Can new employees find instructions for getting a new laptop somewhere?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-onboarding-laptop",
+        "v3-synthesis-harbor-cache-a",
+        "v3-paraphrase-refund-macros",
+        "v3-synthesis-beacon-permissions-a",
+        "v3-synthesis-checkout-design-review-a"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-onboarding-laptop"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-04",
+      "query": "Where do we track what customers are saying about the product these days?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "conflict-08-b",
+        "topic-reranking-plan",
+        "topic-chroma-plan",
+        "topic-fastapi-auth-plan",
+        "topic-vector-search-plan"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-feedback-board"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-05",
+      "query": "Are we still allowed to bring on new people right now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-onboarding-laptop",
+        "v3-trap-target-login-redesign",
+        "v3-trap-target-search-index",
+        "v3-paraphrase-oncall-exempt",
+        "v3-vocab-schema-migration"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-hiring-freeze"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-06",
+      "query": "Did someone update the passwords for the test environment recently?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-staging-unstable-b",
+        "v3-synthesis-staging-unstable-a",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-staging-creds"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-07",
+      "query": "Is it easier now for the help desk folks to locate the money-back reply templates?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-refund-macros",
+        "v3-synthesis-checkout-design-review-a",
+        "v3-paraphrase-checkout-latency",
+        "v3-vocab-circuit-breaker",
+        "v3-trap-target-login-redesign"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-refund-macros"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-08",
+      "query": "Is the old analytics dashboard going away soon?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-crash-sdk",
+        "v3-paraphrase-dashboard-sunset",
+        "v3-vocab-read-model",
+        "project-iot-dashboard-status",
+        "distractor-007-project"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-dashboard-sunset"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-09",
+      "query": "Do I still need my manager to sign off before I get reimbursed for a work trip?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-vendor-finance-a",
+        "v3-synthesis-vendor-finance-b",
+        "v3-synthesis-relay-legal-a",
+        "v3-trap-distractor-payment-retry",
+        "v3-paraphrase-travel-form"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-travel-form"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.2,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-10",
+      "query": "What turned out to be causing checkout to slow down?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-checkout-redesign",
+        "v3-synthesis-search-revert-a",
+        "v3-trap-distractor-search-index",
+        "v3-synthesis-marco-approver-a",
+        "v3-trap-target-mobile-crash-fix"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-checkout-latency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-11",
+      "query": "Who is exempt from being on call this weekend?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-oncall-exempt",
+        "v3-paraphrase-wiki-migration",
+        "v3-vocab-dlq-alert",
+        "conflict-07-a"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-oncall-exempt"
+      ],
+      "precision_at_k": 0.25,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-12",
+      "query": "Are we doing daily meetings out loud still, or writing them up instead?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-checkout-postmortem",
+        "v3-synthesis-marco-approver-a",
+        "v3-vocab-autoscaling",
+        "v3-vocab-dlq-alert",
+        "v3-trap-target-mobile-crash-fix"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-async-standup"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-13",
+      "query": "Did our supplier agreement pricing change this year?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-relay-legal-b",
+        "v3-paraphrase-vendor-renewal",
+        "v3-synthesis-search-revert-b",
+        "v3-synthesis-reporting-double-count-b",
+        "v3-synthesis-reporting-double-count-a"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-vendor-renewal"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-14",
+      "query": "Did the naming for our UI colors change with the rebrand?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-pessimistic-ui",
+        "v3-synthesis-search-revert-b",
+        "v3-synthesis-reporting-double-count-b",
+        "v3-synthesis-reporting-double-count-a",
+        "v3-synthesis-search-revert-a"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-color-tokens"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-15",
+      "query": "What's behind the recent wave of app crashes on phones?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-target-mobile-crash-fix",
+        "v3-paraphrase-crash-sdk",
+        "v3-synthesis-audit-compliance-a",
+        "v3-trap-target-invoice-export",
+        "v3-paraphrase-color-tokens"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-crash-sdk"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-16",
+      "query": "Is the hiring process quicker for candidates now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-hiring-freeze",
+        "v3-trap-target-login-redesign",
+        "v3-trap-target-search-index",
+        "v3-paraphrase-oncall-exempt",
+        "v3-vocab-schema-migration"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-interview-loop"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-17",
+      "query": "Where does internal documentation live now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-wiki-migration",
+        "v3-trap-target-checkout-redesign",
+        "v3-trap-target-caching-layer",
+        "v3-trap-target-login-redesign",
+        "v3-trap-target-search-index"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-wiki-migration"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-18",
+      "query": "How do failed webhook calls get handled now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-webhook-retry",
+        "v3-trap-target-data-pipeline",
+        "v3-trap-target-login-redesign",
+        "v3-trap-target-search-index",
+        "v3-paraphrase-oncall-exempt"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-webhook-retry"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-19",
+      "query": "Was there a bug that inflated the numbers in the weekly report?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-notification-bug",
+        "v3-paraphrase-refund-double-count",
+        "v3-synthesis-reporting-double-count-a",
+        "v3-synthesis-ledger-reconciliation-b",
+        "v3-synthesis-beacon-permissions-b"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-refund-double-count"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-paraphrase-20",
+      "query": "Did they finally move the printer somewhere more convenient?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-printer-move",
+        "v3-trap-distractor-data-pipeline",
+        "synonym-queue-learning",
+        "v3-paraphrase-async-standup",
+        "v3-trap-target-atlas-migration"
+      ],
+      "relevant_note_ids": [
+        "v3-paraphrase-printer-move"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-01",
+      "query": "If I accidentally click submit twice on an order really fast, am I gonna get charged twice?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-target-search-relevance"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-idempotency"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-02",
+      "query": "What happens if the 'you might also like' thing on the site just stops responding?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-onboarding-flow",
+        "conflict-03-b",
+        "conflict-08-b",
+        "conflict-11-b",
+        "conflict-01-b"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-circuit-breaker"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-03",
+      "query": "Did they make the servers add more copies of themselves sooner when things get busy?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-data-pipeline",
+        "conflict-01-a",
+        "conflict-03-a",
+        "conflict-08-a",
+        "conflict-11-a"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-autoscaling"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-04",
+      "query": "Do they test new stuff on just a few users first before everyone gets it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-target-search-relevance",
+        "v3-synthesis-harbor-cache-a",
+        "quiz-biology-date",
+        "quiz-chemistry-date",
+        "quiz-civics-date"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-canary-rollout"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-05",
+      "query": "Is there some overnight cleanup that frees up storage space in the database?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-target-search-index",
+        "latest-resume-polish-new",
+        "v3-vocab-vacuum-job",
+        "v3-synthesis-migration-rehearsal-b",
+        "v3-synthesis-migration-rehearsal-a"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-vacuum-job"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-06",
+      "query": "Can I still send a bunch of requests all at once to the API without getting blocked?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-rate-limit",
+        "v3-trap-distractor-api-rate-limit",
+        "v3-trap-target-data-pipeline",
+        "v3-synthesis-harbor-cache-b",
+        "v3-synthesis-staging-unstable-b"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-rate-limit"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-07",
+      "query": "If the database gets messed up, can we roll it back to some earlier moment?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-checkout-latency",
+        "v3-synthesis-migration-rehearsal-b",
+        "v3-synthesis-checkout-design-review-a",
+        "v3-synthesis-migration-rehearsal-a",
+        "v3-paraphrase-staging-creds"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-wal-archiving"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-08",
+      "query": "Where does the encryption get unwrapped now, at the app or somewhere in front of it?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-target-login-redesign",
+        "v3-trap-target-search-index",
+        "v3-paraphrase-oncall-exempt",
+        "v3-vocab-schema-migration",
+        "v3-paraphrase-onboarding-laptop"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-tls-termination"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-09",
+      "query": "Where are new users bailing out the most when they first sign up?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-travel-form",
+        "v3-trap-target-onboarding-flow",
+        "v3-synthesis-marco-approver-a",
+        "v3-trap-target-mobile-crash-fix",
+        "v3-synthesis-ledger-reconciliation-a"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-activation-funnel"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-10",
+      "query": "How come releases don't cause the site to go down anymore?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-blue-green",
+        "v3-trap-distractor-search-index",
+        "v3-synthesis-checkout-design-review-b",
+        "v3-synthesis-ledger-reconciliation-a",
+        "v3-trap-target-data-pipeline"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-blue-green"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-11",
+      "query": "Why did the dashboard stop making so many slow repeated database calls?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-printer-move",
+        "v3-synthesis-search-revert-a",
+        "v3-synthesis-migration-rehearsal-b",
+        "v3-synthesis-migration-rehearsal-a",
+        "v3-paraphrase-staging-creds"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-read-model"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-12",
+      "query": "How fast does support have to respond before it counts as late now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-target-login-redesign",
+        "v3-trap-target-search-index",
+        "v3-paraphrase-oncall-exempt",
+        "v3-vocab-schema-migration",
+        "v3-paraphrase-onboarding-laptop"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-sla-threshold"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-13",
+      "query": "At what point does someone get woken up if messages are piling up unprocessed?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-dlq-alert",
+        "v3-vocab-wal-archiving",
+        "project-compiler-assignment-status",
+        "v3-paraphrase-async-standup",
+        "context-primary-001"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-dlq-alert"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-14",
+      "query": "Does the checkout button wait for confirmation now before showing success?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-vocab-pessimistic-ui",
+        "v3-trap-distractor-checkout-redesign",
+        "life-driving-license-status",
+        "v3-synthesis-checkout-design-review-a",
+        "v3-paraphrase-checkout-postmortem"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-pessimistic-ui"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-vocab-mismatch-15",
+      "query": "How do they change the database structure without breaking things that are still running?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-migration-rehearsal-a",
+        "study-revise-db-indexing",
+        "v3-synthesis-search-revert-b",
+        "v3-synthesis-migration-rehearsal-b",
+        "study-revise-sliding-window-longest-substring"
+      ],
+      "relevant_note_ids": [
+        "v3-vocab-schema-migration"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-01",
+      "query": "What's the current status of the Atlas migration?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-atlas-migration",
+        "conflict-05-a",
+        "conflict-05-b",
+        "v3-synthesis-migration-rehearsal-a",
+        "distractor-007-project"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-atlas-migration"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-02",
+      "query": "Is the payment retry logic still flaky?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-payment-retry",
+        "life-driving-license-status",
+        "v3-paraphrase-webhook-retry",
+        "topic-sqs-done",
+        "near-miss-stripe-webhooks"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-payment-retry"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-03",
+      "query": "Did the search relevance experiment work?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-search-relevance",
+        "topic-vector-search-done",
+        "v3-trap-distractor-search-index",
+        "latest-hackathon-team-old",
+        "topic-vector-search-plan"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-search-relevance"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-04",
+      "query": "Is the onboarding flow finished?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-onboarding-flow",
+        "v3-paraphrase-onboarding-laptop",
+        "v3-synthesis-harbor-cache-b",
+        "v3-vocab-activation-funnel",
+        "v3-synthesis-checkout-design-review-a"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-onboarding-flow"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-05",
+      "query": "What happened with the checkout redesign?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-checkout-redesign",
+        "v3-trap-distractor-login-redesign",
+        "v3-synthesis-checkout-design-review-a",
+        "v3-paraphrase-checkout-postmortem",
+        "v3-synthesis-checkout-design-review-b"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-checkout-redesign"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-06",
+      "query": "Is the data pipeline reliable now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-data-pipeline",
+        "v3-synthesis-relay-legal-b",
+        "v3-paraphrase-billing-etl",
+        "v3-trap-target-login-redesign",
+        "v3-synthesis-training-backfill-a"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-data-pipeline"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-07",
+      "query": "What's the deal with the notification bug?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-notification-bug",
+        "v3-synthesis-beacon-permissions-b",
+        "conflict-03-a",
+        "retrieval-rrf-regression",
+        "conflict-03-b"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-notification-bug"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-08",
+      "query": "Any update on the login redesign?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-login-redesign",
+        "v3-trap-distractor-checkout-redesign",
+        "topic-reranking-done",
+        "topic-chroma-done",
+        "topic-rrf-done"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-login-redesign"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-09",
+      "query": "Is the billing reconciliation fixed?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-billing-reconciliation",
+        "v3-synthesis-mobile-release-b",
+        "v3-trap-target-invoice-export",
+        "v3-synthesis-ledger-reconciliation-b",
+        "v3-synthesis-ledger-reconciliation-a"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-billing-reconciliation"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-10",
+      "query": "What's happening with the API rate limit rollout?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-api-rate-limit",
+        "v3-vocab-rate-limit",
+        "v3-synthesis-audit-compliance-a",
+        "v3-trap-target-invoice-export",
+        "v3-paraphrase-color-tokens"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-api-rate-limit"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-11",
+      "query": "Did the caching layer get deployed?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-caching-layer",
+        "v3-synthesis-harbor-cache-b",
+        "v3-synthesis-harbor-cache-a",
+        "v3-trap-target-notification-bug",
+        "topic-prompt-caching-done"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-caching-layer"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-12",
+      "query": "Is the fraud detection model live?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-fraud-model",
+        "v3-trap-target-checkout-redesign",
+        "v3-trap-target-caching-layer",
+        "v3-vocab-read-model",
+        "v3-trap-target-search-relevance"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-fraud-model"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-13",
+      "query": "What's the status of the search index rebuild?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-search-index",
+        "v3-synthesis-search-revert-a",
+        "topic-vector-search-done",
+        "v3-synthesis-search-revert-b",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-search-index"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-14",
+      "query": "Did the mobile crash fix ship?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-mobile-crash-fix",
+        "v3-synthesis-mobile-release-a",
+        "v3-paraphrase-crash-sdk",
+        "v3-synthesis-mobile-release-b",
+        "v3-trap-target-notification-bug"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-mobile-crash-fix"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-lexical-trap-15",
+      "query": "Is the invoice export tool working again?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-invoice-export",
+        "conflict-12-a",
+        "isolation-primary-01",
+        "isolation-primary-02",
+        "isolation-primary-03"
+      ],
+      "relevant_note_ids": [
+        "v3-trap-target-invoice-export"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-01",
+      "query": "Is Relay still blocked on legal?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-relay-legal-b",
+        "v3-synthesis-relay-legal-a",
+        "v3-trap-distractor-billing-reconciliation",
+        "v3-trap-distractor-onboarding-flow",
+        "v3-trap-distractor-payment-retry"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-relay-legal-a",
+        "v3-synthesis-relay-legal-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-02",
+      "query": "Can Harbor launch now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-harbor-cache-a",
+        "v3-synthesis-security-audit-b",
+        "v3-trap-target-login-redesign",
+        "v3-trap-target-search-index",
+        "v3-paraphrase-oncall-exempt"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-harbor-cache-a",
+        "v3-synthesis-harbor-cache-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-03",
+      "query": "Should search feel faster again soon?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-paraphrase-refund-macros",
+        "topic-vector-search-done",
+        "v3-trap-distractor-search-index",
+        "v3-trap-distractor-search-relevance",
+        "latest-hackathon-team-old"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-search-revert-a",
+        "v3-synthesis-search-revert-b"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-04",
+      "query": "Can a large vendor invoice get approved this week?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-invoice-export",
+        "v3-synthesis-vendor-finance-b",
+        "v3-synthesis-marco-approver-b",
+        "v3-paraphrase-vendor-renewal",
+        "v3-synthesis-vendor-finance-a"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-marco-approver-a",
+        "v3-synthesis-marco-approver-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-05",
+      "query": "Is Beacon still on track?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-trap-distractor-billing-reconciliation",
+        "v3-trap-distractor-onboarding-flow",
+        "v3-synthesis-beacon-permissions-a",
+        "v3-trap-distractor-payment-retry",
+        "study-dsa-buy-sell-stock"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-beacon-permissions-a",
+        "v3-synthesis-beacon-permissions-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 0.3333333333333333,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-06",
+      "query": "Can the compliance certification move forward?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-audit-compliance-b",
+        "progress-03-current",
+        "progress-08-current",
+        "progress-01-current",
+        "progress-02-current"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-audit-compliance-a",
+        "v3-synthesis-audit-compliance-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-07",
+      "query": "Will the mobile release go out on the new date?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-mobile-release-a",
+        "v3-trap-target-mobile-crash-fix",
+        "v3-paraphrase-travel-form",
+        "geo-quiz-reschedule",
+        "v3-trap-distractor-mobile-crash-fix"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-mobile-release-a",
+        "v3-synthesis-mobile-release-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-08",
+      "query": "Can the migration rehearsal start?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-migration-rehearsal-a",
+        "v3-synthesis-checkout-design-review-b",
+        "v3-trap-distractor-atlas-migration",
+        "progress-03-current",
+        "progress-08-current"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-migration-rehearsal-a",
+        "v3-synthesis-migration-rehearsal-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-09",
+      "query": "Why did the reporting numbers look wrong?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-reporting-double-count-a",
+        "conflict-12-a",
+        "v3-paraphrase-dashboard-sunset",
+        "conflict-12-b",
+        "conflict-01-a"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-reporting-double-count-a",
+        "v3-synthesis-reporting-double-count-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-10",
+      "query": "Is the vendor contract fully approved?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-vendor-finance-b",
+        "v3-paraphrase-vendor-renewal",
+        "v3-synthesis-vendor-finance-a",
+        "v3-synthesis-marco-approver-b",
+        "v3-vocab-schema-migration"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-vendor-finance-a",
+        "v3-synthesis-vendor-finance-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-11",
+      "query": "When can engineering start on the new checkout flow?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-checkout-design-review-b",
+        "v3-synthesis-checkout-design-review-a",
+        "v3-synthesis-harbor-cache-a",
+        "v3-trap-distractor-onboarding-flow",
+        "v3-trap-distractor-checkout-redesign"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-checkout-design-review-a",
+        "v3-synthesis-checkout-design-review-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-12",
+      "query": "Can pre-release testing happen this week?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-staging-unstable-b",
+        "v3-synthesis-mobile-release-a",
+        "v3-synthesis-beacon-permissions-b",
+        "v3-synthesis-checkout-design-review-a",
+        "v3-paraphrase-feedback-board"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-staging-unstable-a",
+        "v3-synthesis-staging-unstable-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-13",
+      "query": "Is launch approval cleared from a security standpoint?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-security-audit-b",
+        "conflict-13-a",
+        "v3-synthesis-harbor-cache-a",
+        "topic-supabase-rls-plan",
+        "v3-synthesis-security-audit-a"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-security-audit-a",
+        "v3-synthesis-security-audit-b"
+      ],
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-14",
+      "query": "Is the recommendation model's training data complete now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-training-backfill-a",
+        "v3-trap-distractor-fraud-model",
+        "v3-synthesis-relay-legal-b",
+        "v3-vocab-circuit-breaker",
+        "v3-trap-distractor-data-pipeline"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-training-backfill-a",
+        "v3-synthesis-training-backfill-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-multi-note-15",
+      "query": "Can Ledger be closed out now?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "v3-synthesis-ledger-reconciliation-a",
+        "learning-08",
+        "v3-synthesis-marco-approver-a",
+        "v3-trap-target-mobile-crash-fix",
+        "v3-paraphrase-travel-form"
+      ],
+      "relevant_note_ids": [
+        "v3-synthesis-ledger-reconciliation-a",
+        "v3-synthesis-ledger-reconciliation-b"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-cross-account-01",
+      "query": "How does my DSA revision progress compare to how the other account is tracking the same topic?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-01",
+        "study-revise-react-usememo",
+        "study-revise-dp-knapsack",
+        "study-revise-graph-topological-sort",
+        "study-revise-ml-regularization"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-01",
+        "isolation-secondary-semantic-01"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-cross-account-02",
+      "query": "Between the two tracked accounts, whose college project is further along?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "college-project-jul20-update",
+        "isolation-primary-semantic-02",
+        "synonym-teacher-review",
+        "v3-trap-target-billing-reconciliation",
+        "project-college-project-status"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-02",
+        "isolation-secondary-semantic-02"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 0.5,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-cross-account-03",
+      "query": "Do both tracked accounts have their geography quiz on the same date?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-03",
+        "geo-quiz-reschedule",
+        "quiz-geography-date",
+        "geo-quiz-date",
+        "synonym-exam-energy"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-03",
+        "isolation-secondary-semantic-03"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-cross-account-04",
+      "query": "Is the AWS learning progress the same across both tracked accounts?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "learning-01",
+        "learning-05",
+        "learning-06",
+        "near-miss-aws-sqs",
+        "learning-02"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-04",
+        "isolation-secondary-semantic-04"
+      ],
+      "precision_at_k": 0.0,
+      "recall_at_k": 0.0,
+      "reciprocal_rank_at_k": 0.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    },
+    {
+      "id": "v3-cross-account-05",
+      "query": "Did both tracked accounts finish RRF at the same stage?",
+      "user_id": "eval-user-primary",
+      "retrieved_note_ids": [
+        "isolation-primary-semantic-05",
+        "topic-rrf-done",
+        "retrieval-rrf-regression",
+        "synonym-fusion-summary",
+        "topic-rrf-plan"
+      ],
+      "relevant_note_ids": [
+        "isolation-primary-semantic-05",
+        "isolation-secondary-semantic-05"
+      ],
+      "precision_at_k": 0.2,
+      "recall_at_k": 0.5,
+      "reciprocal_rank_at_k": 1.0,
+      "foreign_result_ids": [],
+      "isolation_passed": true,
+      "no_context_passed": null,
+      "conflict_retrieval_complete": null
+    }
+  ]
+}

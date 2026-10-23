@@ -127,33 +127,53 @@ python -m evals.scripts.run_dense_retrieval_eval --cases evals/datasets/northsta
 
 Both measure retrieval only; they do not modify or evaluate generated answer wording.
 
-## RRF and Reranker Baselines
+## Hybrid, Reranker, and Rewrite Baselines
 
-The hybrid runner compares the existing production RRF fusion with the same fusion followed by the existing token-overlap reranker. It also evaluates the current guarded production query rewrite against a controlled empty synthetic recent-memory input. It uses an isolated evaluation Chroma collection, an in-memory production `BM25Index`, and the shared scorecard. It does not call the production retrieval orchestrator, Supabase, or application vector collection.
+The hybrid runner compares the production RRF fusion with the same fusion followed by the production cross-encoder reranker (`SentenceTransformerReranker`, `cross-encoder/ms-marco-MiniLM-L-6-v2`). It also evaluates the current guarded production query rewrite against a controlled empty synthetic recent-memory input. It uses an isolated evaluation Chroma collection, an in-memory production `BM25Index`, and the shared scorecard. It does not call the production retrieval orchestrator, Supabase, or application vector collection.
+
+Candidate channels are fetched and fused at `k * 3` (mirroring `QUERY_RETRIEVAL_CANDIDATE_MULTIPLIER`), then truncated or reranked down to `k`. Reranking at the final cutoff only reorders five notes; the wider pool is what lets a reranker promote a gold note that fusion placed lower.
+
+Default output and collection names are derived from the cases file, so `--cases evals/datasets/northstar_rag_v4.jsonl` writes `northstar_rag_v4_<mode>.json`/`.md` and uses collection `northstar_rag_v4_<mode>_eval`. V1 invocations keep their historical names.
+
+Run against V4 (the current focused benchmark):
+
+```powershell
+# Dense plus sparse Reciprocal Rank Fusion (RRF)
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf `
+  --cases evals/datasets/northstar_rag_v4.jsonl `
+  --corpus evals/datasets/northstar_rag_v4_corpus.jsonl `
+  --collection northstar_rag_v4_rrf_eval
+
+# RRF followed by the production cross-encoder reranker, reusing the corpus embeddings
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank --strict-rerank `
+  --cases evals/datasets/northstar_rag_v4.jsonl `
+  --corpus evals/datasets/northstar_rag_v4_corpus.jsonl `
+  --collection northstar_rag_v4_rrf_eval --reuse-collection `
+  --candidate-multiplier 3 `
+  --reranker-model cross-encoder/ms-marco-MiniLM-L-6-v2
+```
 
 Run against V1 fixtures:
 
 ```powershell
 python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf
-python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank
+python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank --strict-rerank
 python -m evals.scripts.run_hybrid_retrieval_eval --mode rewrite
 ```
 
-Or run against V2 merged dataset:
+Useful flags:
 
-```powershell
-python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl
-python -m evals.scripts.run_hybrid_retrieval_eval --mode rerank --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl
-python -m evals.scripts.run_hybrid_retrieval_eval --mode rewrite --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl
-```
+- `--collection`: override the derived collection name.
+- `--candidate-multiplier`: per-channel fetch/fusion depth as a multiple of `--k` (default `3`).
+- `--reranker-model`: cross-encoder model id for `--mode rerank`.
+- `--reuse-collection`: skip re-embedding when the collection already holds the full corpus.
+- `--strict-rerank`: fail the run when the reranker returns unscored candidates. The production reranker silently falls back to fusion order on a scoring error, so without this flag a broken model would be reported as "no effect".
 
-All commands have the same dependency and `GEMINI_API_KEY` requirements as the dense baseline. For V1, they write `evals/results/northstar_rag_v1_rrf.*`, `evals/results/northstar_rag_v1_rerank.*`, and `evals/results/northstar_rag_v1_rewrite.*`. For V2, explicitly specify output paths:
+All commands have the same dependency and `GEMINI_API_KEY` requirements as the dense baseline. Embedding calls retry with exponential backoff on provider rate limits. The reranker model is downloaded from the Hugging Face Hub on first use.
 
-```powershell
-python -m evals.scripts.run_hybrid_retrieval_eval --mode rrf --cases evals/datasets/northstar_rag_v2.jsonl --corpus evals/datasets/northstar_rag_v2_corpus.jsonl --output evals/results/northstar_rag_v2_rrf.json
-```
+`northstar_rag_v1_rerank.*` predates the switch to the cross-encoder and records the retired token-overlap reranker. Re-run `--mode rerank` against V1 before comparing it with current results.
 
-Rewrite reports also retain each case's query quality, confidence, risk flags, and guard decision in JSON. Because the rewrite run makes one model call for each eligible case, CI runs it only through opted-in manual dispatch.
+Rewrite reports retain each case's query quality, confidence, risk flags, and guard decision in JSON. Because the rewrite run makes one model call for each eligible case, CI runs it only through opted-in manual dispatch.
 
 ## Fixture Rules
 
