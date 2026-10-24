@@ -2,7 +2,7 @@
 
 The retrieval engine is intentionally policy-free: callers describe what they
 need with a ``RetrievalRequest`` and receive a ``RetrievalResult``. Task-specific
-policies (chat rewrite, ingestion entity lookup, recall context reuse) live in
+policies (chat rewrite, ingestion context, recall context reuse) live in
 their respective services.
 """
 from __future__ import annotations
@@ -75,14 +75,10 @@ class ContextBundle:
     """Normalized context passed to downstream LLM tasks."""
 
     notes: list[dict[str, Any]] = field(default_factory=list)
-    entity_names: list[str] = field(default_factory=list)
-    memory_items: list[dict[str, Any]] = field(default_factory=list)
     sources: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "related_notes": self.notes,
-            "matched_entity_names": self.entity_names,
-            "memory_items": self.memory_items,
             "retrieval_sources": self.sources,
         }

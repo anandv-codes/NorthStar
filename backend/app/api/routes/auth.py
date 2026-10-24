@@ -1,33 +1,22 @@
-import hmac
 import logging
 import re
-from datetime import datetime, timezone
 
-import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..deps import get_current_user_id
 from ...domain.auth.services import (
     create_user,
-    get_refresh_token_by_jti,
     get_user_by_email,
     get_user_by_id,
-    revoke_refresh_token,
-    store_refresh_token,
 )
 from ...infrastructure.auth.jwt_service import (
     create_access_token,
-    create_refresh_token,
-    decode_token,
     hash_password,
-    hash_refresh_token,
-    refresh_token_expires_at,
     verify_password,
 )
 from ...schemas.models import (
     AuthTokenResponse,
     LoginRequest,
-    RefreshRequest,
     RegisterRequest,
     UserProfileResponse,
 )
@@ -59,32 +48,16 @@ def _to_profile(user: dict) -> UserProfileResponse:
     )
 
 
-def _issue_auth_tokens(
-    user_id: str,
-    email: str,
-    user_agent: str | None,
-    ip_address: str | None,
-) -> AuthTokenResponse:
-    access_token = create_access_token(user_id=user_id)
-    refresh_token, refresh_jti = create_refresh_token(user_id=user_id)
-    store_refresh_token(
-        user_id=user_id,
-        jti=refresh_jti,
-        token_hash=hash_refresh_token(refresh_token),
-        expires_at=refresh_token_expires_at(),
-        user_agent=user_agent,
-        ip_address=ip_address,
-    )
+def _issue_access_token(user_id: str, email: str) -> AuthTokenResponse:
     return AuthTokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
+        access_token=create_access_token(user_id=user_id),
         user_id=user_id,
         email=email,
     )
 
 
 @router.post("/register", response_model=AuthTokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, request: Request):
+def register(payload: RegisterRequest):
     email = _normalize_email(payload.email)
     _validate_password_strength(payload.password)
 
@@ -95,16 +68,11 @@ def register(payload: RegisterRequest, request: Request):
 
     user = create_user(email=email, password_hash=hash_password(payload.password))
     logger.info(f"Registered new user: {user['user_id']}")
-    return _issue_auth_tokens(
-        user_id=str(user["user_id"]),
-        email=email,
-        user_agent=request.headers.get("user-agent"),
-        ip_address=request.client.host if request.client else None,
-    )
+    return _issue_access_token(user_id=str(user["user_id"]), email=email)
 
 
 @router.post("/login", response_model=AuthTokenResponse)
-def login(payload: LoginRequest, request: Request):
+def login(payload: LoginRequest):
     email = _normalize_email(payload.email)
     user = get_user_by_email(email)
     if not user:
@@ -121,63 +89,29 @@ def login(payload: LoginRequest, request: Request):
         raise HTTPException(status_code=403, detail="User is inactive")
 
     logger.info(f"Login succeeded: {user['user_id']}")
-    return _issue_auth_tokens(
-        user_id=str(user["user_id"]),
-        email=email,
-        user_agent=request.headers.get("user-agent"),
-        ip_address=request.client.host if request.client else None,
-    )
+    return _issue_access_token(user_id=str(user["user_id"]), email=email)
 
 
-@router.post("/refresh", response_model=AuthTokenResponse)
-def refresh(payload: RefreshRequest, request: Request):
-    try:
-        decoded = decode_token(payload.refresh_token, expected_type="refresh")
-    except (jwt.PyJWTError, ValueError) as exc:
-        raise HTTPException(status_code=401, detail="Invalid refresh token") from exc
+@router.post("/refresh", status_code=status.HTTP_410_GONE)
+def refresh():
+    """Refresh tokens are disabled; clients hold a single long-lived JWT.
 
-    refresh_jti = str(decoded.get("jti") or "")
-    user_id = str(decoded.get("sub") or "")
-    if not refresh_jti or not user_id:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-    stored = get_refresh_token_by_jti(refresh_jti)
-    if not stored or stored.get("revoked_at"):
-        raise HTTPException(status_code=401, detail="Refresh token revoked")
-
-    stored_hash = str(stored.get("token_hash") or "")
-    if not stored_hash or not hmac.compare_digest(stored_hash, hash_refresh_token(payload.refresh_token)):
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-    expires_at_raw = str(stored.get("expires_at") or "")
-    if not expires_at_raw:
-        raise HTTPException(status_code=401, detail="Refresh token expired")
-    expires_at = datetime.fromisoformat(expires_at_raw.replace("Z", "+00:00"))
-    if expires_at <= datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Refresh token expired")
-
-    user = get_user_by_id(user_id=user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    revoke_refresh_token(refresh_jti)
-    return _issue_auth_tokens(
-        user_id=user_id,
-        email=str(user.get("email", "")),
-        user_agent=request.headers.get("user-agent"),
-        ip_address=request.client.host if request.client else None,
+    Kept as an explicit 410 rather than a 404 so stale bundles get a clear,
+    actionable error instead of a generic "not found".
+    """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Refresh tokens are disabled. Sign in again.",
     )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(payload: RefreshRequest):
-    try:
-        decoded = decode_token(payload.refresh_token, expected_type="refresh")
-    except (jwt.PyJWTError, ValueError):
-        return
-    refresh_jti = str(decoded.get("jti") or "")
-    if refresh_jti:
-        revoke_refresh_token(refresh_jti)
+def logout():
+    """No-op: tokens are stateless, so the client just discards its copy.
+
+    Kept so older clients can still call it without erroring.
+    """
+    return None
 
 
 @router.get("/me", response_model=UserProfileResponse)

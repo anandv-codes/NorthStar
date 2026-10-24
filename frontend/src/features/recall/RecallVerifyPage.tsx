@@ -28,7 +28,12 @@ import { DeckFormModal } from "./components/DeckFormModal";
 import { SuggestionCard } from "./SuggestionCard";
 
 const POLL_INTERVAL_MS = 1500;
+const NOTE_POLL_TIMEOUT_MS = 120_000;
 const TERMINAL_NOTE_STATUSES = new Set(["completed", "enriched", "failed"]);
+
+function isNoteSettled(status: NoteStatus): boolean {
+  return TERMINAL_NOTE_STATUSES.has(status.status) && status.recall_status !== "pending";
+}
 
 export function RecallVerifyPage() {
   const [searchParams] = useSearchParams();
@@ -40,6 +45,8 @@ export function RecallVerifyPage() {
   const [note, setNote] = useState<NoteStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notePollExpired, setNotePollExpired] = useState(false);
+  const [notePollNonce, setNotePollNonce] = useState(0);
   const [processingSuggestionId, setProcessingSuggestionId] = useState<string | null>(null);
   const [processingAction, setProcessingAction] = useState<"accept" | "reject" | "save" | null>(null);
   const [deckSavingId, setDeckSavingId] = useState<string | null>(null);
@@ -56,6 +63,17 @@ export function RecallVerifyPage() {
     const liveIds = new Set(list.suggestions.map((item) => item.candidate_id));
     setSelectedIds((current) => new Set(Array.from(current).filter((id) => liveIds.has(id))));
     return list.suggestions;
+  }, [noteId]);
+
+  const refreshNote = useCallback(async () => {
+    if (!noteId) return null;
+    try {
+      const status = await getNoteStatus(noteId);
+      setNote(status);
+      return status;
+    } catch {
+      return null;
+    }
   }, [noteId]);
 
   const load = useCallback(async () => {
@@ -89,25 +107,41 @@ export function RecallVerifyPage() {
   useEffect(() => {
     if (!noteId) return;
     let cancelled = false;
+    const deadline = Date.now() + NOTE_POLL_TIMEOUT_MS;
 
     const poll = async () => {
       try {
         const status = await getNoteStatus(noteId);
         if (cancelled) return;
         setNote(status);
-        const generated = await loadSuggestions();
+        setNotePollExpired(false);
+        await loadSuggestions();
         if (cancelled) return;
-        const done =
-          TERMINAL_NOTE_STATUSES.has(status.status) &&
-          status.recall_status !== "pending";
-        if (!done && generated.length === 0) {
-          pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS);
+
+        // Keep polling until the note itself is final. Suggestions can appear
+        // while the worker is still writing them, so a non-empty list is not a
+        // signal to stop: doing that freezes `note` at "pending" and leaves the
+        // page showing the generation spinner after every suggestion is filed.
+        if (isNoteSettled(status)) return;
+
+        if (Date.now() >= deadline) {
+          setNotePollExpired(true);
+          return;
         }
+        pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS);
       } catch {
-        // The note page also surfaces failures; stop polling quietly.
+        if (cancelled) return;
+        // Keep trying transient failures until the deadline instead of
+        // leaving the page stuck on a stale "pending" snapshot.
+        if (Date.now() >= deadline) {
+          setNotePollExpired(true);
+          return;
+        }
+        pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS);
       }
     };
 
+    setNotePollExpired(false);
     void poll();
     return () => {
       cancelled = true;
@@ -116,7 +150,7 @@ export function RecallVerifyPage() {
         pollTimer.current = null;
       }
     };
-  }, [noteId, loadSuggestions]);
+  }, [noteId, loadSuggestions, notePollNonce]);
 
   const fallbackDeckId = preferredDeckId || decks.find((deck) => deck.is_default)?.deck_id || "";
 
@@ -135,6 +169,7 @@ export function RecallVerifyPage() {
     try {
       await acceptSuggestion(suggestion.candidate_id);
       removeSuggestion(suggestion.candidate_id);
+      void refreshNote();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't add that question to a deck.");
     } finally {
@@ -149,6 +184,7 @@ export function RecallVerifyPage() {
     try {
       await rejectSuggestion(suggestion.candidate_id);
       removeSuggestion(suggestion.candidate_id);
+      void refreshNote();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't skip that question.");
     } finally {
@@ -246,6 +282,9 @@ export function RecallVerifyPage() {
         acceptedIds.forEach((candidateId) => next.delete(candidateId));
         return next;
       });
+      if (acceptedIds.size > 0) {
+        void refreshNote();
+      }
       if (result.failed > 0) {
         const firstError = result.results.find((item) => item.error)?.error;
         setError(
@@ -279,9 +318,13 @@ export function RecallVerifyPage() {
     }
   };
 
+  const handleRetryNote = () => {
+    setNotePollExpired(false);
+    setNotePollNonce((value) => value + 1);
+  };
+
   const noteProcessing =
-    Boolean(noteId) &&
-    (!note || (!TERMINAL_NOTE_STATUSES.has(note.status) || note.recall_status === "pending"));
+    Boolean(noteId) && !notePollExpired && (!note || !isNoteSettled(note));
   const noteFailed = note?.status === "failed" || note?.recall_status === "failed";
 
   return (
@@ -342,14 +385,30 @@ export function RecallVerifyPage() {
             <CheckCircle size={20} weight="bold" />
           </span>
           <p className="mt-5 font-display text-xl font-semibold text-neutral-950">
-            {noteFailed ? "Question generation failed" : "Nothing left to verify"}
+            {noteFailed
+              ? "Question generation failed"
+              : notePollExpired
+                ? "Still generating questions"
+                : "Nothing left to verify"}
           </p>
           <p className="mt-2 max-w-sm text-sm text-neutral-500">
             {noteFailed
               ? "Your note was saved, but recall questions couldn't be generated. Try toggling recall again from the note."
-              : "All caught up. New questions from recall-enabled notes will appear here."}
+              : notePollExpired
+                ? "Your note is still being processed. Questions will appear in Recall when they're ready."
+                : "All caught up. New questions from recall-enabled notes will appear here."}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {notePollExpired ? (
+              <button
+                type="button"
+                onClick={handleRetryNote}
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 px-4 text-sm font-semibold text-neutral-700 hover:bg-neutral-100"
+              >
+                <ArrowClockwise size={14} />
+                Check again
+              </button>
+            ) : null}
             <Link
               to="/app/recall"
               className="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 px-4 text-sm font-semibold text-neutral-700 hover:bg-neutral-100"

@@ -494,9 +494,11 @@ Option B — Supabase SQL editor: open and run these files **in order**:
 3. `phase3_work_memory.sql`
 4. `phase4_recall.sql`
 5. `phase4_recall_scheduler.sql`
-6. `phase4_pgvector.sql`
+6. `phase4_recall_decks.sql`
+7. `phase4_recall_accept.sql`
+8. `phase4_pgvector.sql`
 
-Before file 6, if `create extension if not exists vector;` is rejected, enable
+Before file 8, if `create extension if not exists vector;` is rejected, enable
 **vector** in Dashboard → Database → Extensions, then run the file. The script
 stops on the first error (`ON_ERROR_STOP=1`) and prints the file it was
 applying.
@@ -514,15 +516,19 @@ where table_schema = 'public'
     'decisions','risks','concepts','entities','memory_item_entities',
     'period_summaries',
     'note_entities','commitments','recall_candidates','recall_cards',
-    'review_history','note_chunks'
+    'review_history','recall_decks','note_chunks'
   );"
-# expect: 22
+# expect: 23
 
 psql "$SUPABASE_DB_URL" -Atc "
 select format_type(atttypid, atttypmod)
 from pg_attribute
 where attrelid = 'note_chunks'::regclass and attname = 'embedding';"
 # expect: vector(768)
+
+psql "$SUPABASE_DB_URL" -Atc "
+select proname from pg_proc where proname = 'accept_recall_candidate';"
+# expect: accept_recall_candidate
 ```
 
 **Do not backfill yet.** The backfill script needs the backend `.env`
@@ -552,7 +558,8 @@ Fill at least these:
 | `GEMINI_API_KEY` | your key | Extraction, questions, embeddings, chat |
 | `SUPABASE_URL` | `https://<ref>.supabase.co` | PostgREST base URL |
 | `SUPABASE_KEY` | **service-role** key | Server-side reads/writes; never ship to the browser |
-| `JWT_SECRET_KEY` | `openssl rand -hex 32` | Signs access/refresh tokens |
+| `JWT_SECRET_KEY` | `openssl rand -hex 32` | Signs access tokens |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `10080` | Token lifetime (7 days); there is no refresh flow |
 | `CORS_ALLOW_ORIGINS` | `https://app.example.com` | Browser origin allowed to call the API |
 | `PROCESS_NOTES_INLINE` | `false` | Use the SQS worker, not the request path |
 | `SQS_QUEUE_URL` | URL from §2.4 | Where `POST /notes` enqueues jobs |

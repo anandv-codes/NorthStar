@@ -29,9 +29,6 @@ Raw notes:
 Related past notes for cross-reference:
 {related_notes_context}
 
-Related context (linked entities and open items):
-{structured_items_context}
-
 Please provide the following:
 1. A concise summary of the notes.
 2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.
@@ -164,7 +161,6 @@ def load_prompt_template(
 def build_extraction_prompt(
     note_text: str,
     related_notes_context: str,
-    structured_items_context: str,
     version: str | None = None,
 ) -> str:
     """Render the note-extraction prompt from the configured template file."""
@@ -181,6 +177,5 @@ def build_extraction_prompt(
         {
             "note_text": note_text,
             "related_notes_context": related_notes_context,
-            "structured_items_context": structured_items_context,
         },
     ).strip()

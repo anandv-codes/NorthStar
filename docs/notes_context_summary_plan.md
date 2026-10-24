@@ -2,6 +2,11 @@
 
 Status: **Phase R ✅ COMPLETE | Phase A ✅ COMPLETE | Phase B ✅ COMPLETE | Phase C ✅ COMPLETE | Phase D pending**
 
+> **Update 2026-10-24:** entity-linked retrieval (Phase A) and the Phase B structured-items
+> prompt context were removed. They never produced results — see `docs/code-review.md` (C4).
+> The checklist entries for them below are historical. A future entity linkage is deferred.
+> Ingestion now uses hybrid retrieval only.
+
 ## 🎯 Session Summary (Latest Work)
 
 **What was completed this session (Phase C):**

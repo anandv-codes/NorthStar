@@ -22,40 +22,6 @@ QUERY_REWRITE_TIMEOUT_SECONDS = 60
 QUERY_REWRITE_MIN_CONFIDENCE = float(os.getenv("QUERY_REWRITE_MIN_CONFIDENCE", "0.55"))
 
 # ============================================================================
-# Phase B: Cost-Controlled Structured Items Configuration
-# ============================================================================
-
-# Limits for each memory item type when filtering open items
-# Only the top N open items per type will be included in LLM context
-STRUCTURED_ITEMS_LIMIT = {
-    "tasks": 3,
-    "questions": 2,
-    "risks": 2,
-    "concepts": 2,
-    "decisions": 1,
-    "facts": 1,
-}
-
-# Status filters for each item type
-# Items must have one of these statuses to be included
-# None means include all statuses (no filtering)
-OPEN_STATUSES = {
-    "tasks": ["open"],
-    "questions": ["open"],
-    "risks": ["open"],
-    "concepts": ["open"],
-    "decisions": None,  # Include all statuses
-    "facts": None,  # Include all statuses
-}
-
-# Maximum length for item descriptions in context
-# Descriptions longer than this will be truncated with "…"
-MAX_ITEM_DESCRIPTION_LENGTH = 150
-
-# Maximum number of matched entity names to display in context
-MAX_MATCHED_ENTITIES_TO_DISPLAY = 5
-
-# ============================================================================
 # Related Notes Context Configuration
 # ============================================================================
 

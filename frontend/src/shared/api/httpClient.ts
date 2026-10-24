@@ -2,7 +2,8 @@
 // environment (see frontend/.env.example) so the bundle talks to the real API.
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 const ACCESS_TOKEN_KEY = "northstar_access_token";
-const REFRESH_TOKEN_KEY = "northstar_refresh_token";
+// Legacy key from the refresh-token flow; only used to clean up old sessions.
+const LEGACY_REFRESH_TOKEN_KEY = "northstar_refresh_token";
 const USER_ID_KEY = "northstar_user_id";
 
 // Local-only escape hatch for visual QA without a running backend (see frontend/src/mock/).
@@ -469,7 +470,6 @@ export interface ChatMessageResponse {
 
 export interface AuthTokens {
   access_token: string;
-  refresh_token: string;
   token_type: string;
   user_id: string;
   email: string;
@@ -485,24 +485,46 @@ export function getStoredAccessToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function getStoredRefreshToken() {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
-}
-
 export function getStoredUserId() {
   return localStorage.getItem(USER_ID_KEY);
 }
 
 export function setAuthTokens(tokens: AuthTokens) {
   localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
   localStorage.setItem(USER_ID_KEY, tokens.user_id);
+  // Drop anything left behind by the old refresh-token flow.
+  localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
 }
 
 export function clearAuthTokens() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_ID_KEY);
+  localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
+}
+
+const AUTH_EXPIRED_EVENT = "northstar:auth-expired";
+
+/**
+ * Notify the auth context that stored credentials are gone, so it can drop the
+ * in-memory user and let `ProtectedRoute` redirect to /login. Without this the
+ * app keeps rendering authenticated pages that fire unauthenticated requests
+ * (each answered with "Missing bearer token").
+ */
+function notifyAuthExpired() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+  }
+}
+
+export function onAuthExpired(handler: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(AUTH_EXPIRED_EVENT, handler);
+  return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handler);
+}
+
+function expireSession() {
+  clearAuthTokens();
+  notifyAuthExpired();
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -523,21 +545,15 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
-  let response = await fetch(url, { ...init, headers });
-
-  if (response.status === 401 && getStoredRefreshToken()) {
-    try {
-      const refreshed = await refreshSession();
-      setAuthTokens(refreshed);
-      headers.set("Authorization", `Bearer ${refreshed.access_token}`);
-      response = await fetch(url, { ...init, headers });
-    } catch {
-      clearAuthTokens();
-      throw new Error("Session expired");
-    }
-  }
+  const response = await fetch(url, { ...init, headers });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Stateless JWT: there is nothing to refresh, so drop the expired token
+      // and let the auth context send the user back to /login.
+      expireSession();
+      throw new Error("Session expired. Please sign in again.");
+    }
     throw new Error(await readErrorMessage(response));
   }
   if (response.status === 204) {
@@ -582,34 +598,16 @@ export async function loginUser(email: string, password: string) {
   });
 }
 
-export async function refreshSession() {
-  if (MOCK_MODE) {
-    return (await loadMockApi()).refreshSession() as Promise<AuthTokens>;
-  }
-  const refreshToken = getStoredRefreshToken();
-  if (!refreshToken) {
-    throw new Error("No refresh token available");
-  }
-  return requestJsonWithoutAuth<AuthTokens>(`${BASE_URL}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-}
-
+/**
+ * Stateless JWT auth has no server-side session to end: logging out means
+ * discarding the locally stored token. The `/auth/logout` endpoint is kept on
+ * the backend as a no-op for older clients.
+ */
 export async function logoutUser() {
   if (MOCK_MODE) {
     return (await loadMockApi()).logoutUser() as Promise<void>;
   }
-  const refreshToken = getStoredRefreshToken();
-  if (!refreshToken) {
-    return;
-  }
-  await requestJsonWithoutAuth<void>(`${BASE_URL}/auth/logout`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
+  clearAuthTokens();
 }
 
 export async function fetchCurrentUser() {

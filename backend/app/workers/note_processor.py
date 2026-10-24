@@ -37,7 +37,7 @@ from ..infrastructure.llm.prompt_logger import append_deterministic_resolution_l
 from ..infrastructure.vector.vectorstore import index_note
 from ..domain.query_retrieval.note_context_provider import fetch_note_context
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -83,7 +83,7 @@ def process_sqs_message(body:dict)-> dict:
         recall_status = "off"
         logger.info(f"Recall generation enabled: {recall_enabled} for note {note_id}")
 
-        # Phase A + R: Fetch context via BOTH hybrid semantic retrieval AND entity-linked deterministic matching.
+        # Fetch related notes from the hybrid retriever (BM25 + dense + RRF).
         try:
             context_result = fetch_note_context(
                 user_id=user_id,
@@ -92,29 +92,20 @@ def process_sqs_message(body:dict)-> dict:
                 exclude_note_id=note_id,
             )
             related_notes = context_result.get("related_notes", [])
-            matched_entity_names = context_result.get("matched_entity_names", [])
-            memory_items = context_result.get("memory_items", [])
             retrieval_sources = context_result.get("retrieval_sources", {})
-            
+
             logger.info(
-                f"Context retrieval: {retrieval_sources.get('hybrid_count', 0)} hybrid + "
-                f"{retrieval_sources.get('entity_linked_count', 0)} entity-linked = "
-                f"{retrieval_sources.get('merged_note_count', 0)} merged notes, "
-                f"{len(matched_entity_names)} entity names matched, "
-                f"{retrieval_sources.get('memory_items_count', 0)} memory items"
+                f"Context retrieval: {retrieval_sources.get('hybrid_count', 0)} hybrid results, "
+                f"{retrieval_sources.get('merged_note_count', 0)} notes after merge"
             )
         except Exception as exc:
             logger.warning(f"Context retrieval failed; continuing without related context: {exc}")
             related_notes = []
-            matched_entity_names = []
-            memory_items = []
         timer.mark("retrieval")
 
         enrichment_res = call_gemini_api(
             raw_text,
             related_notes=related_notes,
-            matched_entity_names=matched_entity_names,
-            memory_items=memory_items,
         )
         # Full prompt/response already persisted to file via log_gemini_interaction in gemini_client.
         enriched_text= enrichment_res.get("summary","")
@@ -332,7 +323,6 @@ def process_sqs_message(body:dict)-> dict:
             user_id=user_id,
             raw_text=raw_text,
             source_note_id=note_id,
-            include_diagnostics=True,
         )
         updated_tasks = resolution.get("updated_tasks", [])
         logger.info(
@@ -376,13 +366,14 @@ def process_sqs_message(body:dict)-> dict:
 
 
 def lambda_handler(event, context):
-    logger.info(f"Received event: {json.dumps(event)}")
+    records = event.get("Records", [])
+    logger.info("Received %d SQS record(s)", len(records))
     batch_failures = []
-    for record in event.get("Records", []):
+    for record in records:
         try:
             body = json.loads(record["body"])
             process_sqs_message(body)
         except Exception as e:
-            logger.error(f"Error processing record: {e}")
+            logger.error("Error processing record %s: %s", record.get("messageId"), e)
             batch_failures.append({"itemIdentifier": record["messageId"]})
     return {"statusCode": 200, "body": "Processing complete", "batchItemFailures": batch_failures}

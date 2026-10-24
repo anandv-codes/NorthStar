@@ -271,15 +271,9 @@ def apply_deterministic_task_resolution(
     user_id: str,
     raw_text: str,
     source_note_id: str | None = None,
-    include_diagnostics: bool = False,
     repo: MemoryRepository | None = None,
-) -> list[dict[str, Any]] | dict[str, Any]:
+) -> dict[str, Any]:
     repo = repo or get_memory_repository()
-
-    def _result(updated_tasks: list[dict[str, Any]], diagnostics: dict[str, Any]):
-        if include_diagnostics:
-            return {"updated_tasks": updated_tasks, "diagnostics": diagnostics}
-        return updated_tasks
 
     diagnostics: dict[str, Any] = {
         "source_note_id": source_note_id,
@@ -296,20 +290,20 @@ def apply_deterministic_task_resolution(
     text = str(raw_text or "").strip()
     if not text:
         diagnostics["selection_blocked_reason"] = "empty_note_text"
-        return _result([], diagnostics)
+        return {"updated_tasks": [], "diagnostics": diagnostics}
 
     lower_text = text.lower()
     completion_pattern = r"\b(done|completed|finished|resolved|closed|fixed)\b"
     if not re.search(completion_pattern, lower_text):
         diagnostics["selection_blocked_reason"] = "no_completion_marker"
-        return _result([], diagnostics)
+        return {"updated_tasks": [], "diagnostics": diagnostics}
     diagnostics["completion_detected"] = True
 
     open_tasks = repo.query_tasks_for_user(user_id=user_id, status="open")
     diagnostics["open_task_count"] = len(open_tasks)
     if not open_tasks:
         diagnostics["selection_blocked_reason"] = "no_open_tasks"
-        return _result([], diagnostics)
+        return {"updated_tasks": [], "diagnostics": diagnostics}
 
     note_tokens = _normalized_tokens(text)
     note_numbers = _number_tokens(text)
@@ -317,7 +311,7 @@ def apply_deterministic_task_resolution(
     diagnostics["note_numbers"] = sorted(note_numbers)
     if not note_tokens:
         diagnostics["selection_blocked_reason"] = "no_meaningful_note_tokens"
-        return _result([], diagnostics)
+        return {"updated_tasks": [], "diagnostics": diagnostics}
 
     ranked: list[tuple[int, dict[str, Any]]] = []
     for task in open_tasks:
@@ -342,7 +336,7 @@ def apply_deterministic_task_resolution(
 
     if not ranked:
         diagnostics["selection_blocked_reason"] = "no_matching_open_task"
-        return _result([], diagnostics)
+        return {"updated_tasks": [], "diagnostics": diagnostics}
 
     ranked.sort(key=lambda item: item[0], reverse=True)
     top_score = ranked[0][0]
@@ -350,9 +344,12 @@ def apply_deterministic_task_resolution(
     best = [task for score, task in ranked if score == top_score]
     diagnostics["selected_task_ids"] = [task.get("task_id") for task in best if task.get("task_id")]
 
-    if top_score < 2 and len(best) != 1:
-        diagnostics["selection_blocked_reason"] = "ambiguous_low_confidence_match"
-        return _result([], diagnostics)
+    # A tie is not a match, regardless of score: completing every task that
+    # happens to share the top overlap would close unrelated work. Require
+    # exactly one best candidate before writing anything.
+    if len(best) != 1:
+        diagnostics["selection_blocked_reason"] = "ambiguous_multiple_matches"
+        return {"updated_tasks": [], "diagnostics": diagnostics}
 
     updated: list[dict[str, Any]] = []
     for task in best:
@@ -363,7 +360,7 @@ def apply_deterministic_task_resolution(
         )
         if row:
             updated.append(row)
-    return _result(updated, diagnostics)
+    return {"updated_tasks": updated, "diagnostics": diagnostics}
 
 
 def _number_tokens(text: str) -> set[str]:

@@ -120,24 +120,6 @@ class MemoryRepository(Protocol):
 
     def query_entities_by_source_note(self, user_id: str, note_id: str) -> list[dict[str, Any]]: ...
 
-    # Phase A: Entity-linked context retrieval (deterministic reverse lookup via shared entity references)
-    def query_entity_names_for_user(self, user_id: str) -> list[str]: ...
-
-    def query_source_notes_by_entity_names(
-        self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
-    ) -> list[dict[str, Any]]: ...
-
-    def query_memory_items_by_entity_names(
-        self, user_id: str, entity_names: list[str], exclude_note_id: str | None = None
-    ) -> list[dict[str, Any]]: ...
-
-    # Phase 4: note <-> entity links (recall provenance + consolidation inputs)
-    def upsert_note_entity_links(
-        self, user_id: str, note_id: str, links: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]: ...
-
-    def query_note_entities_by_source_note(self, user_id: str, note_id: str) -> list[dict[str, Any]]: ...
-
     # Phase 4/5: commitments + entity consolidation
     def insert_commitments(
         self, user_id: str, source_note_id: str, commitments: list[dict[str, Any]]

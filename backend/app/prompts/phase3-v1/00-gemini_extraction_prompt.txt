@@ -6,9 +6,6 @@ Raw notes:
 Related past notes for cross-reference:
 {related_notes_context}
 
-Related context (linked entities and open items):
-{structured_items_context}
-
 Please provide the following:
 1. A concise summary of the notes.
 2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.

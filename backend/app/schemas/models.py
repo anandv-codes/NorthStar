@@ -1,6 +1,22 @@
+import re
 from datetime import date, datetime
 from typing import Any, Dict, Literal, Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+_ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def _extract_iso_date(value: Any) -> Any:
+    """Keep only the ISO date from model output such as 'due 2026-06-13 by EOD'.
+
+    The extraction prompt asks for YYYY-MM-DD but the model occasionally wraps
+    it in prose. Unparseable values become None, matching
+    ``extraction_v2.normalize_due_date``.
+    """
+    if isinstance(value, str):
+        match = _ISO_DATE_RE.search(value)
+        return match.group(0) if match else None
+    return value
 
 class NoteCreateRequest(BaseModel):
     text: str = Field(..., min_length=1, description="Raw note text")
@@ -53,6 +69,11 @@ class ExtractedTask(BaseModel):
     durability: Optional[float] = Field(default=None, ge=0, le=1)
     entities: List[str] = Field(default_factory=list)
 
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def _clean_due_date(cls, value: Any) -> Any:
+        return _extract_iso_date(value)
+
 
 class ExtractedFact(BaseModel):
     content: str = Field(..., min_length=1)
@@ -93,6 +114,11 @@ class ExtractedCommitment(BaseModel):
     due_date: Optional[date] = None
     confidence: Optional[float] = Field(default=None, ge=0, le=1)
     entities: List[str] = Field(default_factory=list)
+
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def _clean_due_date(cls, value: Any) -> Any:
+        return _extract_iso_date(value)
 
 
 class WorkMemoryExtraction(BaseModel):
@@ -405,13 +431,8 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=8)
 
 
-class RefreshRequest(BaseModel):
-    refresh_token: str = Field(..., min_length=1)
-
-
 class AuthTokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
     user_id: str
     email: str

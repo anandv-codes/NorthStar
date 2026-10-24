@@ -13,7 +13,7 @@ import {
   getStoredUserId,
   loginUser,
   logoutUser,
-  refreshSession,
+  onAuthExpired,
   registerUser,
   setAuthTokens,
 } from "../api/httpClient";
@@ -53,14 +53,10 @@ export function AuthorizationProvider({ children }: AuthorizationProviderProps) 
       const profile = await fetchCurrentUser();
       setUserId(profile.user_id);
     } catch {
-      try {
-        const refreshed = await refreshSession();
-        setAuthTokens(refreshed);
-        setUserId(refreshed.user_id);
-      } catch {
-        clearAuthTokens();
-        setUserId(null);
-      }
+      // The stored access token is missing or expired (tokens are stateless and
+      // long-lived; there is no refresh step). Force a fresh sign-in.
+      clearAuthTokens();
+      setUserId(null);
     } finally {
       setIsBootstrapping(false);
     }
@@ -90,6 +86,13 @@ export function AuthorizationProvider({ children }: AuthorizationProviderProps) 
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
+
+  useEffect(() => {
+    // A failed token refresh clears storage from inside the API client; drop
+    // the in-memory user too so protected routes redirect to /login instead of
+    // firing more unauthenticated requests.
+    return onAuthExpired(() => setUserId(null));
+  }, []);
 
   const value = useMemo(
     () => ({

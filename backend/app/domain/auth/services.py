@@ -26,6 +26,9 @@ def get_user_by_id(user_id: str, repo: UserRepository | None = None) -> dict[str
     return repo.get_user_by_id(user_id=user_id)
 
 
+# Refresh-token persistence is retained for a future opt-in auth mode. The
+# current access-token-only flow never calls these; see `jwt_service.py`.
+# Keeping them means re-enabling refresh costs no DB migration.
 def store_refresh_token(
     user_id: str,
     jti: str,

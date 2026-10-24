@@ -29,10 +29,6 @@ from .llm_config import (
     CHAT_ANSWER_GENERATION_TEMPERATURE,
     CHAT_ANSWER_GENERATION_MAX_RETRIES,
     CHAT_ANSWER_GENERATION_TIMEOUT_SECONDS,
-    STRUCTURED_ITEMS_LIMIT,
-    OPEN_STATUSES,
-    MAX_ITEM_DESCRIPTION_LENGTH,
-    MAX_MATCHED_ENTITIES_TO_DISPLAY,
     MAX_RELATED_NOTES_IN_CONTEXT,
     MAX_RELATED_NOTE_SUMMARY_LENGTH,
     PERIOD_SUMMARY_TEMPERATURE,
@@ -41,107 +37,14 @@ from .llm_config import (
 )
 
 
-def filter_open_items(memory_items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
-    """Filter memory items to only open ones, grouped by type, with limits and truncation.
-    
-    Returns dict mapping item type -> list of filtered items (limited to top N, descriptions truncated).
-    """
-    grouped = {}
-    
-    for item in memory_items:
-        item_type = item.get("type")
-        if not item_type:
-            continue
-        
-        # Check if item is open (if status filter is defined)
-        open_statuses = OPEN_STATUSES.get(item_type)
-        if open_statuses is not None:
-            status = item.get("status", "").lower()
-            if status not in open_statuses:
-                continue
-        
-        if item_type not in grouped:
-            grouped[item_type] = []
-        
-        # Truncate description
-        description = item.get("description") or item.get("content") or item.get("question") or item.get("decision") or ""
-        if len(description) > MAX_ITEM_DESCRIPTION_LENGTH:
-            description = description[:MAX_ITEM_DESCRIPTION_LENGTH].rstrip() + "…"
-        
-        truncated_item = {**item, "description": description}
-        grouped[item_type].append(truncated_item)
-    
-    # Limit each group to top N
-    result = {}
-    for item_type, items in grouped.items():
-        limit = STRUCTURED_ITEMS_LIMIT.get(item_type, 3)
-        result[item_type] = items[:limit]
-    
-    return result
-
-
-def generate_structured_items_context(
-    matched_entity_names: list[str] | None = None,
-    memory_items: list[dict[str, Any]] | None = None,
-) -> str:
-    """Format filtered memory items as text block for LLM context.
-    
-    Only includes open items, limited by STRUCTURED_ITEMS_LIMIT, with descriptions truncated.
-    """
-    if not memory_items:
-        return ""
-    
-    filtered = filter_open_items(memory_items)
-    if not filtered:
-        return ""
-    
-    lines = []
-    
-    # Add matched entity names as anchors
-    if matched_entity_names:
-        lines.append("Linked Entities:")
-        for entity_name in matched_entity_names[:MAX_MATCHED_ENTITIES_TO_DISPLAY]:
-            lines.append(f"  • {entity_name}")
-        lines.append("")
-    
-    # Add grouped items
-    type_labels = {
-        "tasks": "Open Tasks",
-        "questions": "Open Questions",
-        "risks": "Open Risks",
-        "concepts": "Concepts",
-        "decisions": "Recent Decisions",
-        "facts": "Key Facts",
-    }
-    
-    for item_type in ["tasks", "questions", "risks", "concepts", "decisions", "facts"]:
-        items = filtered.get(item_type, [])
-        if not items:
-            continue
-        
-        label = type_labels.get(item_type, item_type.title())
-        lines.append(f"{label}:")
-        for item in items:
-            desc = item.get("description") or ""
-            if desc:
-                lines.append(f"  • {desc}")
-        lines.append("")
-    
-    return "\n".join(lines).strip()
-
-
 def call_gemini_api(
     note_text: str,
     related_notes: list[dict[str, Any]] | None = None,
-    matched_entity_names: list[str] | None = None,
-    memory_items: list[dict[str, Any]] | None = None,
 ) -> dict:
     """Extract structured memory from note text using Gemini."""
     prompt = generate_gemini_prompt(
         note_text,
         related_notes=related_notes or [],
-        matched_entity_names=matched_entity_names,
-        memory_items=memory_items,
     )
     output_text = invoke_gemini(prompt)
 
@@ -206,29 +109,30 @@ def invoke_gemini(prompt_text: str) -> str:
 
 
 def parse_gemini_response(output_text: str) -> dict:
-    """Parse Gemini JSON output into structured WorkMemoryExtraction."""
+    """Parse and validate Gemini JSON output as ``WorkMemoryExtraction``.
+
+    ``JsonOutputParser`` only parses; it does not enforce the Pydantic schema.
+    Validation here turns a malformed extraction into a clear failure instead
+    of a ``KeyError`` deeper in the worker.
+    """
     if not output_text or not output_text.strip():
         raise RuntimeError("Gemini returned empty output")
 
     parser = JsonOutputParser(pydantic_object=WorkMemoryExtraction)
     parsed = parser.invoke(output_text)
-    return parsed
+    return WorkMemoryExtraction.model_validate(parsed).model_dump(mode="json")
 
 
 def generate_gemini_prompt(
     note_text: str,
     related_notes: list[dict[str, Any]] | None = None,
-    matched_entity_names: list[str] | None = None,
-    memory_items: list[dict[str, Any]] | None = None,
 ) -> str:
-    """Generate the extraction prompt with note text, related context, and structured items."""
+    """Generate the extraction prompt with note text and related notes."""
     related_context = generate_related_notes_context(related_notes or [])
-    structured_items_context = generate_structured_items_context(matched_entity_names, memory_items)
 
     return build_extraction_prompt(
         note_text=note_text,
         related_notes_context=related_context,
-        structured_items_context=structured_items_context,
         version=os.getenv("WORK_MEMORY_PROMPT_VERSION"),
     )
 

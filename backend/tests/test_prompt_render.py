@@ -54,16 +54,14 @@ def test_build_extraction_prompt_includes_note_and_context():
     prompt = build_extraction_prompt(
         note_text="Fixed the CORS bug",
         related_notes_context="- earlier note",
-        structured_items_context="- Supabase (technology)",
     )
     assert "Fixed the CORS bug" in prompt
     assert "- earlier note" in prompt
-    assert "- Supabase (technology)" in prompt
     assert unresolved_placeholders(prompt) == []
 
 
 def test_build_extraction_prompt_uses_stock_template_by_default():
-    prompt = build_extraction_prompt("note", "related", "structured")
+    prompt = build_extraction_prompt("note", "related")
     assert DEFAULT_EXTRACTION_PROMPT_FILENAME  # document the expected file
     assert "Format your response as JSON" in prompt
     assert "{{" not in prompt and "}}" not in prompt
@@ -73,7 +71,6 @@ def test_build_extraction_prompt_falls_back_when_version_missing():
     prompt = build_extraction_prompt(
         note_text="note",
         related_notes_context="related",
-        structured_items_context="structured",
         version="version-does-not-exist",
     )
     assert "note" in prompt
