@@ -80,6 +80,22 @@ def test_accept_candidate_creates_scheduled_card():
     assert stored["status"] == "carded"
 
 
+def test_accept_candidate_preserves_multi_note_provenance():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+    candidate["rationale"] = {"related_note_ids": ["note-2"]}
+
+    result = accept_candidate(
+        "user-1",
+        candidate["candidate_id"],
+        repo=repo,
+        context=build_context(TEXT, [], [], ["note-3"]),
+        now=NOW,
+    )
+
+    assert result["card"]["source_note_ids"] == ["note-1", "note-3", "note-2"]
+
+
 def test_accept_candidate_requires_question():
     repo = InMemoryRecallRepository()
     candidate = _suggested_candidate(repo, prompt=None)

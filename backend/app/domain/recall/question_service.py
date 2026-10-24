@@ -8,7 +8,7 @@ question is kept and the answer is generated on demand (reveal/accept).
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from .card_generation import (
     RecallConfig,
@@ -17,17 +17,58 @@ from .card_generation import (
     load_recall_config,
 )
 
+RELATED_CONTEXT_LIMIT = 2
+
 
 def build_context(
     source_note_text: str,
     related_snippets: list[str] | None = None,
     entity_names: list[str] | None = None,
+    related_note_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     return {
         "source_note_text": source_note_text,
         "related_snippets": [snippet for snippet in (related_snippets or []) if snippet],
         "entity_names": [name for name in (entity_names or []) if name],
+        "related_note_ids": [note_id for note_id in (related_note_ids or []) if note_id],
     }
+
+
+def collect_related_context(
+    note: dict[str, Any],
+    load_note: Callable[[str], dict[str, Any]],
+) -> tuple[list[str], list[str]]:
+    """Load the related-note snippets that grounded question generation.
+
+    ``note`` is the source note row; ``load_note`` resolves one related note id
+    with the caller's user scope. Missing or empty notes are skipped so answer
+    generation still proceeds with whatever context is available.
+    """
+    snippets: list[str] = []
+    related_note_ids: list[str] = []
+    source_note_id = note.get("note_id")
+    seen: set[str] = set()
+
+    for raw_note_id in note.get("context_note_ids") or []:
+        if len(related_note_ids) >= RELATED_CONTEXT_LIMIT:
+            break
+        note_id = str(raw_note_id or "").strip()
+        if not note_id or note_id == source_note_id or note_id in seen:
+            continue
+        try:
+            related = load_note(note_id) or {}
+        except Exception:  # noqa: BLE001 - related context is best-effort
+            continue
+        snippet = (
+            related.get("enriched_summary") or related.get("raw_text") or ""
+        ).strip()
+        if not snippet:
+            continue
+        seen.add(note_id)
+        related_note_ids.append(note_id)
+        snippets.append(snippet)
+
+    return snippets, related_note_ids
 
 
 def generate_questions_for_note(

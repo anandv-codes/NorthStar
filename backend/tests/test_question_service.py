@@ -23,8 +23,10 @@ CONTEXT = build_context(
 class FakeChatModel:
     def __init__(self, responses):
         self.responses = list(responses)
+        self.prompts = []
 
     def generate(self, prompt):
+        self.prompts.append(prompt)
         return self.responses.pop(0) if self.responses else ""
 
 
@@ -64,6 +66,37 @@ def test_generate_questions_marks_suggested_with_answer():
     # The pair is written together, so a visible suggestion always has an answer.
     assert stored["answer"].startswith("It controls")
     assert model.responses == []
+
+
+def test_generate_questions_grounds_pairs_in_multiple_related_notes():
+    repo = InMemoryRecallRepository()
+    candidate = _candidate(repo, text="Retry policy")
+    candidate["source_note_id"] = "note-1"
+    context = build_context(
+        "Retries use exponential backoff before the message is retried.",
+        [
+            "After five attempts the message moves to the dead-letter queue.",
+            "The retry queue is drained by the worker fleet.",
+        ],
+        ["SQS"],
+        ["note-2", "note-3"],
+    )
+    model = FakeChatModel(
+        [
+            '{"question": "How does the retry policy handle exhausted attempts?", '
+            '"answer": "It moves the message to the dead-letter queue after five '
+            'attempts, and the worker fleet drains the retry queue."}'
+        ]
+    )
+
+    results = generate_questions([candidate], context, model=model, repo=repo, config=CONFIG)
+
+    assert results[0]["status"] == "suggested"
+    assert results[0]["answer"].startswith("It moves")
+    prompt = model.prompts[0]
+    assert "After five attempts the message moves to the dead-letter queue." in prompt
+    assert "The retry queue is drained by the worker fleet." in prompt
+    assert context["related_note_ids"] == ["note-2", "note-3"]
 
 
 def test_generate_questions_rejects_and_records_reason():

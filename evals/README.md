@@ -2,6 +2,16 @@
 
 This directory contains deterministic, synthetic evaluation fixtures and report-only runners for NorthStar retrieval and chat quality.
 
+## Recall Question/Answer Generation Contract
+
+`northstar_recall_generation_v1` replays recorded model responses through the production recall prompt builder and validators. It is a deterministic regression check for question-form matching, answer grounding, expected answer-point coverage, and multi-note context plumbing. It does not measure live model quality, latency, or cost.
+
+```powershell
+python -m evals.scripts.run_recall_generation_eval --fail-on-error
+```
+
+This writes `evals/results/northstar_recall_generation_v1.json` and `.md`. Multi-note cases require the answer to cover points from more than one related note, and fail if any related snippet is missing from the rendered prompt.
+
 ## V0 Retrieval Smoke Baseline
 
 The v0 dataset is a small implementation check, not the planned 40-case golden dataset. It exercises direct lookup, numeric lookup, a semantic phrasing, conflicting evidence, no-context behavior, and user-boundary filtering with synthetic notes.

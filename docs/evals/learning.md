@@ -190,6 +190,22 @@ Install `backend/requirements.txt` in the selected Python environment, configure
 
 Run the unchanged V4 fixture through isolated dense and hybrid retrieval, preserving all case IDs and gold note references. Compare category failures and no-context behavior against this sparse baseline before tuning candidate depth, fusion, or rewriting. Do not treat the V4 result as answer-quality evidence.
 
+## 2026-10-24: Recall Question/Answer Generation Contract
+
+**Artifacts:** `evals/datasets/northstar_recall_generation_v1.jsonl`, `evals/results/northstar_recall_generation_v1.json`, and `evals/results/northstar_recall_generation_v1.md`.
+
+### Decisions Made
+
+- Recall card generation is evaluated separately from retrieval. The replay runner feeds recorded model responses through the production prompt builder, `generate_question_with_answer`, and the deterministic validators, so it catches prompt, context, and validation regressions without calling Gemini.
+- Question prompts no longer force a `How` question when the knowledge unit only supports a definition. The model chooses the form the note supports, and the answer prompt must answer in that same form.
+- On-demand answers rehydrate the source note's `context_note_ids` and include up to two related snippets. Accepted cards keep those related note ids in `source_note_ids` when available from the candidate rationale or answer context.
+- Multi-note cases require the answer to cover expected points from more than one related note and fail when any related snippet is missing from the rendered prompt.
+
+### Coverage Limits
+
+- The runner replays recorded responses; it does not judge live model output. A separate claim-level judge is still required before treating answer quality as measured.
+- No production reveal/accept rates are recorded yet, so the cost/quality trade-off of pre-generated answers remains unmeasured.
+
 ## 2026-10-24: V4 Hybrid and Cross-Encoder Reranker
 
 **Artifacts:** `evals/results/northstar_rag_v4_rrf.json`, `evals/results/northstar_rag_v4_rrf.md`, `evals/results/northstar_rag_v4_rerank.json`, and `evals/results/northstar_rag_v4_rerank.md`.

@@ -92,6 +92,22 @@ def test_entity_mentions_and_related_notes_increase_score():
     assert boosted > baseline
 
 
+def test_candidate_rationale_keeps_related_note_ids_for_provenance():
+    extraction = _extraction(
+        facts=[{"content": "pgvector indexing", "importance": 0.5, "confidence": 1.0}]
+    )
+    candidates = build_candidates(
+        extraction,
+        source_note_id="note-1",
+        related_note_ids=["note-2", "note-2", "note-3", "note-1"],
+        config=CONFIG,
+    )
+
+    rationale = candidates[0]["rationale"]
+    assert rationale["related_note_ids"] == ["note-2", "note-3"]
+    assert rationale["related_note_count"] == 3
+
+
 def test_no_per_note_cap_by_default():
     extraction = _extraction(
         facts=[{"content": f"fact {i}", "importance": 0.9, "confidence": 1.0} for i in range(15)]

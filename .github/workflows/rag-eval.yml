@@ -79,6 +79,9 @@ jobs:
       - name: Run v0 smoke retrieval baseline
         run: python -m evals.scripts.run_retrieval_eval
 
+      - name: Run recall generation contract regression
+        run: python -m evals.scripts.run_recall_generation_eval --fail-on-error
+
       - name: Rebuild and validate v4 focused dataset
         run: |
           python -m evals.scripts.build_rag_v4_focused_dataset
@@ -106,7 +109,7 @@ jobs:
       - name: Publish job summary
         if: always()
         run: |
-          for report in evals/results/northstar_rag_v0_smoke_bm25.md evals/results/northstar_rag_v4_bm25.md evals/results/northstar_rag_v1_bm25.md; do
+          for report in evals/results/northstar_rag_v0_smoke_bm25.md evals/results/northstar_recall_generation_v1.md evals/results/northstar_rag_v4_bm25.md evals/results/northstar_rag_v1_bm25.md; do
             if [ -f "$report" ]; then
               cat "$report" >> "$GITHUB_STEP_SUMMARY"
               echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -121,6 +124,8 @@ jobs:
           path: |
             evals/results/northstar_rag_v0_smoke_bm25.json
             evals/results/northstar_rag_v0_smoke_bm25.md
+            evals/results/northstar_recall_generation_v1.json
+            evals/results/northstar_recall_generation_v1.md
             evals/results/northstar_rag_v4_bm25.json
             evals/results/northstar_rag_v4_bm25.md
             evals/results/northstar_rag_v1_bm25.json

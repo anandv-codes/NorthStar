@@ -1,0 +1,131 @@
+{
+  "runner": "recall_generation_replay",
+  "code_revision": "87fcfb4",
+  "configuration": {
+    "max_attempts": 2,
+    "min_answer_overlap": 0.3
+  },
+  "summary": {
+    "case_count": 4,
+    "passed": 4,
+    "pass_rate": 1.0,
+    "pair_generated_rate": 1.0,
+    "question_form_rate": 1.0,
+    "answer_point_rate": 1.0,
+    "prompt_context_rate": 1.0,
+    "multi_note_case_count": 2,
+    "multi_note_pass_count": 2
+  },
+  "cases": [
+    {
+      "id": "recall-what-definition-01",
+      "question": "What is the SQS visibility timeout?",
+      "answer": "It is the period during which a message stays hidden after a consumer retrieves it.",
+      "status": "generated",
+      "reason": null,
+      "expected_question_form": "what",
+      "actual_question_form": "what",
+      "answer_points": [
+        "period during which a message stays hidden",
+        "after a consumer retrieves it"
+      ],
+      "matched_answer_points": [
+        "period during which a message stays hidden",
+        "after a consumer retrieves it"
+      ],
+      "related_snippet_count": 0,
+      "missing_prompt_snippets": [],
+      "checks": {
+        "pair_generated": true,
+        "question_form": true,
+        "answer_points": true,
+        "prompt_context": true
+      },
+      "passed": true
+    },
+    {
+      "id": "recall-how-process-01",
+      "question": "How does the worker retry a failed message?",
+      "answer": "It retries with exponential backoff and doubles the delay after each attempt.",
+      "status": "generated",
+      "reason": null,
+      "expected_question_form": "how",
+      "actual_question_form": "how",
+      "answer_points": [
+        "exponential backoff",
+        "doubles the delay after each attempt"
+      ],
+      "matched_answer_points": [
+        "exponential backoff",
+        "doubles the delay after each attempt"
+      ],
+      "related_snippet_count": 0,
+      "missing_prompt_snippets": [],
+      "checks": {
+        "pair_generated": true,
+        "question_form": true,
+        "answer_points": true,
+        "prompt_context": true
+      },
+      "passed": true
+    },
+    {
+      "id": "recall-multi-note-how-01",
+      "question": "How does the retry policy handle exhausted attempts?",
+      "answer": "It retries with exponential backoff, then moves the message to the dead-letter queue after five attempts while the worker fleet drains the retry queue.",
+      "status": "generated",
+      "reason": null,
+      "expected_question_form": "how",
+      "actual_question_form": "how",
+      "answer_points": [
+        "exponential backoff",
+        "dead-letter queue after five attempts",
+        "worker fleet drains the retry queue"
+      ],
+      "matched_answer_points": [
+        "exponential backoff",
+        "dead-letter queue after five attempts",
+        "worker fleet drains the retry queue"
+      ],
+      "related_snippet_count": 2,
+      "missing_prompt_snippets": [],
+      "checks": {
+        "pair_generated": true,
+        "question_form": true,
+        "answer_points": true,
+        "prompt_context": true,
+        "multi_note": true
+      },
+      "passed": true
+    },
+    {
+      "id": "recall-multi-note-why-01",
+      "question": "Why did the team roll back the pricing change for enterprise accounts?",
+      "answer": "Support saw a spike in billing confusion after the pricing change, and enterprise renewals were paused until the invoices were corrected.",
+      "status": "generated",
+      "reason": null,
+      "expected_question_form": "why",
+      "actual_question_form": "why",
+      "answer_points": [
+        "spike in billing confusion",
+        "enterprise renewals were paused",
+        "invoices were corrected"
+      ],
+      "matched_answer_points": [
+        "spike in billing confusion",
+        "enterprise renewals were paused",
+        "invoices were corrected"
+      ],
+      "related_snippet_count": 2,
+      "missing_prompt_snippets": [],
+      "checks": {
+        "pair_generated": true,
+        "question_form": true,
+        "answer_points": true,
+        "prompt_context": true,
+        "multi_note": true
+      },
+      "passed": true
+    }
+  ]
+}

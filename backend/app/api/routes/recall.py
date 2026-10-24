@@ -27,6 +27,7 @@ from ...schemas.models import (
 )
 from ...domain.recall.question_service import (
     build_context,
+    collect_related_context,
     generate_answer_for_candidate,
 )
 from ...domain.recall.card_library import (
@@ -70,6 +71,7 @@ def _context_for_note(user_id: str, source_note_id: str | None) -> dict:
 
     Batch accept calls this once per distinct note, not once per candidate.
     """
+    note: dict = {}
     note_text = ""
     if source_note_id:
         try:
@@ -86,7 +88,16 @@ def _context_for_note(user_id: str, source_note_id: str | None) -> dict:
         except Exception:  # noqa: BLE001 - context is best-effort
             entity_names = []
 
-    return build_context(note_text, entity_names=entity_names)
+    related_snippets, related_note_ids = collect_related_context(
+        note,
+        lambda note_id: get_note_item(user_id=user_id, note_id=note_id),
+    )
+    return build_context(
+        note_text,
+        related_snippets,
+        entity_names,
+        related_note_ids,
+    )
 
 
 def _to_suggestion(row: dict) -> RecallSuggestionResponse:

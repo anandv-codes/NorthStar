@@ -44,9 +44,12 @@ def build_candidates(
 ) -> list[dict[str, Any]]:
     """Return candidates sorted by descending score."""
     config = config or load_scoring_config()
-    related_note_ids = related_note_ids or []
     entity_mention_counts = {k.lower(): v for k, v in (entity_mention_counts or {}).items()}
-    related_note_count = len({note_id for note_id in related_note_ids if note_id}) + 1
+    related_ids: list[str] = []
+    for note_id in related_note_ids or []:
+        if note_id and note_id != source_note_id and note_id not in related_ids:
+            related_ids.append(note_id)
+    related_note_count = len(related_ids) + 1
 
     candidates: list[dict[str, Any]] = []
     for item_type, (text_field, _id_field) in ITEM_SPECS.items():
@@ -87,6 +90,7 @@ def build_candidates(
                         "importance": importance,
                         "mention_count": mention_count,
                         "related_note_count": related_note_count,
+                        "related_note_ids": related_ids,
                     },
                 }
             )

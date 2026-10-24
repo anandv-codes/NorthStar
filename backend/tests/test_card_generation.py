@@ -20,6 +20,16 @@ CONTEXT = {
     "entity_names": ["SQS"],
 }
 
+MULTI_NOTE_CONTEXT = {
+    "candidate_text": "Retry policy",
+    "source_note_text": "Retries use exponential backoff before the message is retried.",
+    "related_snippets": [
+        "After five attempts the message moves to the dead-letter queue.",
+        "The retry queue is drained by the worker fleet.",
+    ],
+    "entity_names": ["SQS"],
+}
+
 
 class FakeChatModel:
     def __init__(self, responses):
@@ -53,6 +63,37 @@ def test_question_answer_prompt_renders_cleanly():
     assert "{candidate_text}" not in prompt
     assert "{question}" not in prompt
     assert "{answer}" not in prompt
+
+
+def test_question_prompt_selects_the_supported_question_form():
+    prompt = build_question_prompt("SQS visibility timeout", "fact", CONTEXT)
+    assert "Do not force a 'How' question" in prompt
+    assert "'What' for definitions" in prompt
+
+
+def test_answer_prompt_matches_the_question_form():
+    prompt = build_answer_prompt("How does the visibility timeout work?", CONTEXT)
+    assert "match its form" in prompt
+    assert "describe the mechanism, steps, or process" in prompt
+    assert "Do not merely restate the knowledge unit" in prompt
+
+
+def test_question_answer_prompt_matches_the_question_form():
+    prompt = build_question_answer_prompt("SQS visibility timeout", "fact", CONTEXT)
+    assert "Do not force a 'How' question" in prompt
+    assert "match its form" in prompt
+    assert "Do not merely restate the knowledge unit" in prompt
+
+
+def test_prompts_include_all_related_note_snippets():
+    answer_prompt = build_answer_prompt("What is the retry policy?", MULTI_NOTE_CONTEXT)
+    pair_prompt = build_question_answer_prompt(
+        "Retry policy", "fact", MULTI_NOTE_CONTEXT
+    )
+
+    for prompt in (answer_prompt, pair_prompt):
+        assert "After five attempts the message moves to the dead-letter queue." in prompt
+        assert "The retry queue is drained by the worker fleet." in prompt
 
 
 def test_validate_question_rules():
@@ -123,6 +164,26 @@ def test_generate_answer_grounding_and_rejection():
     result = generate_answer("What does it control?", CONTEXT, model, config=CONFIG)
     assert result["status"] == "rejected"
     assert result["reason"] == "answer_not_grounded"
+
+
+def test_generate_answer_uses_related_note_context():
+    model = FakeChatModel(
+        [
+            '{"answer": "It moves the message to the dead-letter queue after five '
+            'attempts, and the worker fleet drains the retry queue."}'
+        ]
+    )
+    result = generate_answer(
+        "How does the retry policy handle exhausted attempts?",
+        MULTI_NOTE_CONTEXT,
+        model,
+        config=CONFIG,
+    )
+
+    assert result["status"] == "generated"
+    prompt = model.prompts[0]
+    assert "After five attempts the message moves to the dead-letter queue." in prompt
+    assert "The retry queue is drained by the worker fleet." in prompt
 
 
 def test_generate_question_with_answer_returns_both():

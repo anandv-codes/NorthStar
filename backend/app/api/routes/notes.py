@@ -21,7 +21,11 @@ from ...infrastructure.db.supabase_client import (
 )
 from ...infrastructure.db.recall_repository import get_recall_repository
 from ...infrastructure.llm.gemini_client import get_chat_model
-from ...domain.recall.question_service import build_context, generate_questions_for_note
+from ...domain.recall.question_service import (
+    build_context,
+    collect_related_context,
+    generate_questions_for_note,
+)
 from ...domain.memory.services import (
     query_latest_extraction_run_for_note,
     query_tasks_by_source_note,
@@ -209,7 +213,16 @@ def toggle_note_recall(
         try:
             entity_rows = query_entities_by_source_note(user_id=user_id, note_id=note_id)
             entity_names = [e.get("name") for e in entity_rows if e.get("name")]
-            context = build_context(note.get("raw_text", ""), entity_names=entity_names)
+            related_snippets, related_note_ids = collect_related_context(
+                note,
+                lambda related_id: get_note_item(user_id=user_id, note_id=related_id),
+            )
+            context = build_context(
+                note.get("raw_text", ""),
+                related_snippets,
+                entity_names,
+                related_note_ids,
+            )
             results = generate_questions_for_note(
                 user_id,
                 note_id,

@@ -17,6 +17,21 @@ from .question_service import generate_answer_for_candidate
 from .scheduling import AnkiScheduler, SystemClock, initial_card_state, load_scheduler_config
 
 
+def _card_source_note_ids(candidate: dict[str, Any], context: dict[str, Any] | None) -> list[str]:
+    """Preserve source-note provenance, including notes used to ground the pair."""
+    rationale = candidate.get("rationale") or {}
+    candidates = [
+        candidate.get("source_note_id"),
+        *((context or {}).get("related_note_ids") or []),
+        *(rationale.get("related_note_ids") or []),
+    ]
+    source_note_ids: list[str] = []
+    for note_id in candidates:
+        if note_id and note_id not in source_note_ids:
+            source_note_ids.append(note_id)
+    return source_note_ids
+
+
 def list_suggestions(user_id: str, *, repo: Any, limit: int = 50) -> list[dict[str, Any]]:
     """Candidates awaiting a user decision, highest score first."""
     return repo.query_candidates(user_id, status="suggested", limit=limit)
@@ -101,7 +116,7 @@ def accept_candidate(
         "deck_id": resolved_deck_id,
         "question": question,
         "answer": answer,
-        "source_note_ids": [candidate["source_note_id"]] if candidate.get("source_note_id") else [],
+        "source_note_ids": _card_source_note_ids(candidate, context),
         "status": "active",
         **{k: v for k, v in state.items() if v is not None},
         "next_due": now.isoformat(),
