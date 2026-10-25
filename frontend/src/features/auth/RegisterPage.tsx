@@ -27,7 +27,7 @@ export function RegisterPage() {
     setSubmitting(true);
     try {
       await register(email, password);
-      navigate("/app/dashboard");
+      navigate("/onboarding/commitments", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create your account.");
     } finally {

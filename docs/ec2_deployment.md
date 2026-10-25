@@ -497,6 +497,7 @@ Option B — Supabase SQL editor: open and run these files **in order**:
 6. `phase4_recall_decks.sql`
 7. `phase4_recall_accept.sql`
 8. `phase4_pgvector.sql`
+9. `phase5_commitments.sql`
 
 Before file 8, if `create extension if not exists vector;` is rejected, enable
 **vector** in Dashboard → Database → Extensions, then run the file. The script
@@ -516,9 +517,10 @@ where table_schema = 'public'
     'decisions','risks','concepts','entities','memory_item_entities',
     'period_summaries',
     'note_entities','commitments','recall_candidates','recall_cards',
-    'review_history','recall_decks','note_chunks'
+    'review_history','recall_decks','note_chunks',
+    'user_commitments','commitment_contributions'
   );"
-# expect: 23
+# expect: 25
 
 psql "$SUPABASE_DB_URL" -Atc "
 select format_type(atttypid, atttypmod)

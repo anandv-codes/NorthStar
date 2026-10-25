@@ -12,6 +12,8 @@ import { ChatPage } from "../features/chat/ChatPage";
 import { RecallPage } from "../features/recall/RecallPage";
 import { RecallVerifyPage } from "../features/recall/RecallVerifyPage";
 import { StudyPage } from "../features/recall/StudyPage";
+import { SettingsPage } from "../features/settings/SettingsPage";
+import { CommitmentOnboardingPage } from "../features/onboarding/CommitmentOnboardingPage";
 const LibraryLayout = lazy(() =>
   import("../features/library/LibraryLayout").then((module) => ({ default: module.LibraryLayout })),
 );
@@ -49,11 +51,13 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/onboarding/commitments" element={<CommitmentOnboardingPage />} />
         <Route path="/app" element={<AppShell />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="notes" element={<NoteTakerPage />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route
             path="library"
             element={

@@ -38,6 +38,24 @@ def test_valid_payload_returns_normalized_dict():
     assert parsed["facts"] == []
 
 
+def test_commitment_contributions_are_validated():
+    parsed = parse_gemini_response(
+        '{"summary": "s", "commitment_contributions": ['
+        '{"commitment_id": "goal-1", "comment": "Finished the API."}]}'
+    )
+
+    assert parsed["commitment_contributions"] == [
+        {"commitment_id": "goal-1", "comment": "Finished the API."}
+    ]
+
+
+def test_commitment_contribution_requires_comment():
+    with pytest.raises(ValidationError):
+        parse_gemini_response(
+            '{"commitment_contributions": [{"commitment_id": "goal-1"}]}'
+        )
+
+
 def test_due_date_wrapped_in_prose_keeps_the_iso_date():
     parsed = parse_gemini_response(
         '{"tasks": [{"description": "Deploy", "due_date": "due 2026-06-13 by EOD"}]}'

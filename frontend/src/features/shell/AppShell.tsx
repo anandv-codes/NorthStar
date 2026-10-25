@@ -4,6 +4,7 @@ import {
   Books,
   ChatCircleDots,
   ClockCounterClockwise,
+  GearSix,
   List,
   SignOut,
   SquaresFour,
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { to: "/app/recall", label: "Recall", icon: ClockCounterClockwise },
   { to: "/app/notes", label: "Note Taker", icon: NotePencil },
   { to: "/app/chat", label: "Ask", icon: ChatCircleDots },
+  { to: "/app/settings", label: "Settings", icon: GearSix },
 ];
 
 export function AppShell() {

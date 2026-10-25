@@ -18,10 +18,11 @@ Apply in this exact order on a fresh database:
 | 6 | `phase4_recall_decks.sql` | `recall_decks`, `deck_id` on candidates/cards, General deck backfill |
 | 7 | `phase4_recall_accept.sql` | `accept_recall_candidate` RPC: atomic, idempotent accept |
 | 8 | `phase4_pgvector.sql` | `vector` extension, `note_chunks`, embedding columns, `match_*` RPCs |
+| 9 | `phase5_commitments.sql` | `user_commitments`, `commitment_contributions` (user-authored long-term goals) |
 
 ## Option A — Supabase SQL editor
 
-Open each file in order and run it. Before step 6, enable the **vector**
+Open each file in order and run it. Before step 8, enable the **vector**
 extension in the Supabase dashboard (Database → Extensions) if
 `create extension if not exists vector;` is rejected; then run the file.
 

@@ -10,11 +10,11 @@ from ..infrastructure.llm.gemini_client import (
     call_gemini_api,
     get_chat_model,
 )
+from ..domain.commitments.services import persist_note_contributions
 from ..domain.memory.services import (
     apply_deterministic_task_resolution,
     bump_entity_mentions,
     create_extraction_run,
-    insert_commitments,
     insert_decisions,
     insert_facts,
     insert_memory_item_entity_links,
@@ -26,12 +26,12 @@ from ..domain.memory.services import (
 )
 from ..domain.memory.extraction_v2 import (
     build_note_metadata,
-    commitment_rows,
     entity_importance_delta,
     task_rows_with_scoring,
 )
 from ..domain.recall.candidate_service import generate_candidates
 from ..domain.recall.question_service import build_context, generate_questions
+from ..infrastructure.db.commitment_repository import get_commitment_repository
 from ..infrastructure.db.recall_repository import get_recall_repository
 from ..infrastructure.llm.prompt_logger import append_deterministic_resolution_log
 from ..infrastructure.vector.vectorstore import index_note
@@ -103,9 +103,20 @@ def process_sqs_message(body:dict)-> dict:
             related_notes = []
         timer.mark("retrieval")
 
+        commitment_repo = get_commitment_repository()
+        try:
+            # The extraction prompt needs id + text only. Querying the repository
+            # directly avoids the contribution-count query used by list views.
+            active_commitments = commitment_repo.query_commitments(user_id, status="active")
+        except Exception as exc:
+            # Goal tracking must never break note ingestion.
+            logger.warning(f"Could not load long-term goals; continuing without them: {exc}")
+            active_commitments = []
+
         enrichment_res = call_gemini_api(
             raw_text,
             related_notes=related_notes,
+            commitments=active_commitments,
         )
         # Full prompt/response already persisted to file via log_gemini_interaction in gemini_client.
         enriched_text= enrichment_res.get("summary","")
@@ -200,17 +211,16 @@ def process_sqs_message(body:dict)-> dict:
                 logger.warning(f"Entity importance update failed; continuing: {exc}")
 
         try:
-            extracted_commitments = commitment_rows(enrichment_res, user_id, note_id)
-            if extracted_commitments:
-                inserted_commitments = insert_commitments(
-                    user_id=user_id,
-                    source_note_id=note_id,
-                    commitments=extracted_commitments,
-                )
-                logger.info(f"Commitments extracted: {len(inserted_commitments)}")
+            contributions = persist_note_contributions(
+                user_id=user_id,
+                note_id=note_id,
+                extraction=enrichment_res,
+                repo=commitment_repo,
+            )
+            logger.info(f"Long-term goal contributions added: {len(contributions)}")
         except Exception as exc:
-            logger.warning(f"Commitment persistence failed; continuing: {exc}")
-        timer.mark("entities")
+            logger.warning(f"Commitment contribution persistence failed; continuing: {exc}")
+        timer.mark("commitments")
 
         entity_name_to_id = {
             str(entity.get("name", "")).strip().lower(): entity.get("entity_id")

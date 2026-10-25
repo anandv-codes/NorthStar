@@ -197,7 +197,8 @@ export interface PeriodSummary {
   period_start: string;
   period_end: string;
   narrative: string;
-  stats: Record<string, number>;
+  /** Numeric counters plus the deterministic `long_term_focus` string list. */
+  stats: Record<string, number | string[]>;
   source_note_count: number;
   generated_at: string;
 }
@@ -207,6 +208,44 @@ export interface PeriodSummaryStatus {
   summary?: PeriodSummary | null;
   notes_count: number;
   min_notes_required: number;
+}
+
+export type UserCommitmentStatus = "active" | "completed";
+
+export interface UserCommitment {
+  commitment_id: string;
+  user_id: string;
+  text: string;
+  progress: number;
+  status: UserCommitmentStatus;
+  contribution_count: number;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+}
+
+export interface UserCommitmentList {
+  commitments: UserCommitment[];
+  active_count: number;
+  max_active: number;
+}
+
+export interface CommitmentContribution {
+  contribution_id: string;
+  commitment_id: string;
+  note_id: string;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+  edited_at?: string | null;
+  source_note_created_at?: string | null;
+  source_note_excerpt?: string | null;
+}
+
+export interface UserCommitmentUpdate {
+  text?: string;
+  progress?: number;
+  status?: "completed";
 }
 
 export type RecallGrade = 1 | 3 | 4 | 5;
@@ -774,6 +813,67 @@ export async function generateWeeklySummary(regenerate = false, date?: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ period_start: date ?? null, regenerate }),
   });
+}
+
+export async function fetchCommitments(status?: UserCommitmentStatus) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return requestJson<UserCommitmentList>(`${BASE_URL}/commitments${query}`);
+}
+
+export async function createCommitment(text: string) {
+  return requestJson<UserCommitment>(`${BASE_URL}/commitments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+}
+
+export async function updateCommitment(
+  commitmentId: string,
+  payload: UserCommitmentUpdate,
+) {
+  return requestJson<UserCommitment>(
+    `${BASE_URL}/commitments/${encodeURIComponent(commitmentId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function deleteCommitment(commitmentId: string) {
+  return requestJson<{ deleted: boolean }>(
+    `${BASE_URL}/commitments/${encodeURIComponent(commitmentId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function fetchCommitmentContributions(commitmentId: string) {
+  return requestJson<CommitmentContribution[]>(
+    `${BASE_URL}/commitments/${encodeURIComponent(commitmentId)}/contributions`,
+  );
+}
+
+export async function updateCommitmentContribution(
+  contributionId: string,
+  comment: string,
+) {
+  return requestJson<CommitmentContribution>(
+    `${BASE_URL}/commitments/contributions/${encodeURIComponent(contributionId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
+    },
+  );
+}
+
+export async function deleteCommitmentContribution(contributionId: string) {
+  return requestJson<{ deleted: boolean }>(
+    `${BASE_URL}/commitments/contributions/${encodeURIComponent(contributionId)}`,
+    { method: "DELETE" },
+  );
 }
 
 export async function retrieveQueryContext(query: string, limit = 5) {

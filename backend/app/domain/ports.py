@@ -152,6 +152,47 @@ class MemoryRepository(Protocol):
 
 
 @runtime_checkable
+class CommitmentRepository(Protocol):
+    """Persistence for user-authored long-term goals and note-derived contributions."""
+
+    def create_commitment(self, user_id: str, text: str) -> dict[str, Any]: ...
+
+    def get_commitment(self, user_id: str, commitment_id: str) -> dict[str, Any] | None: ...
+
+    def query_commitments(
+        self, user_id: str, status: str | None = None
+    ) -> list[dict[str, Any]]: ...
+
+    def update_commitment(
+        self, user_id: str, commitment_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]: ...
+
+    def delete_commitment(self, user_id: str, commitment_id: str) -> bool: ...
+
+    def count_contributions_by_commitment(
+        self, user_id: str, commitment_ids: list[str]
+    ) -> dict[str, int]: ...
+
+    def insert_contribution(
+        self, user_id: str, commitment_id: str, note_id: str, comment: str
+    ) -> dict[str, Any] | None: ...
+
+    def get_contribution(
+        self, user_id: str, contribution_id: str
+    ) -> dict[str, Any] | None: ...
+
+    def query_contributions(
+        self, user_id: str, commitment_id: str
+    ) -> list[dict[str, Any]]: ...
+
+    def update_contribution(
+        self, user_id: str, contribution_id: str, comment: str
+    ) -> dict[str, Any]: ...
+
+    def delete_contribution(self, user_id: str, contribution_id: str) -> bool: ...
+
+
+@runtime_checkable
 class RecallRepository(Protocol):
     """Persistence for the recall loop: candidates, cards, reviews, commitments.
 

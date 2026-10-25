@@ -89,7 +89,9 @@ def build_note_metadata(extraction: dict[str, Any]) -> dict[str, Any]:
         "decisions": list(extraction.get("decisions", [])),
         "risks": list(extraction.get("risks", [])),
         "entities": list(extraction.get("entities", [])),
-        "commitments": list(extraction.get("commitments", [])),
+        "commitment_contributions": list(
+            extraction.get("commitment_contributions", [])
+        ),
     }
 
 

@@ -17,6 +17,7 @@ EXPECTED_PLACEHOLDERS = {
     "00-gemini_extraction_prompt.txt": {
         "note_text",
         "related_notes_context",
+        "commitments_context",
     },
     "01-query_rewrite_prompt.txt": {"user_query", "memory_context"},
     "02-chat_prompt.txt": {

@@ -10,6 +10,7 @@ from backend.app.infrastructure.llm.prompt_render import (
     DEFAULT_EXTRACTION_PROMPT_FILENAME,
     DEFAULT_EXTRACTION_PROMPT_VERSION,
     build_extraction_prompt,
+    format_commitments_context,
     render_prompt_template,
     unresolved_placeholders,
 )
@@ -58,6 +59,36 @@ def test_build_extraction_prompt_includes_note_and_context():
     assert "Fixed the CORS bug" in prompt
     assert "- earlier note" in prompt
     assert unresolved_placeholders(prompt) == []
+
+
+def test_commitment_context_includes_only_id_and_user_text():
+    context = format_commitments_context(
+        [
+            {
+                "commitment_id": "goal-1",
+                "text": "Ship the MVP",
+                "progress": 75,
+                "contribution_count": 4,
+            }
+        ]
+    )
+    assert "goal-1" in context
+    assert "Ship the MVP" in context
+    assert "75" not in context
+    assert "progress" not in context.lower()
+    assert "contribution" not in context.lower()
+    assert format_commitments_context([]) == "No active long-term goals."
+
+
+def test_build_extraction_prompt_places_goals_before_instructions():
+    prompt = build_extraction_prompt(
+        note_text="Finished the API",
+        related_notes_context="none",
+        commitments=[{"commitment_id": "goal-1", "text": "Ship the MVP"}],
+    )
+    assert "goal-1" in prompt
+    assert "Ship the MVP" in prompt
+    assert prompt.index("Ship the MVP") < prompt.index("Please provide the following")
 
 
 def test_build_extraction_prompt_uses_stock_template_by_default():

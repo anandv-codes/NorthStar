@@ -30,6 +30,7 @@ import { ActivityHeatmap } from "./components/ActivityHeatmap";
 import { RecallSpotlight } from "./components/RecallSpotlight";
 import { WhatToDoPanel } from "./components/WhatToDoPanel";
 import { QuickAddNote } from "./components/QuickAddNote";
+import { CommitmentsPanel } from "../commitments/CommitmentsPanel";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -172,6 +173,10 @@ export function DashboardPage() {
         onGenerateDaily={handleGenerateDaily}
         onGenerateWeekly={handleGenerateWeekly}
       />
+
+      <div className="mt-5">
+        <CommitmentsPanel />
+      </div>
 
       {/* What to remember — the core loop leads the dashboard per the product pivot */}
       <div className="mt-5">

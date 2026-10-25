@@ -392,3 +392,129 @@ class InMemoryRecallRepository:
             return {}
         row.update({**updates, "updated_at": _now()})
         return row
+
+
+class InMemoryCommitmentRepository:
+    """User-authored goal persistence mirroring the Supabase repository."""
+
+    def __init__(self) -> None:
+        self.commitments: dict[str, dict[str, Any]] = {}
+        self.contributions: dict[str, dict[str, Any]] = {}
+
+    def create_commitment(self, user_id: str, text: str) -> dict[str, Any]:
+        commitment_id = str(uuid.uuid4())
+        now = _now()
+        row = {
+            "commitment_id": commitment_id,
+            "user_id": user_id,
+            "text": text,
+            "progress": 0,
+            "status": "active",
+            "created_at": now,
+            "updated_at": now,
+            "completed_at": None,
+        }
+        self.commitments[commitment_id] = row
+        return row
+
+    def get_commitment(
+        self, user_id: str, commitment_id: str
+    ) -> dict[str, Any] | None:
+        row = self.commitments.get(commitment_id)
+        return row if row and row["user_id"] == user_id else None
+
+    def query_commitments(
+        self, user_id: str, status: str | None = None
+    ) -> list[dict[str, Any]]:
+        rows = [
+            row
+            for row in self.commitments.values()
+            if row["user_id"] == user_id
+            and (status is None or row.get("status") == status)
+        ]
+        return sorted(rows, key=lambda row: row["created_at"], reverse=True)
+
+    def update_commitment(
+        self, user_id: str, commitment_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]:
+        row = self.get_commitment(user_id, commitment_id)
+        if row is None:
+            return {}
+        row.update({**updates, "updated_at": _now()})
+        return row
+
+    def delete_commitment(self, user_id: str, commitment_id: str) -> bool:
+        if self.get_commitment(user_id, commitment_id) is None:
+            return False
+        del self.commitments[commitment_id]
+        for contribution_id, contribution in list(self.contributions.items()):
+            if contribution["commitment_id"] == commitment_id:
+                del self.contributions[contribution_id]
+        return True
+
+    def count_contributions_by_commitment(
+        self, user_id: str, commitment_ids: list[str]
+    ) -> dict[str, int]:
+        wanted = set(commitment_ids)
+        counts: dict[str, int] = {}
+        for row in self.contributions.values():
+            if row["user_id"] == user_id and row["commitment_id"] in wanted:
+                counts[row["commitment_id"]] = counts.get(row["commitment_id"], 0) + 1
+        return counts
+
+    def insert_contribution(
+        self, user_id: str, commitment_id: str, note_id: str, comment: str
+    ) -> dict[str, Any] | None:
+        if any(
+            row["user_id"] == user_id
+            and row["commitment_id"] == commitment_id
+            and row["note_id"] == note_id
+            for row in self.contributions.values()
+        ):
+            return None
+        contribution_id = str(uuid.uuid4())
+        now = _now()
+        row = {
+            "contribution_id": contribution_id,
+            "commitment_id": commitment_id,
+            "user_id": user_id,
+            "note_id": note_id,
+            "comment": comment,
+            "created_at": now,
+            "updated_at": now,
+            "edited_at": None,
+        }
+        self.contributions[contribution_id] = row
+        return row
+
+    def get_contribution(
+        self, user_id: str, contribution_id: str
+    ) -> dict[str, Any] | None:
+        row = self.contributions.get(contribution_id)
+        return row if row and row["user_id"] == user_id else None
+
+    def query_contributions(
+        self, user_id: str, commitment_id: str
+    ) -> list[dict[str, Any]]:
+        rows = [
+            row
+            for row in self.contributions.values()
+            if row["user_id"] == user_id and row["commitment_id"] == commitment_id
+        ]
+        return sorted(rows, key=lambda row: row["created_at"], reverse=True)
+
+    def update_contribution(
+        self, user_id: str, contribution_id: str, comment: str
+    ) -> dict[str, Any]:
+        row = self.get_contribution(user_id, contribution_id)
+        if row is None:
+            return {}
+        now = _now()
+        row.update({"comment": comment, "updated_at": now, "edited_at": now})
+        return row
+
+    def delete_contribution(self, user_id: str, contribution_id: str) -> bool:
+        if self.get_contribution(user_id, contribution_id) is None:
+            return False
+        del self.contributions[contribution_id]
+        return True

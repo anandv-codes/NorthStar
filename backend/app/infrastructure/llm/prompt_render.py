@@ -29,6 +29,9 @@ Raw notes:
 Related past notes for cross-reference:
 {related_notes_context}
 
+Active long-term goals (user-authored; never rewrite them or infer progress from them):
+{commitments_context}
+
 Please provide the following:
 1. A concise summary of the notes.
 2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.
@@ -39,7 +42,7 @@ Please provide the following:
 7. IMPORTANT: Surface any open questions from context for awareness, but NEVER mark them as answered unless the current note explicitly resolves them.
 8. For tasks, facts, and concepts, add an `importance` score (0-1, how much this matters for future recall) and a `durability` score (0-1, how long-lived/permanent the knowledge is).
 9. Add any explicit deadline to a task's `due_date` (YYYY-MM-DD). Only set dates that are stated or directly implied; otherwise omit.
-10. Extract `commitments`: things the user committed to doing, with an optional `due_date`. A task may also be a commitment.
+10. If, and only if, this note contains explicit evidence of progress toward an active long-term goal above, add one `commitment_contributions` entry for that goal. Use its `commitment_id` exactly, and write one factual line (max 200 characters) describing what was actually done. At most one entry per goal. Never restate the goal, never change progress, never infer progress from related-note context alone, and return an empty list when there is no explicit evidence.
 
 Format your response as JSON with the following structure:
 {
@@ -54,12 +57,10 @@ Format your response as JSON with the following structure:
             "entities": ["Supabase"]
         }
     ],
-    "commitments": [
+    "commitment_contributions": [
         {
-            "title": "Finish monthly report",
-            "due_date": "2026-06-13",
-            "confidence": 0.8,
-            "entities": []
+            "commitment_id": "id from the list above",
+            "comment": "One factual line of progress"
         }
     ],
     "facts": [
@@ -158,9 +159,26 @@ def load_prompt_template(
     )
 
 
+def format_commitments_context(commitments: list[Mapping[str, str]] | None) -> str:
+    """Format user-authored goal text and ids for the extraction prompt.
+
+    Only the goal text and its id are included. Progress, contribution history,
+    and completed goals are deliberately excluded so the model can decide
+    whether a note contains new evidence without being anchored by state.
+    """
+    lines: list[str] = []
+    for commitment in commitments or []:
+        commitment_id = str(commitment.get("commitment_id") or "").strip()
+        text = str(commitment.get("text") or "").strip()
+        if commitment_id and text:
+            lines.append(f"- commitment_id: {commitment_id}\n  goal: {text}")
+    return "\n".join(lines) if lines else "No active long-term goals."
+
+
 def build_extraction_prompt(
     note_text: str,
     related_notes_context: str,
+    commitments: list[Mapping[str, str]] | None = None,
     version: str | None = None,
 ) -> str:
     """Render the note-extraction prompt from the configured template file."""
@@ -177,5 +195,6 @@ def build_extraction_prompt(
         {
             "note_text": note_text,
             "related_notes_context": related_notes_context,
+            "commitments_context": format_commitments_context(commitments),
         },
     ).strip()

@@ -15,7 +15,7 @@ Follow these steps in order to get the app running locally.
 
 ### 2. Set up the database
 
-In your Supabase project's SQL editor, run these 7 files **in order** (they are idempotent, safe to re-run):
+In your Supabase project's SQL editor, run these 9 files **in order** (they are idempotent, safe to re-run):
 
 1. [backend/sql/auth_jwt.sql](backend/sql/auth_jwt.sql) — user accounts + refresh tokens
 2. [backend/sql/chat_conversations.sql](backend/sql/chat_conversations.sql) — chat threads + messages + pending tool-call confirmations (`pending_chat_actions`)
@@ -23,18 +23,22 @@ In your Supabase project's SQL editor, run these 7 files **in order** (they are 
 4. [backend/sql/phase4_recall.sql](backend/sql/phase4_recall.sql) — recall foundation: `note_entities`, entity importance, task due dates, `commitments`, `recall_candidates`, `recall_cards`, `review_history`, per-note `recall_enabled`/`recall_status`
 5. [backend/sql/phase4_recall_scheduler.sql](backend/sql/phase4_recall_scheduler.sql) — Anki-style scheduler state on `recall_cards` (`state`, `learning_step`)
 6. [backend/sql/phase4_recall_decks.sql](backend/sql/phase4_recall_decks.sql) — categorised recall decks: `recall_decks`, candidate/card `deck_id`, and the per-user General deck backfill
-7. [backend/sql/phase4_pgvector.sql](backend/sql/phase4_pgvector.sql) — pgvector retrieval: `note_chunks`, chunk/note/entity embeddings, HNSW indexes, `match_*` functions
+7. [backend/sql/phase4_recall_accept.sql](backend/sql/phase4_recall_accept.sql) — atomic, idempotent `accept_recall_candidate` RPC
+8. [backend/sql/phase4_pgvector.sql](backend/sql/phase4_pgvector.sql) — pgvector retrieval: `note_chunks`, chunk/note/entity embeddings, HNSW indexes, `match_*` functions
+9. [backend/sql/phase5_commitments.sql](backend/sql/phase5_commitments.sql) — user-authored long-term goals (`user_commitments`) and note-derived updates (`commitment_contributions`)
 
-That's all 7 files needed for a brand-new database — no other migrations required. File 7 enables the `vector` extension (pre-installed on Supabase).
+That's all 9 files needed for a brand-new database — no other migrations required. File 8 enables the `vector` extension (pre-installed on Supabase).
 
-**Updating an existing database:** if you set up NorthStar before the daily/weekly summary, chat tool-calling, or recall features existed, re-run files 2–7 above — every statement in them uses `create table if not exists` / `alter table ... add column if not exists` / `create index if not exists`, so re-running is safe and only adds the tables/columns/indexes that are missing:
+**Updating an existing database:** if you set up NorthStar before the daily/weekly summary, chat tool-calling, recall, or long-term goals features existed, re-run files 2–9 above — every statement in them uses `create table if not exists` / `alter table ... add column if not exists` / `create index if not exists`, so re-running is safe and only adds the tables/columns/indexes that are missing:
 
 - `chat_conversations.sql` adds `pending_chat_actions` (tool actions the assistant proposed in chat and is waiting on explicit yes/no confirmation for).
 - `phase3_work_memory.sql` adds `period_summaries` (generated daily/weekly recaps) and the `notes.context_note_ids` column.
 - `phase4_recall.sql` adds the recall loop's state (`recall_candidates`, `recall_cards`, `review_history`, etc.), the `recall_candidates.text` column, per-note `recall_enabled`/`recall_status`, and the `entities.importance` / `tasks.due_date` scoring inputs.
 - `phase4_recall_scheduler.sql` adds the scheduler columns (`recall_cards.state`, `learning_step`) — required for reviews to work.
 - `phase4_recall_decks.sql` adds `recall_decks`, links candidates/cards to a deck, and backfills a General deck per existing user.
+- `phase4_recall_accept.sql` adds the `accept_recall_candidate` RPC used by bulk acceptance.
 - `phase4_pgvector.sql` adds the pgvector-backed retrieval index (`note_chunks`, `match_*`). After running it, backfill existing notes once with `python -m backend.scripts.backfill_pgvector`.
+- `phase5_commitments.sql` adds `user_commitments` and `commitment_contributions`. The old extracted `commitments` table is left untouched for compatibility; the product now writes only to the new user-authored tables.
 
 To confirm all tables exist, run in the SQL editor:
 
@@ -48,12 +52,13 @@ where table_schema = 'public'
     'decisions', 'risks', 'concepts', 'entities', 'memory_item_entities',
     'period_summaries',
     'note_entities', 'commitments', 'recall_candidates', 'recall_cards',
-    'review_history', 'recall_decks', 'note_chunks'
+    'review_history', 'recall_decks', 'note_chunks',
+    'user_commitments', 'commitment_contributions'
   )
 order by table_name;
 ```
 
-This should return all 23 names; any missing from the result means the corresponding `.sql` file above still needs to be run.
+This should return all 25 names; any missing from the result means the corresponding `.sql` file above still needs to be run.
 
 ### 3. Configure the backend
 

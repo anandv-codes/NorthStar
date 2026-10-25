@@ -40,11 +40,13 @@ from .llm_config import (
 def call_gemini_api(
     note_text: str,
     related_notes: list[dict[str, Any]] | None = None,
+    commitments: list[dict[str, Any]] | None = None,
 ) -> dict:
     """Extract structured memory from note text using Gemini."""
     prompt = generate_gemini_prompt(
         note_text,
         related_notes=related_notes or [],
+        commitments=commitments or [],
     )
     output_text = invoke_gemini(prompt)
 
@@ -53,13 +55,14 @@ def call_gemini_api(
     try:
         parsed_response = parse_gemini_response(output_text)
         logger.info(
-            "Gemini extraction parsed: tasks=%d facts=%d questions=%d decisions=%d risks=%d concepts=%d",
+            "Gemini extraction parsed: tasks=%d facts=%d questions=%d decisions=%d risks=%d concepts=%d contributions=%d",
             len(parsed_response.get("tasks", [])),
             len(parsed_response.get("facts", [])),
             len(parsed_response.get("questions", [])),
             len(parsed_response.get("decisions", [])),
             len(parsed_response.get("risks", [])),
             len(parsed_response.get("concepts", [])),
+            len(parsed_response.get("commitment_contributions", [])),
         )
         return parsed_response
     except Exception as exc:
@@ -126,13 +129,15 @@ def parse_gemini_response(output_text: str) -> dict:
 def generate_gemini_prompt(
     note_text: str,
     related_notes: list[dict[str, Any]] | None = None,
+    commitments: list[dict[str, Any]] | None = None,
 ) -> str:
-    """Generate the extraction prompt with note text and related notes."""
+    """Generate the extraction prompt with note text, related notes, and goals."""
     related_context = generate_related_notes_context(related_notes or [])
 
     return build_extraction_prompt(
         note_text=note_text,
         related_notes_context=related_context,
+        commitments=commitments or [],
         version=os.getenv("WORK_MEMORY_PROMPT_VERSION"),
     )
 

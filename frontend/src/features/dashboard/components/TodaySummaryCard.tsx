@@ -1,6 +1,6 @@
 import { useState } from "react";
 import clsx from "clsx";
-import { ArrowsClockwise, Sparkle } from "@phosphor-icons/react";
+import { ArrowsClockwise, Sparkle, Target } from "@phosphor-icons/react";
 import { Button } from "../../../shared/ui/Button";
 import type { PeriodSummaryStatus } from "../../../shared/api/httpClient";
 
@@ -34,6 +34,10 @@ export function TodaySummaryCard({
   const loading = tab === "daily" ? generatingDaily : generatingWeekly;
   const onGenerate = tab === "daily" ? onGenerateDaily : onGenerateWeekly;
   const hasSummary = status?.status === "ready" && status.summary;
+  const focusValue = status?.summary?.stats?.long_term_focus;
+  const focus = Array.isArray(focusValue)
+    ? focusValue.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-card">
@@ -65,7 +69,24 @@ export function TodaySummaryCard({
 
       <div role="tabpanel" aria-label={TABS.find((t) => t.key === tab)?.label}>
         {hasSummary ? (
-          <p className="mt-4 text-sm leading-relaxed text-neutral-600">{status?.summary?.narrative}</p>
+          <>
+            <p className="mt-4 text-sm leading-relaxed text-neutral-600">{status?.summary?.narrative}</p>
+            {focus.length > 0 ? (
+              <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                  <Target size={13} weight="bold" />
+                  Long-term focus
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {focus.map((goal, index) => (
+                    <li key={`${goal}-${index}`} className="text-sm leading-snug text-neutral-800">
+                      {goal}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </>
         ) : status?.status === "insufficient_data" ? (
           <p className="mt-4 text-sm text-neutral-500">
             Not enough notes yet ({status.notes_count}/{status.min_notes_required} needed). Keep capturing notes

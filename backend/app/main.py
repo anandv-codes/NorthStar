@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from .api.routes.auth import router as auth_router
 from .api.routes.chat import router as chat_router
+from .api.routes.commitments import router as commitments_router
 from .api.routes.notes import router as notes_router
 from .api.routes.memory import router as memory_router
 from .api.routes.recall import router as recall_router
@@ -136,5 +137,6 @@ app.include_router(memory_router, tags=["memory"])
 app.include_router(retrieval_router, prefix="/retrieval", tags=["retrieval"])
 app.include_router(chat_router, prefix="/chat", tags=["chat"])
 app.include_router(summaries_router, prefix="/summaries", tags=["summaries"])
+app.include_router(commitments_router, prefix="/commitments", tags=["commitments"])
 app.include_router(recall_router, prefix="/recall", tags=["recall"])
 app.include_router(auth_router)

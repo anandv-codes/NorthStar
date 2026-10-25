@@ -94,6 +94,16 @@ def test_pgvector_migration_defines_chunks_indexes_and_match_functions():
         assert f"create or replace function {function}" in text
 
 
+def test_commitments_migration_defines_user_goals_and_contributions():
+    text = (SQL_DIR / "phase5_commitments.sql").read_text(encoding="utf-8").lower()
+    assert "create table if not exists user_commitments" in text
+    assert "create table if not exists commitment_contributions" in text
+    assert "progress between 0 and 100" in text
+    assert "status in ('active', 'completed')" in text
+    assert "unique index if not exists idx_commitment_contributions_commitment_note" in text
+    assert "on delete cascade" in text
+
+
 def test_match_functions_are_user_scoped():
     text = (SQL_DIR / "phase4_pgvector.sql").read_text(encoding="utf-8").lower()
     assert text.count("match_user_id") >= 6

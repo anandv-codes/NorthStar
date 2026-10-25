@@ -10,11 +10,12 @@ from __future__ import annotations
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
+from ...infrastructure.db.commitment_repository import get_commitment_repository
 from ...infrastructure.db.memory_repository import get_memory_repository
 from ...infrastructure.db.period_summary_repository import get_period_summary_repository
 from ...infrastructure.llm.gemini_client import generate_period_summary_narrative
 from ...infrastructure.llm.llm_config import MIN_NOTES_FOR_DAILY_SUMMARY
-from ..ports import MemoryRepository, PeriodSummaryRepository
+from ..ports import CommitmentRepository, MemoryRepository, PeriodSummaryRepository
 
 MAX_HIGHLIGHT_ITEMS = 10
 MAX_HIGHLIGHT_TEXT_LENGTH = 200
@@ -44,6 +45,9 @@ Facts recorded today: {facts_count}
 Write a concise (3-6 sentence) prose recap of the day's work, highlighting what was accomplished,
 resolved, and decided. Do not invent facts beyond what's listed above. If nothing substantive
 happened, say so briefly. Write flowing prose, not bullet points.
+
+Long-term goals (background only; do not list them separately or claim progress):
+{commitments_text}
 """
 
 DEFAULT_WEEKLY_TEMPLATE = """You are an assistant that writes a short weekly recap for a user's personal work-memory app,
@@ -64,6 +68,9 @@ Aggregate stats for the week:
 Write a concise (4-8 sentence) prose recap of the week, synthesizing the daily recaps into an
 overall narrative of progress, open threads, and key decisions. Do not invent facts beyond what's
 listed above. Write flowing prose, not bullet points.
+
+Long-term goals (background only; do not list them separately or claim progress):
+{commitments_text}
 """
 
 
@@ -94,6 +101,24 @@ def _format_bullets(items: list[str]) -> str:
     if not items:
         return "(none)"
     return "\n".join(f"- {_truncate(item)}" for item in items[:MAX_HIGHLIGHT_ITEMS])
+
+
+def _load_long_term_focus(
+    user_id: str, commitment_repo: CommitmentRepository
+) -> list[str]:
+    """Return active goal text only; progress and contribution history stay out."""
+    rows = commitment_repo.query_commitments(user_id, status="active")
+    return [
+        str(row.get("text") or "").strip()
+        for row in rows
+        if str(row.get("text") or "").strip()
+    ]
+
+
+def _format_long_term_focus(focus_texts: list[str]) -> str:
+    if not focus_texts:
+        return "No active long-term goals."
+    return "\n".join(f"- {_truncate(text)}" for text in focus_texts)
 
 
 def _compute_daily_stats_and_highlights(
@@ -128,7 +153,11 @@ def _compute_daily_stats_and_highlights(
 
 
 def _build_daily_prompt(
-    day: date, notes: list[dict[str, Any]], stats: dict[str, Any], highlights: dict[str, list[str]]
+    day: date,
+    notes: list[dict[str, Any]],
+    stats: dict[str, Any],
+    highlights: dict[str, list[str]],
+    focus_texts: list[str],
 ) -> str:
     notes_lines = [
         _truncate(n.get("enriched_summary") or n.get("raw_text") or "") for n in notes[:MAX_NOTE_LINES]
@@ -145,6 +174,7 @@ def _build_daily_prompt(
         risks_opened_count=stats["risks_opened"],
         decisions_text=_format_bullets(highlights["decisions"]),
         facts_count=stats["facts_recorded"],
+        commitments_text=_format_long_term_focus(focus_texts),
     )
 
 
@@ -157,7 +187,12 @@ def _merge_stats(stats_list: list[dict[str, Any]]) -> dict[str, Any]:
     return merged
 
 
-def _build_weekly_prompt(week_start: date, week_end_inclusive: date, daily_rows: list[dict[str, Any]]) -> str:
+def _build_weekly_prompt(
+    week_start: date,
+    week_end_inclusive: date,
+    daily_rows: list[dict[str, Any]],
+    focus_texts: list[str],
+) -> str:
     merged_stats = _merge_stats([row.get("stats", {}) for row in daily_rows])
     daily_narratives_text = "\n\n".join(
         f"{row['period_start']}: {row['narrative']}" for row in daily_rows
@@ -171,6 +206,7 @@ def _build_weekly_prompt(week_start: date, week_end_inclusive: date, daily_rows:
         questions_answered=merged_stats.get("questions_answered", 0),
         risks_resolved=merged_stats.get("risks_resolved", 0),
         decisions_made=merged_stats.get("decisions_made", 0),
+        commitments_text=_format_long_term_focus(focus_texts),
     )
 
 
@@ -211,10 +247,12 @@ def generate_daily_summary(
     regenerate: bool = False,
     repo: MemoryRepository | None = None,
     summary_repo: PeriodSummaryRepository | None = None,
+    commitment_repo: CommitmentRepository | None = None,
 ) -> dict[str, Any]:
     """Generate (or return the existing) daily summary for ``day`` (defaults to today, UTC)."""
     repo = repo or get_memory_repository()
     summary_repo = summary_repo or get_period_summary_repository()
+    commitment_repo = commitment_repo or get_commitment_repository()
     day = day or _utcnow_date()
 
     existing = summary_repo.get_period_summary(user_id, "daily", day.isoformat())
@@ -239,7 +277,9 @@ def generate_daily_summary(
 
     stats, highlights = _compute_daily_stats_and_highlights(user_id, start_iso, end_iso, repo)
     stats["notes_count"] = notes_count
-    prompt = _build_daily_prompt(day, notes, stats, highlights)
+    focus_texts = _load_long_term_focus(user_id, commitment_repo)
+    stats["long_term_focus"] = focus_texts
+    prompt = _build_daily_prompt(day, notes, stats, highlights, focus_texts)
     narrative = generate_period_summary_narrative(prompt)
 
     row = summary_repo.upsert_period_summary(
@@ -296,6 +336,7 @@ def generate_weekly_summary(
     regenerate: bool = False,
     repo: MemoryRepository | None = None,
     summary_repo: PeriodSummaryRepository | None = None,
+    commitment_repo: CommitmentRepository | None = None,
 ) -> dict[str, Any]:
     """Generate (or return the existing) weekly summary for the Sunday-starting week
     containing ``any_day`` (defaults to today, UTC). Composed from that week's daily
@@ -303,6 +344,7 @@ def generate_weekly_summary(
     """
     repo = repo or get_memory_repository()
     summary_repo = summary_repo or get_period_summary_repository()
+    commitment_repo = commitment_repo or get_commitment_repository()
     today = _utcnow_date()
     week_start, week_end_exclusive = _week_bounds(any_day or today)
 
@@ -320,7 +362,14 @@ def generate_weekly_summary(
         day = week_start + timedelta(days=offset)
         if day > today:
             break
-        daily_result = generate_daily_summary(user_id, day, regenerate=False, repo=repo, summary_repo=summary_repo)
+        daily_result = generate_daily_summary(
+            user_id,
+            day,
+            regenerate=False,
+            repo=repo,
+            summary_repo=summary_repo,
+            commitment_repo=commitment_repo,
+        )
         if daily_result["status"] == "ready" and daily_result["summary"] is not None:
             daily_rows.append(daily_result["summary"])
 
@@ -336,7 +385,11 @@ def generate_weekly_summary(
     week_end_inclusive = week_end_exclusive - timedelta(days=1)
     merged_stats = _merge_stats([row.get("stats", {}) for row in daily_rows])
     merged_stats["notes_count"] = total_notes
-    prompt = _build_weekly_prompt(week_start, week_end_inclusive, daily_rows)
+    focus_texts = _load_long_term_focus(user_id, commitment_repo)
+    merged_stats["long_term_focus"] = focus_texts
+    prompt = _build_weekly_prompt(
+        week_start, week_end_inclusive, daily_rows, focus_texts
+    )
     narrative = generate_period_summary_narrative(prompt)
 
     row = summary_repo.upsert_period_summary(

@@ -109,16 +109,11 @@ class ExtractedConcept(BaseModel):
     entities: List[str] = Field(default_factory=list)
 
 
-class ExtractedCommitment(BaseModel):
-    title: str = Field(..., min_length=1)
-    due_date: Optional[date] = None
-    confidence: Optional[float] = Field(default=None, ge=0, le=1)
-    entities: List[str] = Field(default_factory=list)
+class ExtractedCommitmentContribution(BaseModel):
+    """One line describing explicit progress toward a user-authored goal."""
 
-    @field_validator("due_date", mode="before")
-    @classmethod
-    def _clean_due_date(cls, value: Any) -> Any:
-        return _extract_iso_date(value)
+    commitment_id: str = Field(..., min_length=1)
+    comment: str = Field(..., min_length=1, max_length=240)
 
 
 class WorkMemoryExtraction(BaseModel):
@@ -130,7 +125,9 @@ class WorkMemoryExtraction(BaseModel):
     risks: List[ExtractedRisk] = Field(default_factory=list)
     entities: List[ExtractedEntity] = Field(default_factory=list)
     concepts: List[ExtractedConcept] = Field(default_factory=list)
-    commitments: List[ExtractedCommitment] = Field(default_factory=list)
+    commitment_contributions: List[ExtractedCommitmentContribution] = Field(
+        default_factory=list
+    )
 
 
 class TaskUpdateRequest(BaseModel):
@@ -442,6 +439,57 @@ class UserProfileResponse(BaseModel):
     user_id: str
     email: str
     is_active: bool = True
+
+
+# ---------------------------------------------------------------------------
+# User-authored long-term commitments (Phase 5)
+# ---------------------------------------------------------------------------
+
+UserCommitmentStatus = Literal["active", "completed"]
+
+
+class UserCommitmentCreateRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=200)
+
+
+class UserCommitmentUpdateRequest(BaseModel):
+    text: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    progress: Optional[int] = Field(default=None, ge=0, le=100)
+    status: Optional[Literal["completed"]] = None
+
+
+class CommitmentContributionUpdateRequest(BaseModel):
+    comment: str = Field(..., min_length=1, max_length=240)
+
+
+class CommitmentContributionResponse(BaseModel):
+    contribution_id: str
+    commitment_id: str
+    note_id: str
+    comment: str
+    created_at: datetime
+    updated_at: datetime
+    edited_at: Optional[datetime] = None
+    source_note_created_at: Optional[datetime] = None
+    source_note_excerpt: Optional[str] = None
+
+
+class UserCommitmentResponse(BaseModel):
+    commitment_id: str
+    user_id: str
+    text: str
+    progress: int = Field(..., ge=0, le=100)
+    status: UserCommitmentStatus
+    contribution_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+    completed_at: Optional[datetime] = None
+
+
+class UserCommitmentListResponse(BaseModel):
+    commitments: List[UserCommitmentResponse] = Field(default_factory=list)
+    active_count: int = 0
+    max_active: int = 3
 
 
 # ---------------------------------------------------------------------------
