@@ -8,6 +8,10 @@ from ...schemas.models import (
     RecallBulkAcceptRequest,
     RecallBulkAcceptResponse,
     RecallBulkDeckAssignRequest,
+    RecallBulkRejectRequest,
+    RecallBulkRejectResponse,
+    RecallBulkRestoreRequest,
+    RecallBulkRestoreResponse,
     RecallCardBulkUpdateRequest,
     RecallCardListResponse,
     RecallCardUpdateRequest,
@@ -49,6 +53,8 @@ from ...domain.recall.review_service import (
     accept_candidate,
     accept_candidates,
     reject_candidate,
+    reject_candidates,
+    restore_candidates,
     review_card,
     update_suggestion,
 )
@@ -284,6 +290,72 @@ def post_generate_candidate_answer(
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
     return _to_suggestion(row)
+
+
+@router.post(
+    "/candidates/reject-batch",
+    response_model=RecallBulkRejectResponse,
+    responses={
+        207: {
+            "model": RecallBulkRejectResponse,
+            "description": "At least one candidate failed; results contains every outcome",
+        }
+    },
+)
+def post_reject_candidates(
+    payload: RecallBulkRejectRequest,
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Reject candidates in one bulk read, returning per-candidate outcomes."""
+    repo = get_recall_repository()
+    candidate_ids = list(dict.fromkeys(payload.candidate_ids))
+    candidates = {
+        row["candidate_id"]: row
+        for row in repo.get_candidates_by_ids(user_id, candidate_ids)
+    }
+    result = reject_candidates(
+        user_id,
+        candidate_ids,
+        repo=repo,
+        candidates=candidates,
+    )
+    if result["failed"]:
+        response.status_code = 207
+    return RecallBulkRejectResponse(**result)
+
+
+@router.post(
+    "/candidates/restore-batch",
+    response_model=RecallBulkRestoreResponse,
+    responses={
+        207: {
+            "model": RecallBulkRestoreResponse,
+            "description": "At least one candidate failed; results contains every outcome",
+        }
+    },
+)
+def post_restore_candidates(
+    payload: RecallBulkRestoreRequest,
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Restore rejected candidates in one bulk read, returning per-candidate outcomes."""
+    repo = get_recall_repository()
+    candidate_ids = list(dict.fromkeys(payload.candidate_ids))
+    candidates = {
+        row["candidate_id"]: row
+        for row in repo.get_candidates_by_ids(user_id, candidate_ids)
+    }
+    result = restore_candidates(
+        user_id,
+        candidate_ids,
+        repo=repo,
+        candidates=candidates,
+    )
+    if result["failed"]:
+        response.status_code = 207
+    return RecallBulkRestoreResponse(**result)
 
 
 @router.post("/candidates/{candidate_id}/reject", response_model=RecallDecisionResponse)

@@ -28,7 +28,7 @@ export function DeckPicker({
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       <label
         htmlFor={id}
-        className={compact ? "text-[11px] font-semibold uppercase tracking-wide text-neutral-400" : "text-xs font-semibold text-neutral-600"}
+        className={compact ? "text-[11px] font-semibold uppercase tracking-wide text-neutral-400" : "text-xs font-semibold text-neutral-700"}
       >
         {label}
       </label>
@@ -40,7 +40,7 @@ export function DeckPicker({
         className={
           compact
             ? "max-w-[11rem] cursor-pointer truncate rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-medium text-neutral-700 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
-            : "cursor-pointer rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+            : "min-w-[12rem] flex-1 cursor-pointer rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         }
       >
         {value == null ? <option value="">Choose a deck</option> : null}

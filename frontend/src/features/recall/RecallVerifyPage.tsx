@@ -7,6 +7,7 @@ import {
   NotePencil,
   Spinner,
   Stack,
+  X,
 } from "@phosphor-icons/react";
 import {
   acceptSuggestion,
@@ -16,6 +17,8 @@ import {
   fetchSuggestions,
   getNoteStatus,
   rejectSuggestion,
+  rejectSuggestions,
+  restoreSuggestions,
   revealSuggestionAnswer,
   updateSuggestion,
   type NoteStatus,
@@ -54,6 +57,13 @@ export function RecallVerifyPage() {
   const [bulkDeckId, setBulkDeckId] = useState("");
   const [bulkAssigning, setBulkAssigning] = useState(false);
   const [bulkAccepting, setBulkAccepting] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const [selectionWarning, setSelectionWarning] = useState<string | null>(null);
+  const [undoNotice, setUndoNotice] = useState<{
+    candidateIds: string[];
+    message: string;
+  } | null>(null);
+  const [undoBusy, setUndoBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -152,15 +162,28 @@ export function RecallVerifyPage() {
     };
   }, [noteId, loadSuggestions, notePollNonce]);
 
+  useEffect(() => {
+    if (!undoNotice) return;
+    const timer = setTimeout(() => setUndoNotice(null), 10_000);
+    return () => clearTimeout(timer);
+  }, [undoNotice]);
+
   const fallbackDeckId = preferredDeckId || decks.find((deck) => deck.is_default)?.deck_id || "";
 
-  const removeSuggestion = (candidateId: string) => {
-    setSuggestions((current) => current.filter((item) => item.candidate_id !== candidateId));
+  const removeSuggestions = (candidateIds: Set<string>) => {
+    if (candidateIds.size === 0) return;
+    setSuggestions((current) =>
+      current.filter((item) => !candidateIds.has(item.candidate_id)),
+    );
     setSelectedIds((current) => {
       const next = new Set(current);
-      next.delete(candidateId);
+      candidateIds.forEach((candidateId) => next.delete(candidateId));
       return next;
     });
+  };
+
+  const removeSuggestion = (candidateId: string) => {
+    removeSuggestions(new Set([candidateId]));
   };
 
   const handleAccept = async (suggestion: RecallSuggestion) => {
@@ -184,6 +207,10 @@ export function RecallVerifyPage() {
     try {
       await rejectSuggestion(suggestion.candidate_id);
       removeSuggestion(suggestion.candidate_id);
+      setUndoNotice({
+        candidateIds: [suggestion.candidate_id],
+        message: "Card skipped.",
+      });
       void refreshNote();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't skip that question.");
@@ -235,6 +262,7 @@ export function RecallVerifyPage() {
   };
 
   const handleSelect = (candidateId: string, selected: boolean) => {
+    setSelectionWarning(null);
     setSelectedIds((current) => {
       const next = new Set(current);
       if (selected) next.add(candidateId);
@@ -247,6 +275,7 @@ export function RecallVerifyPage() {
     suggestions.length > 0 && suggestions.every((item) => selectedIds.has(item.candidate_id));
 
   const handleSelectAll = (selected: boolean) => {
+    setSelectionWarning(null);
     setSelectedIds(selected ? new Set(suggestions.map((item) => item.candidate_id)) : new Set());
   };
 
@@ -268,20 +297,19 @@ export function RecallVerifyPage() {
 
   const handleBulkAccept = async () => {
     const candidateIds = Array.from(selectedIds);
-    if (candidateIds.length === 0) return;
+    if (candidateIds.length === 0) {
+      setSelectionWarning("No recall card selected. Select at least one card before adding.");
+      return;
+    }
+    setSelectionWarning(null);
     setBulkAccepting(true);
     setError(null);
     try {
-      const result = await acceptSuggestions(candidateIds, bulkDeckId || null);
+      const result = await acceptSuggestions(candidateIds, null);
       const acceptedIds = new Set(
         result.results.filter((item) => item.status === "carded").map((item) => item.candidate_id),
       );
-      setSuggestions((current) => current.filter((item) => !acceptedIds.has(item.candidate_id)));
-      setSelectedIds((current) => {
-        const next = new Set(current);
-        acceptedIds.forEach((candidateId) => next.delete(candidateId));
-        return next;
-      });
+      removeSuggestions(acceptedIds);
       if (acceptedIds.size > 0) {
         void refreshNote();
       }
@@ -297,6 +325,114 @@ export function RecallVerifyPage() {
       setError(err instanceof Error ? err.message : "Couldn't add the selected questions.");
     } finally {
       setBulkAccepting(false);
+    }
+  };
+
+  const handleFinishReview = async () => {
+    const candidateIds = Array.from(selectedIds);
+    const hasSelection = candidateIds.length > 0;
+    const unselectedIds = suggestions
+      .filter((item) => !selectedIds.has(item.candidate_id))
+      .map((item) => item.candidate_id);
+
+    if (hasSelection) {
+      setSelectionWarning(null);
+    } else {
+      setSelectionWarning("No recall card selected. Discarding all remaining cards.");
+    }
+
+    setFinishing(true);
+    setError(null);
+    try {
+      if (hasSelection) {
+        const acceptResult = await acceptSuggestions(candidateIds, null);
+        const acceptedIds = new Set(
+          acceptResult.results
+            .filter((item) => item.status === "carded")
+            .map((item) => item.candidate_id),
+        );
+        removeSuggestions(acceptedIds);
+        if (acceptedIds.size > 0) {
+          void refreshNote();
+        }
+
+        if (acceptResult.failed > 0) {
+          const firstError = acceptResult.results.find((item) => item.error)?.error;
+          setError(
+            `${acceptResult.failed} selected question${
+              acceptResult.failed === 1 ? "" : "s"
+            } couldn't be added${firstError ? `: ${firstError}` : "."} Nothing was discarded, so you can retry.`,
+          );
+          return;
+        }
+      }
+
+      if (unselectedIds.length === 0) return;
+
+      const rejectResult = await rejectSuggestions(unselectedIds);
+      const rejectedIds = new Set(
+        rejectResult.results
+          .filter((item) => item.status === "rejected")
+          .map((item) => item.candidate_id),
+      );
+      removeSuggestions(rejectedIds);
+
+      if (rejectedIds.size > 0) {
+        setUndoNotice({
+          candidateIds: Array.from(rejectedIds),
+          message: `${rejectedIds.size} card${rejectedIds.size === 1 ? "" : "s"} discarded.`,
+        });
+      }
+
+      if (rejectResult.failed > 0) {
+        const firstError = rejectResult.results.find((item) => item.error)?.error;
+        setError(
+          `${rejectResult.failed} unselected card${
+            rejectResult.failed === 1 ? "" : "s"
+          } couldn't be discarded${firstError ? `: ${firstError}` : "."}`,
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't finish the review.");
+    } finally {
+      setFinishing(false);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!undoNotice || undoBusy) return;
+    setUndoBusy(true);
+    setError(null);
+    try {
+      const result = await restoreSuggestions(undoNotice.candidateIds);
+      const failedIds = result.results
+        .filter((item) => item.status === "failed")
+        .map((item) => item.candidate_id);
+
+      if (result.restored > 0) {
+        setSelectionWarning(null);
+        await loadSuggestions();
+        void refreshNote();
+      }
+
+      if (failedIds.length > 0) {
+        const firstError = result.results.find((item) => item.error)?.error;
+        setUndoNotice({
+          candidateIds: failedIds,
+          message: `${failedIds.length} card${
+            failedIds.length === 1 ? "" : "s"
+          } couldn't be restored.`,
+        });
+        setError(
+          `Some cards couldn't be restored${firstError ? `: ${firstError}` : "."}`,
+        );
+      } else {
+        setUndoNotice(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't restore those cards.");
+    } finally {
+      setUndoBusy(false);
     }
   };
 
@@ -343,7 +479,7 @@ export function RecallVerifyPage() {
               Verify questions
             </h1>
             <p className="mt-0.5 max-w-lg text-sm text-neutral-500">
-              Check each question, reveal its answer, and file it into the right deck.
+              Tick the cards worth keeping, choose their decks, then finish to discard the rest.
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
@@ -426,21 +562,36 @@ export function RecallVerifyPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-3 shadow-card">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-neutral-600">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={(event) => handleSelectAll(event.target.checked)}
-                  className="h-4 w-4 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950"
-                />
-                Select all
-              </label>
-              <Button size="sm" disabled={selectedIds.size === 0 || bulkAccepting} onClick={() => void handleBulkAccept()}>
-                {bulkAccepting ? "Adding…" : `Add selected (${selectedIds.size})`}
-              </Button>
+          <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-card">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-700">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(event) => handleSelectAll(event.target.checked)}
+                    className="h-4 w-4 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950"
+                  />
+                  Select all
+                </label>
+                <p className="mt-1 max-w-md text-xs leading-relaxed text-neutral-500">
+                  Tick the cards you want to keep. You can finish without reviewing every card.
+                </p>
+              </div>
+              <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
+                {selectedIds.size} selected
+              </span>
             </div>
+
+            {selectionWarning ? (
+              <p
+                role="alert"
+                className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800"
+              >
+                {selectionWarning}
+              </p>
+            ) : null}
+
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-3">
               <DeckPicker
                 decks={decks}
@@ -448,7 +599,7 @@ export function RecallVerifyPage() {
                 onChange={setBulkDeckId}
                 onCreate={() => setFormOpen(true)}
                 disabled={bulkAssigning}
-                label="File selected under"
+                label="Move selected to"
               />
               <Button
                 size="sm"
@@ -458,6 +609,33 @@ export function RecallVerifyPage() {
               >
                 {bulkAssigning ? "Assigning…" : "Assign deck"}
               </Button>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-neutral-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs leading-relaxed text-neutral-500">
+                {selectedIds.size === 0
+                  ? "No recall card selected. Finishing will discard all remaining cards."
+                  : `Keeps ${selectedIds.size} selected and discards ${
+                      suggestions.length - selectedIds.size
+                    } unselected.`}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={selectedIds.size === 0 || bulkAccepting || finishing}
+                  onClick={() => void handleBulkAccept()}
+                >
+                  {bulkAccepting ? "Adding…" : `Add selected (${selectedIds.size})`}
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={bulkAccepting || bulkAssigning || finishing}
+                  onClick={() => void handleFinishReview()}
+                >
+                  {finishing ? "Finishing…" : "Finish review"}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -492,6 +670,35 @@ export function RecallVerifyPage() {
           </button>
         </div>
       )}
+
+      {undoNotice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-lg items-center justify-between gap-4 rounded-xl bg-neutral-950 px-4 py-3 text-sm text-white shadow-soft"
+        >
+          <span className="min-w-0">{undoNotice.message}</span>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => void handleUndo()}
+              disabled={undoBusy}
+              className="inline-flex h-8 items-center justify-center rounded-lg px-2 text-sm font-semibold text-white underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60"
+            >
+              {undoBusy ? "Restoring…" : "Undo"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setUndoNotice(null)}
+              aria-label="Dismiss undo message"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/10 hover:text-white"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <DeckFormModal
         open={formOpen}

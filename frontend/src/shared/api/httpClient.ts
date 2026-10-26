@@ -317,6 +317,30 @@ export interface RecallBulkAcceptResponse {
   results: RecallBulkAcceptItem[];
 }
 
+export interface RecallBulkRejectItem {
+  candidate_id: string;
+  status: string;
+  error?: string | null;
+}
+
+export interface RecallBulkRejectResponse {
+  rejected: number;
+  failed: number;
+  results: RecallBulkRejectItem[];
+}
+
+export interface RecallBulkRestoreItem {
+  candidate_id: string;
+  status: string;
+  error?: string | null;
+}
+
+export interface RecallBulkRestoreResponse {
+  restored: number;
+  failed: number;
+  results: RecallBulkRestoreItem[];
+}
+
 export interface RecallCard {
   card_id: string;
   user_id: string;
@@ -586,7 +610,9 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   }
   const response = await fetch(url, { ...init, headers });
 
-  if (!response.ok) {
+  // 207 Multi-Status is a successful response whose body carries per-item
+  // outcomes (for example, a partially failed batch).
+  if (!response.ok && response.status !== 207) {
     if (response.status === 401) {
       // Stateless JWT: there is nothing to refresh, so drop the expired token
       // and let the auth context send the user back to /login.
@@ -1121,14 +1147,75 @@ export async function updateSuggestion(candidateId: string, payload: RecallSugge
   );
 }
 
+const ACCEPT_BATCH_LIMIT = 100;
+
 export async function acceptSuggestions(candidateIds: string[], deckId?: string | null) {
-  if (MOCK_MODE) {
-    return (await loadMockApi()).acceptSuggestions(candidateIds, deckId) as Promise<RecallBulkAcceptResponse>;
+  const uniqueIds = Array.from(new Set(candidateIds));
+
+  const send = async (ids: string[]) => {
+    if (MOCK_MODE) {
+      return (await loadMockApi()).acceptSuggestions(ids, deckId) as Promise<RecallBulkAcceptResponse>;
+    }
+    return requestJson<RecallBulkAcceptResponse>(`${BASE_URL}/recall/candidates/accept-batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ candidate_ids: ids, deck_id: deckId ?? null }),
+    });
+  };
+
+  if (uniqueIds.length <= ACCEPT_BATCH_LIMIT) {
+    return send(uniqueIds);
   }
-  return requestJson<RecallBulkAcceptResponse>(`${BASE_URL}/recall/candidates/accept-batch`, {
+
+  const combined: RecallBulkAcceptResponse = { accepted: 0, failed: 0, results: [] };
+  for (let start = 0; start < uniqueIds.length; start += ACCEPT_BATCH_LIMIT) {
+    const chunk = uniqueIds.slice(start, start + ACCEPT_BATCH_LIMIT);
+    const result = await send(chunk);
+    combined.accepted += result.accepted;
+    combined.failed += result.failed;
+    combined.results.push(...result.results);
+  }
+  return combined;
+}
+
+export async function rejectSuggestions(candidateIds: string[]) {
+  if (MOCK_MODE) {
+    const api = await loadMockApi();
+    if (typeof api.rejectSuggestions === "function") {
+      return api.rejectSuggestions(candidateIds) as Promise<RecallBulkRejectResponse>;
+    }
+    const results = await Promise.all(
+      candidateIds.map((candidateId) => api.rejectSuggestion(candidateId)),
+    );
+    return {
+      rejected: results.length,
+      failed: 0,
+      results: results.map((item: RecallDecisionResponse) => ({
+        candidate_id: item.candidate_id,
+        status: item.status,
+        error: null,
+      })),
+    } as RecallBulkRejectResponse;
+  }
+  return requestJson<RecallBulkRejectResponse>(`${BASE_URL}/recall/candidates/reject-batch`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ candidate_ids: candidateIds, deck_id: deckId ?? null }),
+    body: JSON.stringify({ candidate_ids: candidateIds }),
+  });
+}
+
+export async function restoreSuggestions(candidateIds: string[]) {
+  if (MOCK_MODE) {
+    const api = await loadMockApi();
+    if (typeof api.restoreSuggestions === "function") {
+      return api.restoreSuggestions(candidateIds) as Promise<RecallBulkRestoreResponse>;
+    }
+    throw new Error("Undo is not available in mock mode.");
+  }
+  return requestJson<RecallBulkRestoreResponse>(`${BASE_URL}/recall/candidates/restore-batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ candidate_ids: candidateIds }),
   });
 }
 

@@ -9,6 +9,9 @@ from backend.app.domain.recall.review_service import (
     due_cards,
     list_suggestions,
     reject_candidate,
+    reject_candidates,
+    restore_candidate,
+    restore_candidates,
     review_card,
     update_suggestion,
 )
@@ -115,6 +118,75 @@ def test_reject_candidate_marks_rejected():
     result = reject_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
     assert result["status"] == "rejected"
     assert repo.get_candidate("user-1", candidate["candidate_id"])["status"] == "rejected"
+
+
+def test_reject_candidates_returns_per_candidate_outcomes():
+    repo = InMemoryRecallRepository()
+    first = _suggested_candidate(repo, text="first")
+    second = _suggested_candidate(repo, text="second")
+
+    result = reject_candidates(
+        "user-1",
+        [first["candidate_id"], "missing", second["candidate_id"]],
+        repo=repo,
+        now=NOW,
+    )
+
+    assert result["rejected"] == 2
+    assert result["failed"] == 1
+    assert repo.get_candidate("user-1", first["candidate_id"])["status"] == "rejected"
+    assert repo.get_candidate("user-1", second["candidate_id"])["status"] == "rejected"
+
+
+def test_restore_candidate_undoes_rejection():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+    reject_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
+
+    result = restore_candidate(
+        "user-1",
+        candidate["candidate_id"],
+        repo=repo,
+        now=NOW,
+    )
+
+    assert result["status"] == "suggested"
+    restored = repo.get_candidate("user-1", candidate["candidate_id"])
+    assert restored["status"] == "suggested"
+    assert restored["decided_at"] is None
+
+
+def test_restore_candidates_returns_per_candidate_outcomes():
+    repo = InMemoryRecallRepository()
+    first = _suggested_candidate(repo, text="first")
+    second = _suggested_candidate(repo, text="second")
+    reject_candidates(
+        "user-1",
+        [first["candidate_id"], second["candidate_id"]],
+        repo=repo,
+        now=NOW,
+    )
+
+    result = restore_candidates(
+        "user-1",
+        [first["candidate_id"], "missing"],
+        repo=repo,
+        now=NOW,
+    )
+
+    assert result["restored"] == 1
+    assert result["failed"] == 1
+    assert repo.get_candidate("user-1", first["candidate_id"])["status"] == "suggested"
+    assert repo.get_candidate("user-1", second["candidate_id"])["status"] == "rejected"
+
+
+def test_restore_candidate_refuses_carded_candidates():
+    repo = InMemoryRecallRepository()
+    candidate = _suggested_candidate(repo)
+    accept_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
+
+    with pytest.raises(ValueError, match="candidate_not_restorable"):
+        restore_candidate("user-1", candidate["candidate_id"], repo=repo, now=NOW)
 
 
 def test_review_card_persists_state_and_history():

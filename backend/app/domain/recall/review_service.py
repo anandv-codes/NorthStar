@@ -196,16 +196,143 @@ def update_suggestion(
 
 
 def reject_candidate(
-    user_id: str, candidate_id: str, *, repo: Any, now: datetime | None = None
+    user_id: str,
+    candidate_id: str,
+    *,
+    repo: Any,
+    now: datetime | None = None,
+    candidate: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     now = now or SystemClock().now()
-    candidate = repo.get_candidate(user_id, candidate_id)
+    candidate = candidate or repo.get_candidate(user_id, candidate_id)
     if candidate is None:
         raise LookupError("candidate_not_found")
     updated = repo.update_candidate(
         user_id, candidate_id, {"status": "rejected", "decided_at": now.isoformat()}
     )
     return {"status": "rejected", "candidate": updated or candidate}
+
+
+def reject_candidates(
+    user_id: str,
+    candidate_ids: list[str],
+    *,
+    repo: Any,
+    now: datetime | None = None,
+    candidates: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Reject multiple suggestions, returning one outcome per candidate."""
+    now = now or SystemClock().now()
+    results: list[dict[str, Any]] = []
+    rejected = 0
+    failed = 0
+
+    for candidate_id in candidate_ids:
+        candidate = (candidates or {}).get(candidate_id)
+        if candidates is not None and candidate is None:
+            failed += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "failed", "error": "candidate_not_found"}
+            )
+            continue
+        try:
+            reject_candidate(
+                user_id,
+                candidate_id,
+                repo=repo,
+                now=now,
+                candidate=candidate,
+            )
+        except LookupError:
+            failed += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "failed", "error": "candidate_not_found"}
+            )
+        else:
+            rejected += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "rejected", "error": None}
+            )
+
+    return {"rejected": rejected, "failed": failed, "results": results}
+
+
+def restore_candidate(
+    user_id: str,
+    candidate_id: str,
+    *,
+    repo: Any,
+    now: datetime | None = None,
+    candidate: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Undo a rejection by returning a suggestion to the review queue."""
+    now = now or SystemClock().now()
+    candidate = candidate or repo.get_candidate(user_id, candidate_id)
+    if candidate is None:
+        raise LookupError("candidate_not_found")
+    if candidate.get("status") == "suggested":
+        return {"status": "suggested", "candidate": candidate}
+    if candidate.get("status") != "rejected":
+        raise ValueError("candidate_not_restorable")
+
+    updated = repo.update_candidate_if_status(
+        user_id,
+        candidate_id,
+        "rejected",
+        {"status": "suggested", "decided_at": None, "updated_at": now.isoformat()},
+    )
+    if not updated:
+        raise ValueError("candidate_not_restorable")
+    return {"status": "suggested", "candidate": updated}
+
+
+def restore_candidates(
+    user_id: str,
+    candidate_ids: list[str],
+    *,
+    repo: Any,
+    now: datetime | None = None,
+    candidates: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Restore multiple rejected suggestions, one outcome per candidate."""
+    now = now or SystemClock().now()
+    results: list[dict[str, Any]] = []
+    restored = 0
+    failed = 0
+
+    for candidate_id in candidate_ids:
+        candidate = (candidates or {}).get(candidate_id)
+        if candidates is not None and candidate is None:
+            failed += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "failed", "error": "candidate_not_found"}
+            )
+            continue
+        try:
+            restore_candidate(
+                user_id,
+                candidate_id,
+                repo=repo,
+                now=now,
+                candidate=candidate,
+            )
+        except LookupError:
+            failed += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "failed", "error": "candidate_not_found"}
+            )
+        except ValueError:
+            failed += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "failed", "error": "candidate_not_restorable"}
+            )
+        else:
+            restored += 1
+            results.append(
+                {"candidate_id": candidate_id, "status": "suggested", "error": None}
+            )
+
+    return {"restored": restored, "failed": failed, "results": results}
 
 
 def review_card(

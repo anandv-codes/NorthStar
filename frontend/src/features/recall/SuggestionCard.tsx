@@ -122,7 +122,11 @@ export function SuggestionCard({
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-card">
+    <div
+      className={`rounded-2xl border bg-white p-5 shadow-card transition-colors ${
+        selected ? "border-neutral-950 ring-1 ring-neutral-950/10" : "border-neutral-200"
+      }`}
+    >
       <div className="flex items-start gap-3">
         <label className="mt-1 inline-flex shrink-0 cursor-pointer items-center">
           <input
@@ -153,14 +157,14 @@ export function SuggestionCard({
             ) : null}
           </div>
 
-          <div className="mt-2">
+          <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3">
             <DeckPicker
               decks={decks}
               value={deckValue ?? suggestion.deck_id ?? null}
               onChange={onDeckChange}
               onCreate={onCreateDeck}
               disabled={busy}
-              compact
+              label="File this card under"
             />
           </div>
 

@@ -712,6 +712,38 @@ class RecallBulkAcceptResponse(BaseModel):
     results: List[RecallBulkAcceptItem] = Field(default_factory=list)
 
 
+class RecallBulkRejectRequest(BaseModel):
+    candidate_ids: List[str] = Field(..., min_length=1, max_length=200)
+
+
+class RecallBulkRejectItem(BaseModel):
+    candidate_id: str
+    status: str
+    error: Optional[str] = None
+
+
+class RecallBulkRejectResponse(BaseModel):
+    rejected: int = 0
+    failed: int = 0
+    results: List[RecallBulkRejectItem] = Field(default_factory=list)
+
+
+class RecallBulkRestoreRequest(BaseModel):
+    candidate_ids: List[str] = Field(..., min_length=1, max_length=200)
+
+
+class RecallBulkRestoreItem(BaseModel):
+    candidate_id: str
+    status: str
+    error: Optional[str] = None
+
+
+class RecallBulkRestoreResponse(BaseModel):
+    restored: int = 0
+    failed: int = 0
+    results: List[RecallBulkRestoreItem] = Field(default_factory=list)
+
+
 class NoteRecallToggleRequest(BaseModel):
     enabled: bool
 
