@@ -200,6 +200,13 @@ export function NoteDetailPanel({ noteId }: NoteDetailPanelProps) {
         </h2>
       </header>
 
+      {note.status === "failed" && note.index_error ? (
+        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <p className="text-xs font-semibold text-red-800">Indexing failed</p>
+          <p className="mt-1 text-xs text-red-700">{note.index_error}</p>
+        </div>
+      ) : null}
+
       <div className="mt-5 rounded-2xl border border-neutral-200 bg-white p-5 shadow-card">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -381,7 +388,7 @@ export function NoteDetailPanel({ noteId }: NoteDetailPanelProps) {
             <NotePencil size={20} className="mx-auto text-neutral-400" />
             <p className="mt-2 text-sm font-medium text-neutral-700">No memory extracted yet</p>
             <p className="mt-1 text-xs text-neutral-500">
-              {note.status === "processing"
+              {note.status === "processing" || note.status === "enriched"
                 ? "NorthStar is still processing this note."
                 : "There were no tasks, questions, decisions, or concepts to pull out."}
             </p>

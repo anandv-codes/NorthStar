@@ -26,10 +26,12 @@ class NoteCreateRequest(BaseModel):
         description="Generate recall questions for this note when it is processed",
     )
 
+NoteStatus = Literal["processing", "enriched", "indexed", "failed"]
+
 class NoteStatusResponse(BaseModel):
     note_id: str
     user_id: str
-    status: str
+    status: NoteStatus
     created_at: datetime
     raw_text: str
     enriched_summary: Optional[str] = None
@@ -40,6 +42,14 @@ class NoteStatusResponse(BaseModel):
     concepts: Optional[List[str]] = None
     recall_enabled: bool = False
     recall_status: str = "off"
+    indexed_at: Optional[datetime] = Field(
+        default=None,
+        description="When vector indexing finished; set only for status=indexed",
+    )
+    index_error: Optional[str] = Field(
+        default=None,
+        description="Why vector indexing failed; set only for status=failed",
+    )
 
 class NoteListResponse(BaseModel):
     notes: List[NoteStatusResponse] = Field(default_factory=list)

@@ -246,7 +246,7 @@ def toggle_note_recall(
         payload.enabled
         and recall_status == "ready"
         and suggestions_total == 0
-        and note.get("status") != "completed"
+        and note.get("status") != "indexed"
     ):
         recall_status = "pending"
     if payload.enabled:

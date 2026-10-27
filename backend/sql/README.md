@@ -19,6 +19,7 @@ Apply in this exact order on a fresh database:
 | 7 | `phase4_recall_accept.sql` | `accept_recall_candidate` RPC: atomic, idempotent accept |
 | 8 | `phase4_pgvector.sql` | `vector` extension, `note_chunks`, embedding columns, `match_*` RPCs |
 | 9 | `phase5_commitments.sql` | `user_commitments`, `commitment_contributions` (user-authored long-term goals) |
+| 10 | `phase6_note_status.sql` | one note-status vocabulary (`processing`/`enriched`/`indexed`/`failed`), `indexed_at`, `index_error`, and a `CHECK` constraint |
 
 ## Option A — Supabase SQL editor
 

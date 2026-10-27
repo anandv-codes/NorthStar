@@ -28,6 +28,7 @@ from ..domain.memory.extraction_v2 import (
     entity_importance_delta,
     task_rows_with_scoring,
 )
+from ..domain.memory.note_status import validate_note_status_transition
 from ..domain.recall.candidate_service import generate_candidates
 from ..domain.recall.question_service import build_context, generate_questions
 from ..infrastructure.db.commitment_repository import get_commitment_repository
@@ -57,6 +58,34 @@ class _StageTimer:
         return round(sum(self.timings.values()), 1)
 
 
+def _finalize_note(
+    *,
+    user_id: str,
+    note_id: str,
+    status: str,
+    recall_status: str,
+    indexed_at: str | None = None,
+    index_error: str | None = None,
+) -> None:
+    """Write the terminal status without failing an already-processed note.
+
+    Best-effort on purpose: the typed memories and vectors are already
+    persisted, so a status-write hiccup should be logged rather than trigger a
+    full SQS redelivery (which would re-run the LLM).
+    """
+    payload: dict[str, object] = {"status": status, "recall_status": recall_status}
+    if indexed_at:
+        payload["indexed_at"] = indexed_at
+    if index_error:
+        payload["index_error"] = index_error
+    try:
+        update_note_item(user_id, note_id, payload)
+    except Exception as exc:
+        logger.warning(
+            f"Could not persist terminal status {status} for note {note_id}: {exc}"
+        )
+
+
 def process_sqs_message(body:dict)-> dict:
     ##Extract data & call Gemini
     ##DB update & return success
@@ -80,6 +109,13 @@ def process_sqs_message(body:dict)-> dict:
             note_row = {}
         recall_enabled = bool(note_row.get("recall_enabled", False))
         recall_status = "off"
+        note_status = str(note_row.get("status") or "processing")
+        # A redelivered job re-enters the lifecycle instead of jumping straight
+        # from `failed` to `enriched`, which the state machine rejects.
+        if note_status == "failed":
+            validate_note_status_transition(note_status, "processing")
+            update_note_item(user_id, note_id, {"status": "processing", "index_error": None})
+            note_status = "processing"
         logger.info(f"Recall generation enabled: {recall_enabled} for note {note_id}")
 
         # Fetch related notes from the hybrid retriever (BM25 + dense + RRF).
@@ -139,10 +175,12 @@ def process_sqs_message(body:dict)-> dict:
                 seen.add(nid)
 
         metadata_projection = build_note_metadata(enrichment_res)
+        # Extraction is persisted from here on, so the note is `enriched`.
+        # It is not retrievable until `index_note` below succeeds.
+        validate_note_status_transition(note_status, "enriched")
+        note_status = "enriched"
         updates = {
-            # The note stays "processing" until the end of the pipeline, so
-            # "completed" always implies recall questions are ready (when enabled).
-            "status": "processing",
+            "status": "enriched",
             "recall_status": "pending" if recall_enabled else "off",
             "enriched_summary": enrichment_res.get("summary", ""),
             "context_note_ids": context_note_ids_dedup,
@@ -309,16 +347,13 @@ def process_sqs_message(body:dict)-> dict:
             recall_status = "failed" if recall_enabled else "off"
             logger.warning(f"Candidate/question generation failed; continuing: {exc}")
 
-        # Finalize the note: "completed" only once question generation has
-        # finished (or failed). Always set it here rather than before inserts so
-        # a toggle racing with processing can rely on the status.
+        # Persist recall state now, but leave the note non-terminal: it is not
+        # retrievable until `index_note` below succeeds.
         try:
-            update_note_item(
-                user_id, note_id, {"status": "completed", "recall_status": recall_status}
-            )
+            update_note_item(user_id, note_id, {"recall_status": recall_status})
         except Exception as exc:
-            logger.warning(f"Could not finalize note recall status: {exc}")
-        timer.mark("finalize")
+            logger.warning(f"Could not persist recall status: {exc}")
+        timer.mark("recall_status")
 
         resolution = apply_deterministic_task_resolution(
             user_id=user_id,
@@ -338,7 +373,9 @@ def process_sqs_message(body:dict)-> dict:
 
         # RAG is always enabled: chunk + embed the note and index it in
         # pgvector for future retrieval. Done last so failed enrichment does
-        # not pollute the index.
+        # not pollute the index. This is the step that makes the note
+        # retrievable, so it also decides the terminal status: swallowing this
+        # error used to leave a "completed" note retrieval could never find.
         try:
             chunk_count = index_note(
                 user_id=user_id,
@@ -347,7 +384,26 @@ def process_sqs_message(body:dict)-> dict:
             )
             logger.info(f"Indexed {chunk_count} chunk(s) for note {note_id}")
         except Exception as exc:
-            logger.warning(f"Vector indexing failed; note stored without embeddings: {exc}")
+            logger.warning(f"Vector indexing failed; marking note failed: {exc}")
+            validate_note_status_transition(note_status, "failed")
+            note_status = "failed"
+            _finalize_note(
+                user_id=user_id,
+                note_id=note_id,
+                status="failed",
+                recall_status=recall_status,
+                index_error=str(exc)[:500],
+            )
+        else:
+            validate_note_status_transition(note_status, "indexed")
+            note_status = "indexed"
+            _finalize_note(
+                user_id=user_id,
+                note_id=note_id,
+                status="indexed",
+                recall_status=recall_status,
+                indexed_at=datetime.now(timezone.utc).isoformat(),
+            )
         timer.mark("indexing")
 
         logger.info(
@@ -358,8 +414,9 @@ def process_sqs_message(body:dict)-> dict:
         )
 
         return {
-            "success": True,
+            "success": note_status == "indexed",
             "note_id": note_id,
+            "status": note_status,
         }
     except Exception as e:
         logger.exception(f"Note processing failed for note_id={body.get('note_id')} user_id={body.get('user_id')}: {e}")

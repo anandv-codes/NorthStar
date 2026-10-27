@@ -30,10 +30,12 @@ export interface CreateNotePayload {
   recall_enabled?: boolean;
 }
 
+export type NoteLifecycleStatus = "processing" | "enriched" | "indexed" | "failed";
+
 export interface NoteStatus {
   note_id: string;
   user_id: string;
-  status: string;
+  status: NoteLifecycleStatus;
   created_at: string;
   raw_text: string;
   enriched_summary?: string;
@@ -44,6 +46,8 @@ export interface NoteStatus {
   concepts?: string[];
   recall_enabled?: boolean;
   recall_status?: string;
+  indexed_at?: string | null;
+  index_error?: string | null;
 }
 
 export interface NoteListResponse {

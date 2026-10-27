@@ -100,7 +100,7 @@ export function NoteList({
           const showGroup = group !== lastGroup;
           lastGroup = group;
           const recallOn = Boolean(note.recall_enabled);
-          const processing = note.status === "processing";
+          const processing = note.status === "processing" || note.status === "enriched";
           const failed = note.status === "failed";
 
           return (

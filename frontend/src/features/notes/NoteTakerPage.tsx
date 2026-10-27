@@ -9,7 +9,7 @@ import { appendTranscript, useSpeechDictation } from "../../shared/lib/useSpeech
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 60000;
 
-const TERMINAL_NOTE_STATUSES = new Set(["completed", "enriched", "failed"]);
+const TERMINAL_NOTE_STATUSES = new Set(["indexed", "failed"]);
 const isTerminalStatus = (status: string) => TERMINAL_NOTE_STATUSES.has(status);
 
 const RECALL_STATUS_LABELS: Record<string, string> = {

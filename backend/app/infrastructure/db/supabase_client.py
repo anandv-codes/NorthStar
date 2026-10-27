@@ -153,7 +153,10 @@ class SupabaseNoteRepository:
                 .eq("user_id", user_id)
             )
             if status == "ready":
-                query = query.in_("status", ["completed", "enriched"])
+                # `indexed` is the only state where the note is retrievable.
+                # `enriched` has typed memories but no vectors yet, so counting
+                # it as ready would repeat the old "completed" lie.
+                query = query.in_("status", ["indexed"])
             elif status:
                 query = query.eq("status", status)
             if recall == "on":
