@@ -225,6 +225,46 @@ you dedupe without consistency.
 
 **Effort:** S.
 
+**Done (2026-10-28) — commit `c412439`. Applied to the live database before the API/worker.**
+
+**What changed:**
+- `backend/sql/phase8_typed_memory_keys.sql`: `content_hash` on tasks/facts/questions/
+  decisions/concepts, backfilled with `md5(lower(btrim(<content>)))`, and a unique index on
+  `(source_note_id, extraction_run_id, content_hash)` for each.
+- `ingest_note_memories` now inserts with `on conflict (...) do update ... returning`, so a
+  duplicate item inside one payload reuses the existing row id. Without that, the first
+  duplicate would abort the whole note and every retry would replay the same poison payload.
+- The "partial unique index for the active run per note" half of this item is already
+  covered by phase 7's full unique index on `extraction_runs(note_id)` — the stronger
+  invariant.
+
+**What I learned:**
+- **A unique index is only as strong as its hash.** `lower(btrim(...))` makes `"Same  task"`
+  and `"same task"` the same memory; without normalization the constraint is defeated by
+  whitespace. The backfill and the RPC must use the exact same expression, or the index and
+  the writer disagree about what a duplicate is.
+- **Adding a constraint to existing data is a migration, not a DDL line.** I checked the live
+  corpus for exact duplicates *before* writing the index; a single pair would have made the
+  migration fail. The migration deliberately fails loudly rather than deleting a
+  user-visible row.
+- **`on conflict do update ... returning` is the clean way to resolve a duplicate and still
+  get the row id.** `do nothing` returns no row, which breaks the entity links that need the
+  id; a no-op update (`set description = tasks.description`) returns the existing row.
+- **Constraints change the failure mode, not just the data.** Before this, a duplicate inside
+  one LLM payload was silently inserted twice; with a bare unique index it would become a
+  poison message. The RPC had to learn to absorb the conflict.
+- **NULL is not a value in a unique index.** Chat-created rows have no extraction run and a
+  NULL key, so they sit outside the constraint by design — they are one-per-anchor-note
+  anyway.
+- **Two migrations, one invariant.** Phase 7's attempt key prevents *retry* duplication;
+  phase 8's content key prevents *payload* duplication. The interview answer is the pair,
+  not either one alone.
+
+**Verified on the live database (2026-10-28):** all 61 existing typed rows have a hash and
+zero duplicate keys; a probe payload with two case/whitespace-variant tasks and two identical
+facts persisted exactly one row each (5 links, 1 entity), and the replay still returned
+`duplicate: true`. Probe rows deleted (0 left). 352 tests pass.
+
 ---
 
 ### 6. Route-level tests for the untested main path
