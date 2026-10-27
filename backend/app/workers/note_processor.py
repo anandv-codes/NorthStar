@@ -10,18 +10,12 @@ from ..infrastructure.llm.gemini_client import (
     call_gemini_api,
     get_chat_model,
 )
-from ..domain.commitments.services import persist_note_contributions
 from ..domain.memory.services import (
     apply_deterministic_task_resolution,
+    begin_extraction_run,
     bump_entity_mentions,
-    create_extraction_run,
-    insert_decisions,
-    insert_facts,
-    insert_memory_item_entity_links,
-    insert_questions,
-    insert_tasks,
-    insert_concepts,
-    upsert_entities,
+    ingest_note_memories,
+    save_extraction_payload,
 )
 from ..domain.memory.extraction_v2 import (
     build_note_metadata,
@@ -110,6 +104,14 @@ def process_sqs_message(body:dict)-> dict:
         recall_enabled = bool(note_row.get("recall_enabled", False))
         recall_status = "off"
         note_status = str(note_row.get("status") or "processing")
+        # `indexed` is terminal: a duplicate delivery of a finished note is
+        # acknowledged instead of re-running extraction or failing the state
+        # machine.
+        if note_status == "indexed":
+            logger.info(
+                f"Note {note_id} is already indexed; acknowledging duplicate delivery"
+            )
+            return {"success": True, "note_id": note_id, "status": "indexed"}
         # A redelivered job re-enters the lifecycle instead of jumping straight
         # from `failed` to `enriched`, which the state machine rejects.
         if note_status == "failed":
@@ -148,20 +150,33 @@ def process_sqs_message(body:dict)-> dict:
             logger.warning(f"Could not load long-term goals; continuing without them: {exc}")
             active_commitments = []
 
-        enrichment_res = call_gemini_api(
-            raw_text,
-            related_notes=related_notes,
-            commitments=active_commitments,
-        )
-        # Full prompt/response already persisted to file via log_gemini_interaction in gemini_client.
-        enriched_text= enrichment_res.get("summary","")
-        extraction_run = create_extraction_run(
+        extraction_run = begin_extraction_run(
             user_id=user_id,
             note_id=note_id,
             model_name=os.getenv("GEMINI_MODEL_ID", DEFAULT_GEMINI_MODEL_ID),
             prompt_version=os.getenv("WORK_MEMORY_PROMPT_VERSION", "phase3-v1"),
-            status="completed",
         )
+        extraction_run_id = extraction_run["extraction_run_id"]
+
+        # The payload is written *before* the fan-out, so "payload present"
+        # means the LLM call already happened: a redelivery replays it instead
+        # of paying for the same extraction twice.
+        stored_payload = extraction_run.get("payload")
+        if stored_payload:
+            logger.info(
+                f"Replaying stored extraction payload for note {note_id} "
+                f"(run {extraction_run_id}); skipping LLM"
+            )
+            enrichment_res = stored_payload
+        else:
+            enrichment_res = call_gemini_api(
+                raw_text,
+                related_notes=related_notes,
+                commitments=active_commitments,
+            )
+            # Full prompt/response already persisted to file via
+            # log_gemini_interaction in gemini_client.
+            save_extraction_payload(extraction_run_id, enrichment_res)
         timer.mark("extraction")
 
         # Extract context note IDs from both hybrid and entity-linked retrieval.
@@ -194,44 +209,50 @@ def process_sqs_message(body:dict)-> dict:
         update_note_item(user_id,note_id,updates)
         timer.mark("db_update")
 
-        tasks = insert_tasks(
+        # One transaction writes every typed row, entity, link, and goal
+        # contribution. A replay returns the rows the first attempt wrote
+        # instead of inserting them again.
+        fanout_payload = {
+            "tasks": task_rows_with_scoring(enrichment_res.get("tasks", [])),
+            "facts": enrichment_res.get("facts", []),
+            "questions": enrichment_res.get("questions", []),
+            "decisions": enrichment_res.get("decisions", []),
+            "concepts": enrichment_res.get("concepts", []),
+            "entities": enrichment_res.get("entities", []),
+            "commitment_contributions": enrichment_res.get(
+                "commitment_contributions", []
+            ),
+        }
+        fanout = ingest_note_memories(
             user_id=user_id,
-            source_note_id=note_id,
-            extraction_run_id=extraction_run["extraction_run_id"],
-            tasks=task_rows_with_scoring(enrichment_res.get("tasks", [])),
+            note_id=note_id,
+            extraction_run_id=extraction_run_id,
+            payload=fanout_payload,
         )
-        facts = insert_facts(
-            user_id=user_id,
-            source_note_id=note_id,
-            extraction_run_id=extraction_run["extraction_run_id"],
-            facts=enrichment_res.get("facts", []),
+        tasks = fanout.get("tasks", [])
+        facts = fanout.get("facts", [])
+        questions = fanout.get("questions", [])
+        decisions = fanout.get("decisions", [])
+        concepts = fanout.get("concepts", [])
+        entity_rows = fanout.get("entities", [])
+        logger.info(
+            "Fan-out %s: tasks=%d facts=%d questions=%d decisions=%d "
+            "concepts=%d links=%d contributions=%d",
+            "replayed" if fanout.get("duplicate") else "applied",
+            len(tasks),
+            len(facts),
+            len(questions),
+            len(decisions),
+            len(concepts),
+            fanout.get("links", 0),
+            fanout.get("contributions", 0),
         )
-        questions = insert_questions(
-            user_id=user_id,
-            source_note_id=note_id,
-            extraction_run_id=extraction_run["extraction_run_id"],
-            questions=enrichment_res.get("questions", []),
-        )
-        decisions = insert_decisions(
-            user_id=user_id,
-            source_note_id=note_id,
-            extraction_run_id=extraction_run["extraction_run_id"],
-            decisions=enrichment_res.get("decisions", []),
-        )
-        concepts = insert_concepts(
-            user_id=user_id,
-            source_note_id=note_id,
-            extraction_run_id=extraction_run["extraction_run_id"],
-            concepts=enrichment_res.get("concepts", []),
-        )
-        entity_rows = upsert_entities(
-            user_id=user_id,
-            entities=enrichment_res.get("entities", []),
-        )
+        timer.mark("fanout")
 
         # Consolidation: entities seen across notes gain weight over time.
+        # Skipped on a replay, where the first attempt already bumped them.
         entity_names = [entity.get("name") for entity in entity_rows if entity.get("name")]
-        if entity_names:
+        if entity_names and not fanout.get("duplicate"):
             try:
                 bump_entity_mentions(
                     user_id=user_id,
@@ -240,56 +261,6 @@ def process_sqs_message(body:dict)-> dict:
                 )
             except Exception as exc:
                 logger.warning(f"Entity importance update failed; continuing: {exc}")
-
-        try:
-            contributions = persist_note_contributions(
-                user_id=user_id,
-                note_id=note_id,
-                extraction=enrichment_res,
-                repo=commitment_repo,
-            )
-            logger.info(f"Long-term goal contributions added: {len(contributions)}")
-        except Exception as exc:
-            logger.warning(f"Commitment contribution persistence failed; continuing: {exc}")
-        timer.mark("commitments")
-
-        entity_name_to_id = {
-            str(entity.get("name", "")).strip().lower(): entity.get("entity_id")
-            for entity in entity_rows
-            if entity.get("name")
-        }
-        links = []
-
-        def add_links(items: list[dict], item_type: str, id_key: str) -> None:
-            for item in items:
-                item_id = item.get(id_key)
-                if not item_id:
-                    continue
-                for entity_name in item.get("entities", []):
-                    entity_id = entity_name_to_id.get(str(entity_name).strip().lower())
-                    if entity_id:
-                        links.append(
-                            {
-                                "entity_id": entity_id,
-                                "item_type": item_type,
-                                "item_id": item_id,
-                            }
-                        )
-
-        add_links(tasks, "task", "task_id")
-        add_links(facts, "fact", "fact_id")
-        add_links(questions, "question", "question_id")
-        add_links(decisions, "decision", "decision_id")
-        add_links(concepts, "concept", "concept_id")
-
-        if links:
-            insert_memory_item_entity_links(
-                user_id=user_id,
-                source_note_id=note_id,
-                links=links,
-            )
-        logger.info(f"Entity links created: {len(links)}")
-        timer.mark("entity_links")
 
         # PR6: score extracted units into recall candidates. Idempotent via
         # (user_id, dedupe_key) upsert, so re-processing a note is safe.

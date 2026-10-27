@@ -95,9 +95,15 @@ class _FakeCommitmentRepo:
         return []
 
 
-def _patch_pipeline(monkeypatch) -> list[dict]:
+def _patch_pipeline(
+    monkeypatch,
+    *,
+    stored_payload: dict | None = None,
+    calls: dict | None = None,
+) -> list[dict]:
     """Replace every external call in `process_sqs_message` with a no-op."""
     updates: list[dict] = []
+    calls = calls if calls is not None else {}
 
     def record_update(user_id, note_id, payload):
         updates.append(dict(payload))
@@ -117,10 +123,10 @@ def _patch_pipeline(monkeypatch) -> list[dict]:
     monkeypatch.setattr(
         note_processor, "get_commitment_repository", lambda: _FakeCommitmentRepo()
     )
-    monkeypatch.setattr(
-        note_processor,
-        "call_gemini_api",
-        lambda *a, **k: {
+
+    def fake_llm(*a, **k):
+        calls["llm"] = calls.get("llm", 0) + 1
+        return {
             "summary": "summary",
             "tasks": [],
             "facts": [],
@@ -128,31 +134,44 @@ def _patch_pipeline(monkeypatch) -> list[dict]:
             "decisions": [],
             "concepts": [],
             "entities": [],
-        },
-    )
+        }
+
+    monkeypatch.setattr(note_processor, "call_gemini_api", fake_llm)
     monkeypatch.setattr(
         note_processor,
-        "create_extraction_run",
-        lambda *a, **k: {"extraction_run_id": "run-1"},
+        "begin_extraction_run",
+        lambda *a, **k: {
+            "extraction_run_id": "run-1",
+            "payload": stored_payload,
+            "fanned_out": bool(stored_payload),
+        },
     )
+
+    def fake_save(run_id, payload):
+        calls["saved"] = calls.get("saved", 0) + 1
+
+    monkeypatch.setattr(note_processor, "save_extraction_payload", fake_save)
+
+    def fake_ingest(*a, **k):
+        calls["ingest"] = calls.get("ingest", 0) + 1
+        return {
+            "duplicate": False,
+            "tasks": [],
+            "facts": [],
+            "questions": [],
+            "decisions": [],
+            "concepts": [],
+            "entities": [],
+            "links": 0,
+            "contributions": 0,
+        }
+
+    monkeypatch.setattr(note_processor, "ingest_note_memories", fake_ingest)
     monkeypatch.setattr(note_processor, "build_note_metadata", lambda *a, **k: {})
     monkeypatch.setattr(note_processor, "task_rows_with_scoring", lambda *a, **k: [])
-    for name in (
-        "insert_tasks",
-        "insert_facts",
-        "insert_questions",
-        "insert_decisions",
-        "insert_concepts",
-        "upsert_entities",
-        "insert_memory_item_entity_links",
-        "generate_candidates",
-    ):
-        monkeypatch.setattr(note_processor, name, lambda *a, **k: [])
+    monkeypatch.setattr(note_processor, "generate_candidates", lambda *a, **k: [])
     monkeypatch.setattr(note_processor, "bump_entity_mentions", lambda *a, **k: None)
     monkeypatch.setattr(note_processor, "entity_importance_delta", lambda *a, **k: 0.1)
-    monkeypatch.setattr(
-        note_processor, "persist_note_contributions", lambda *a, **k: []
-    )
     monkeypatch.setattr(note_processor, "get_chat_model", lambda: object())
     monkeypatch.setattr(note_processor, "get_recall_repository", lambda: object())
     monkeypatch.setattr(note_processor, "build_context", lambda *a, **k: "")
@@ -196,6 +215,65 @@ def test_indexing_failure_is_visible_not_swallowed(monkeypatch):
     assert "embedding provider timed out" in updates[-1]["index_error"]
     assert result["status"] == "failed"
     assert result["success"] is False
+
+
+# -- Idempotent ingestion --------------------------------------------------
+
+
+def test_first_attempt_calls_llm_once_and_persists_payload(monkeypatch):
+    calls: dict = {}
+    _patch_pipeline(monkeypatch, calls=calls)
+    monkeypatch.setattr(note_processor, "index_note", lambda *a, **k: 1)
+
+    note_processor.process_sqs_message(
+        {"note_id": "note-1", "user_id": "user-1", "raw_text": "hello"}
+    )
+
+    assert calls["llm"] == 1
+    assert calls["saved"] == 1
+    assert calls["ingest"] == 1
+
+
+def test_redelivery_replays_stored_payload_without_calling_the_llm(monkeypatch):
+    calls: dict = {}
+    payload = {
+        "summary": "cached",
+        "tasks": [],
+        "facts": [],
+        "questions": [],
+        "decisions": [],
+        "concepts": [],
+        "entities": [],
+    }
+    _patch_pipeline(monkeypatch, stored_payload=payload, calls=calls)
+    monkeypatch.setattr(note_processor, "index_note", lambda *a, **k: 1)
+
+    result = note_processor.process_sqs_message(
+        {"note_id": "note-1", "user_id": "user-1", "raw_text": "hello"}
+    )
+
+    assert calls.get("llm", 0) == 0
+    assert calls.get("saved", 0) == 0
+    assert calls["ingest"] == 1
+    assert result["status"] == "indexed"
+
+
+def test_duplicate_delivery_of_indexed_note_is_a_noop(monkeypatch):
+    calls: dict = {}
+    updates = _patch_pipeline(monkeypatch, calls=calls)
+    monkeypatch.setattr(
+        note_processor,
+        "get_note_item",
+        lambda *a, **k: {"status": "indexed", "recall_enabled": False},
+    )
+
+    result = note_processor.process_sqs_message(
+        {"note_id": "note-1", "user_id": "user-1", "raw_text": "hello"}
+    )
+
+    assert result == {"success": True, "note_id": "note-1", "status": "indexed"}
+    assert updates == []
+    assert calls.get("llm", 0) == 0
 
 
 # -- Migration guards ------------------------------------------------------

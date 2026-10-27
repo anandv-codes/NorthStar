@@ -28,6 +28,7 @@ FILES=(
   phase4_pgvector.sql
   phase5_commitments.sql
   phase6_note_status.sql
+  phase7_atomic_ingestion.sql
 )
 
 for file in "${FILES[@]}"; do

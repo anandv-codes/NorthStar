@@ -33,6 +33,12 @@ def _new_id() -> str:
     return str(uuid.uuid4())
 
 
+def _first_row(data: Any) -> dict[str, Any]:
+    if isinstance(data, list):
+        return data[0] if data else {}
+    return data if isinstance(data, dict) else {}
+
+
 def _execute_insert(table: str, rows: dict[str, Any] | list[dict[str, Any]]) -> Any:
     try:
         response = supabase.table(table).insert(rows).execute()
@@ -57,27 +63,78 @@ def _execute_upsert(
 class SupabaseMemoryRepository:
     """Concrete work-memory persistence backed by Supabase."""
 
-    def create_extraction_run(
+    def begin_extraction_run(
         self,
         user_id: str,
         note_id: str,
         model_name: str,
         prompt_version: str,
-        status: str = "completed",
-        error_message: str | None = None,
+        now: str | None = None,
     ) -> dict[str, Any]:
-        row = {
-            "extraction_run_id": _new_id(),
-            "note_id": note_id,
-            "user_id": user_id,
-            "model_name": model_name,
-            "prompt_version": prompt_version,
-            "status": status,
-            "error_message": error_message,
-            "created_at": _utc_now(),
-        }
-        inserted = _execute_insert(EXTRACTION_RUNS_TABLE, row)
-        return inserted[0] if isinstance(inserted, list) and inserted else row
+        """Return the note's extraction run, creating it on the first attempt.
+
+        ``note_id`` is the stable attempt key: a redelivered job reuses the same
+        run (and its stored payload) instead of minting a new run id.
+        """
+        try:
+            response = supabase.rpc(
+                "begin_extraction_run",
+                {
+                    "p_user_id": user_id,
+                    "p_note_id": note_id,
+                    "p_model_name": model_name,
+                    "p_prompt_version": prompt_version,
+                    "p_now": now or _utc_now(),
+                },
+            ).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return _first_row(response.data)
+
+    def save_extraction_payload(
+        self,
+        extraction_run_id: str,
+        payload: dict[str, Any],
+    ) -> None:
+        """Persist the raw extraction *before* the fan-out so a retry replays it."""
+        try:
+            (
+                supabase.table(EXTRACTION_RUNS_TABLE)
+                .update({"payload": payload})
+                .eq("extraction_run_id", extraction_run_id)
+                .execute()
+            )
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+
+    def ingest_note_memories(
+        self,
+        user_id: str,
+        note_id: str,
+        extraction_run_id: str,
+        payload: dict[str, Any],
+        now: str | None = None,
+    ) -> dict[str, Any]:
+        """Fan out one extraction payload in a single transaction.
+
+        Returns the persisted rows plus ``duplicate``: a replay returns the rows
+        the first attempt wrote instead of inserting them again.
+        """
+        try:
+            response = supabase.rpc(
+                "ingest_note_memories",
+                {
+                    "p_user_id": user_id,
+                    "p_note_id": note_id,
+                    "p_extraction_run_id": extraction_run_id,
+                    "p_payload": payload,
+                    "p_now": now or _utc_now(),
+                },
+            ).execute()
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
+        data = response.data
+        return data if isinstance(data, dict) else _first_row(data)
 
     def insert_tasks(
         self,

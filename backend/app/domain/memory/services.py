@@ -7,23 +7,44 @@ from ...infrastructure.db.memory_repository import get_memory_repository
 from ..ports import MemoryRepository
 
 
-def create_extraction_run(
+def begin_extraction_run(
     user_id: str,
     note_id: str,
     model_name: str,
     prompt_version: str,
-    status: str = "completed",
-    error_message: str | None = None,
     repo: MemoryRepository | None = None,
 ) -> dict[str, Any]:
     repo = repo or get_memory_repository()
-    return repo.create_extraction_run(
+    return repo.begin_extraction_run(
         user_id=user_id,
         note_id=note_id,
         model_name=model_name,
         prompt_version=prompt_version,
-        status=status,
-        error_message=error_message,
+    )
+
+
+def save_extraction_payload(
+    extraction_run_id: str,
+    payload: dict[str, Any],
+    repo: MemoryRepository | None = None,
+) -> None:
+    repo = repo or get_memory_repository()
+    repo.save_extraction_payload(extraction_run_id, payload)
+
+
+def ingest_note_memories(
+    user_id: str,
+    note_id: str,
+    extraction_run_id: str,
+    payload: dict[str, Any],
+    repo: MemoryRepository | None = None,
+) -> dict[str, Any]:
+    repo = repo or get_memory_repository()
+    return repo.ingest_note_memories(
+        user_id=user_id,
+        note_id=note_id,
+        extraction_run_id=extraction_run_id,
+        payload=payload,
     )
 
 

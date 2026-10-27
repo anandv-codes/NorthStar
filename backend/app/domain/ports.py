@@ -46,14 +46,26 @@ class UserRepository(Protocol):
 class MemoryRepository(Protocol):
     """Persistence for extraction runs and typed work-memory items."""
 
-    def create_extraction_run(
+    def begin_extraction_run(
         self,
         user_id: str,
         note_id: str,
         model_name: str,
         prompt_version: str,
-        status: str = "completed",
-        error_message: str | None = None,
+    ) -> dict[str, Any]: ...
+
+    def save_extraction_payload(
+        self,
+        extraction_run_id: str,
+        payload: dict[str, Any],
+    ) -> None: ...
+
+    def ingest_note_memories(
+        self,
+        user_id: str,
+        note_id: str,
+        extraction_run_id: str,
+        payload: dict[str, Any],
     ) -> dict[str, Any]: ...
 
     def insert_tasks(
