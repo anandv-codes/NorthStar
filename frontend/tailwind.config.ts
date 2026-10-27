@@ -30,14 +30,27 @@ export default {
         soft: "0 1px 2px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.06)",
         card: "0 1px 0 rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)",
       },
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.22, 1, 0.36, 1)",
+      },
       keyframes: {
         marquee: {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "card-enter": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "skeleton-breathe": {
+          "0%, 100%": { opacity: "0.55" },
+          "50%": { opacity: "0.85" },
+        },
       },
       animation: {
         marquee: "marquee 32s linear infinite",
+        "card-enter": "card-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) backwards",
+        "skeleton-breathe": "skeleton-breathe 1.8s ease-in-out infinite",
       },
     },
   },

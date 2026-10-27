@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   CheckCircle,
   NotePencil,
-  Spinner,
   Stack,
   X,
 } from "@phosphor-icons/react";
@@ -25,9 +24,11 @@ import {
   type RecallDeck,
   type RecallSuggestion,
 } from "../../shared/api/httpClient";
+import { useListFlip } from "../../shared/animation/useListFlip";
 import { Button } from "../../shared/ui/Button";
 import { DeckPicker } from "./components/DeckPicker";
 import { DeckFormModal } from "./components/DeckFormModal";
+import { VerifySkeleton } from "./components/VerifySkeleton";
 import { SuggestionCard } from "./SuggestionCard";
 
 const POLL_INTERVAL_MS = 1500;
@@ -36,6 +37,19 @@ const TERMINAL_NOTE_STATUSES = new Set(["completed", "enriched", "failed"]);
 
 function isNoteSettled(status: NoteStatus): boolean {
   return TERMINAL_NOTE_STATUSES.has(status.status) && status.recall_status !== "pending";
+}
+
+function generationStage(note: NoteStatus | null) {
+  if (!note || note.status === "processing") {
+    return {
+      title: "Reading your note",
+      detail: "Pulling out the ideas worth remembering.",
+    };
+  }
+  return {
+    title: "Writing recall questions",
+    detail: "Drafting a question and answer for each idea.",
+  };
 }
 
 export function RecallVerifyPage() {
@@ -66,14 +80,22 @@ export function RecallVerifyPage() {
   const [undoBusy, setUndoBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestionsListRef = useListFlip<HTMLDivElement>();
+
+  const applySuggestions = useCallback((nextSuggestions: RecallSuggestion[]) => {
+    setSuggestions(nextSuggestions);
+    const liveIds = new Set(nextSuggestions.map((item) => item.candidate_id));
+    setSelectedIds((current) => {
+      const next = new Set(Array.from(current).filter((id) => liveIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, []);
 
   const loadSuggestions = useCallback(async () => {
     const list = await fetchSuggestions(200, noteId);
-    setSuggestions(list.suggestions);
-    const liveIds = new Set(list.suggestions.map((item) => item.candidate_id));
-    setSelectedIds((current) => new Set(Array.from(current).filter((id) => liveIds.has(id))));
+    applySuggestions(list.suggestions);
     return list.suggestions;
-  }, [noteId]);
+  }, [applySuggestions, noteId]);
 
   const refreshNote = useCallback(async () => {
     if (!noteId) return null;
@@ -90,25 +112,26 @@ export function RecallVerifyPage() {
     setLoading(true);
     setError(null);
     try {
-      const [deckList, suggestionList] = await Promise.all([
+      const [deckList, suggestionList, status] = await Promise.all([
         fetchRecallDecks(),
         fetchSuggestions(200, noteId),
+        noteId ? getNoteStatus(noteId) : Promise.resolve(null),
       ]);
       setDecks(deckList.decks);
       const defaultDeckId =
         deckList.decks.find((deck) => deck.is_default)?.deck_id ?? deckList.decks[0]?.deck_id ?? "";
       setPreferredDeckId((current) => current || defaultDeckId);
       setBulkDeckId((current) => current || defaultDeckId);
-      setSuggestions(suggestionList.suggestions);
-      if (noteId) {
-        setNote(await getNoteStatus(noteId));
+      applySuggestions(suggestionList.suggestions);
+      if (status) {
+        setNote(status);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't load your questions.");
     } finally {
       setLoading(false);
     }
-  }, [noteId]);
+  }, [applySuggestions, noteId]);
 
   useEffect(() => {
     void load();
@@ -120,35 +143,36 @@ export function RecallVerifyPage() {
     const deadline = Date.now() + NOTE_POLL_TIMEOUT_MS;
 
     const poll = async () => {
-      try {
-        const status = await getNoteStatus(noteId);
-        if (cancelled) return;
-        setNote(status);
+      const [statusResult, suggestionsResult] = await Promise.allSettled([
+        getNoteStatus(noteId),
+        fetchSuggestions(200, noteId),
+      ]);
+      if (cancelled) return;
+
+      if (statusResult.status === "fulfilled") {
+        setNote(statusResult.value);
         setNotePollExpired(false);
-        await loadSuggestions();
-        if (cancelled) return;
-
-        // Keep polling until the note itself is final. Suggestions can appear
-        // while the worker is still writing them, so a non-empty list is not a
-        // signal to stop: doing that freezes `note` at "pending" and leaves the
-        // page showing the generation spinner after every suggestion is filed.
-        if (isNoteSettled(status)) return;
-
-        if (Date.now() >= deadline) {
-          setNotePollExpired(true);
-          return;
-        }
-        pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS);
-      } catch {
-        if (cancelled) return;
-        // Keep trying transient failures until the deadline instead of
-        // leaving the page stuck on a stale "pending" snapshot.
-        if (Date.now() >= deadline) {
-          setNotePollExpired(true);
-          return;
-        }
-        pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS);
       }
+      if (suggestionsResult.status === "fulfilled") {
+        applySuggestions(suggestionsResult.value.suggestions);
+        setNotePollExpired(false);
+      }
+
+      // Keep polling until the note itself is final. Suggestions can appear
+      // while the worker is still writing them, so a non-empty list is not a
+      // signal to stop: doing that freezes `note` at "pending" and leaves the
+      // generation status showing after every suggestion is filed.
+      if (statusResult.status === "fulfilled" && isNoteSettled(statusResult.value)) {
+        return;
+      }
+
+      // Keep trying transient failures until the deadline instead of leaving
+      // the page stuck on a stale "pending" snapshot.
+      if (Date.now() >= deadline) {
+        setNotePollExpired(true);
+        return;
+      }
+      pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS);
     };
 
     setNotePollExpired(false);
@@ -160,7 +184,7 @@ export function RecallVerifyPage() {
         pollTimer.current = null;
       }
     };
-  }, [noteId, loadSuggestions, notePollNonce]);
+  }, [noteId, applySuggestions, notePollNonce]);
 
   useEffect(() => {
     if (!undoNotice) return;
@@ -462,6 +486,7 @@ export function RecallVerifyPage() {
   const noteProcessing =
     Boolean(noteId) && !notePollExpired && (!note || !isNoteSettled(note));
   const noteFailed = note?.status === "failed" || note?.recall_status === "failed";
+  const stage = generationStage(note);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -483,8 +508,20 @@ export function RecallVerifyPage() {
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
-            <Stack size={14} weight="bold" />
-            {suggestions.length} to verify
+            {noteProcessing && suggestions.length === 0 ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 rounded-full bg-neutral-950 motion-safe:animate-pulse"
+                />
+                Preparing
+              </>
+            ) : (
+              <>
+                <Stack size={14} weight="bold" />
+                {suggestions.length} to verify
+              </>
+            )}
           </span>
         </div>
       </header>
@@ -496,24 +533,32 @@ export function RecallVerifyPage() {
       ) : null}
 
       {loading ? (
-        <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-neutral-200 bg-white shadow-card">
-          <span className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-950" />
+        <div role="status" aria-live="polite">
+          <span className="sr-only">Loading questions…</span>
+          <VerifySkeleton count={3} />
         </div>
       ) : noteProcessing && suggestions.length === 0 ? (
-        <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-card">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-950 text-white">
-            <Spinner size={20} className="animate-spin" />
-          </span>
-          <p className="mt-5 font-display text-xl font-semibold text-neutral-950">
-            Turning your note into questions
-          </p>
-          <p className="mt-2 max-w-sm text-sm text-neutral-500">
-            This usually takes a few seconds. You can leave this page — the questions will be waiting in
-            Recall.
-          </p>
-          <div className="mt-5 h-1.5 w-48 overflow-hidden rounded-full bg-neutral-100">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-neutral-950" />
+        <div className="space-y-3">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-5 shadow-card"
+          >
+            <span
+              aria-hidden="true"
+              className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-neutral-950 motion-safe:animate-pulse"
+            />
+            <div>
+              <p className="font-display text-base font-semibold text-neutral-950">{stage.title}</p>
+              <p className="mt-1 text-sm text-neutral-500">{stage.detail}</p>
+              <p className="mt-2 text-xs leading-relaxed text-neutral-400">
+                This usually takes a few seconds. Cards appear as they're ready, and you can leave
+                this page — the questions will be waiting in Recall.
+              </p>
+            </div>
           </div>
+          <VerifySkeleton count={2} />
         </div>
       ) : suggestions.length === 0 ? (
         <div className="flex flex-col items-center rounded-2xl border border-neutral-200 bg-white py-14 text-center shadow-card">
@@ -639,26 +684,50 @@ export function RecallVerifyPage() {
             </div>
           </div>
 
-          {suggestions.map((suggestion) => (
-            <SuggestionCard
-              key={suggestion.candidate_id}
-              suggestion={suggestion}
-              decks={decks}
-              deckValue={suggestion.deck_id ?? fallbackDeckId}
-              deckSaving={deckSavingId === suggestion.candidate_id}
-              selected={selectedIds.has(suggestion.candidate_id)}
-              processing={
-                processingSuggestionId === suggestion.candidate_id ? processingAction : null
-              }
-              onSelect={(selected) => handleSelect(suggestion.candidate_id, selected)}
-              onAccept={() => void handleAccept(suggestion)}
-              onReject={() => void handleReject(suggestion)}
-              onSave={(question, answer) => handleSave(suggestion, question, answer)}
-              onDeckChange={(deckId) => void handleDeckChange(suggestion, deckId)}
-              onCreateDeck={() => setFormOpen(true)}
-              onRevealAnswer={() => handleRevealAnswer(suggestion)}
-            />
-          ))}
+          {noteProcessing ? (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-neutral-200 bg-neutral-50/70 px-3.5 py-2.5 text-xs shadow-card"
+            >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-950 motion-safe:animate-pulse"
+              />
+              <span className="font-medium text-neutral-800">{stage.title}</span>
+              <span className="text-neutral-400">Cards appear as they're ready.</span>
+            </div>
+          ) : null}
+
+          <div ref={suggestionsListRef} className="space-y-3">
+            {suggestions.map((suggestion, index) => (
+              <div key={suggestion.candidate_id} data-flip-id={suggestion.candidate_id}>
+                <div
+                  className="motion-safe:animate-card-enter"
+                  style={{ animationDelay: `${Math.min(index * 30, 180)}ms` }}
+                >
+                  <SuggestionCard
+                    suggestion={suggestion}
+                    decks={decks}
+                    deckValue={suggestion.deck_id ?? fallbackDeckId}
+                    deckSaving={deckSavingId === suggestion.candidate_id}
+                    selected={selectedIds.has(suggestion.candidate_id)}
+                    processing={
+                      processingSuggestionId === suggestion.candidate_id ? processingAction : null
+                    }
+                    onSelect={(selected) => handleSelect(suggestion.candidate_id, selected)}
+                    onAccept={() => void handleAccept(suggestion)}
+                    onReject={() => void handleReject(suggestion)}
+                    onSave={(question, answer) => handleSave(suggestion, question, answer)}
+                    onDeckChange={(deckId) => void handleDeckChange(suggestion, deckId)}
+                    onCreateDeck={() => setFormOpen(true)}
+                    onRevealAnswer={() => handleRevealAnswer(suggestion)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
 
           <button
             type="button"
