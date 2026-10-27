@@ -29,6 +29,7 @@ FILES=(
   phase5_commitments.sql
   phase6_note_status.sql
   phase7_atomic_ingestion.sql
+  phase8_typed_memory_keys.sql
 )
 
 for file in "${FILES[@]}"; do

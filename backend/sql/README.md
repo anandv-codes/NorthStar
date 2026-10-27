@@ -21,6 +21,7 @@ Apply in this exact order on a fresh database:
 | 9 | `phase5_commitments.sql` | `user_commitments`, `commitment_contributions` (user-authored long-term goals) |
 | 10 | `phase6_note_status.sql` | one note-status vocabulary (`processing`/`enriched`/`indexed`/`failed`), `indexed_at`, `index_error`, and a `CHECK` constraint |
 | 11 | `phase7_atomic_ingestion.sql` | `extraction_runs.payload`/`fanned_out`, one run per note, and the `begin_extraction_run` + `ingest_note_memories` RPCs |
+| 12 | `phase8_typed_memory_keys.sql` | `content_hash` on typed memories, unique `(source_note_id, extraction_run_id, content_hash)`, and the conflict-safe fan-out |
 
 ## Option A — Supabase SQL editor
 
