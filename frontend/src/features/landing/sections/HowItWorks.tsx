@@ -12,7 +12,7 @@ const STEPS = [
   {
     icon: Sparkle,
     title: "NorthStar organizes it",
-    description: "Tasks, questions, risks and concepts are extracted automatically in the background.",
+    description: "Tasks, questions, decisions and concepts are extracted automatically in the background.",
   },
   {
     icon: ChatCircleDots,

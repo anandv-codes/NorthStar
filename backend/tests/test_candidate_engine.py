@@ -15,7 +15,6 @@ def _extraction(**overrides):
         "concepts": [],
         "questions": [],
         "decisions": [],
-        "risks": [],
         "entities": [],
         "commitments": [],
     }

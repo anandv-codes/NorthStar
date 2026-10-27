@@ -170,7 +170,6 @@ The reranker is an optional second-stage sorter:
   - notes
   - tasks
   - questions
-  - risks
   - decisions
   - concepts
   - recent memory

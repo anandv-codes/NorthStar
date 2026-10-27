@@ -19,7 +19,7 @@ In your Supabase project's SQL editor, run these 9 files **in order** (they are 
 
 1. [backend/sql/auth_jwt.sql](backend/sql/auth_jwt.sql) — user accounts + refresh tokens
 2. [backend/sql/chat_conversations.sql](backend/sql/chat_conversations.sql) — chat threads + messages + pending tool-call confirmations (`pending_chat_actions`)
-3. [backend/sql/phase3_work_memory.sql](backend/sql/phase3_work_memory.sql) — notes + all extracted memory tables (tasks, facts, questions, decisions, risks, concepts, entities) + daily/weekly rollup summaries (`period_summaries`)
+3. [backend/sql/phase3_work_memory.sql](backend/sql/phase3_work_memory.sql) — notes + extracted memory tables (tasks, facts, questions, decisions, concepts, entities) + the legacy dormant `risks` table + daily/weekly rollup summaries (`period_summaries`)
 4. [backend/sql/phase4_recall.sql](backend/sql/phase4_recall.sql) — recall foundation: `note_entities`, entity importance, task due dates, `commitments`, `recall_candidates`, `recall_cards`, `review_history`, per-note `recall_enabled`/`recall_status`
 5. [backend/sql/phase4_recall_scheduler.sql](backend/sql/phase4_recall_scheduler.sql) — Anki-style scheduler state on `recall_cards` (`state`, `learning_step`)
 6. [backend/sql/phase4_recall_decks.sql](backend/sql/phase4_recall_decks.sql) — categorised recall decks: `recall_decks`, candidate/card `deck_id`, and the per-user General deck backfill
@@ -58,7 +58,7 @@ where table_schema = 'public'
 order by table_name;
 ```
 
-This should return all 25 names; any missing from the result means the corresponding `.sql` file above still needs to be run.
+This should return all 25 names; any missing from the result means the corresponding `.sql` file above still needs to be run. The `risks` table is retained for existing data only and is no longer read or written by the app; see [entity-deprecation.md](entity-deprecation.md) before dropping it.
 
 ### 3. Configure the backend
 
@@ -126,7 +126,7 @@ npm run build
 ### 6. Try it out
 
 1. Open the frontend URL, register a new account, then log in.
-2. Go to "Add Note" and submit a note — with `PROCESS_NOTES_INLINE=true` it is enriched synchronously, so refreshing the dashboard shortly after shows the extracted summary, tasks, questions, decisions, risks, and concepts.
+2. Go to "Add Note" and submit a note — with `PROCESS_NOTES_INLINE=true` it is enriched synchronously, so refreshing the dashboard shortly after shows the extracted summary, tasks, questions, decisions, and concepts.
 3. Try the chat page to ask about your notes.
 
 ## Deploying beyond local testing

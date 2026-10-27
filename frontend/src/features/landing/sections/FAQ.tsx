@@ -8,7 +8,7 @@ const FAQS = [
   {
     question: "Do I need to format my notes in a special way?",
     answer:
-      "No. Write the way you think. NorthStar extracts tasks, questions, risks and concepts from plain, unstructured text.",
+      "No. Write the way you think. NorthStar extracts tasks, questions, decisions and concepts from plain, unstructured text.",
   },
   {
     question: "How are daily and weekly summaries generated?",

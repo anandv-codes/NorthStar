@@ -32,12 +32,6 @@ class _MemoryRepo:
     def query_questions_answered_in_range(self, *args):
         return []
 
-    def query_risks_opened_in_range(self, *args):
-        return []
-
-    def query_risks_resolved_in_range(self, *args):
-        return []
-
     def query_decisions_in_range(self, *args):
         return []
 

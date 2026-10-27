@@ -48,7 +48,6 @@ def build_recent_memory_context(recent_memory: dict[str, list[dict[str, Any]]] |
         "decisions": ("Decisions", "decision", "rationale"),
         "tasks": ("Tasks", "description", "status"),
         "questions": ("Questions", "question", "status"),
-        "risks": ("Risks", "risk", "severity"),
         "concepts": ("Concepts", "concept", "status"),
     }
 

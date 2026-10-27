@@ -34,9 +34,6 @@ Tasks completed today (of {tasks_opened_count} opened):
 Questions answered today (of {questions_opened_count} opened):
 {questions_answered_text}
 
-Risks resolved today (of {risks_opened_count} opened):
-{risks_resolved_text}
-
 Decisions made today:
 {decisions_text}
 
@@ -62,7 +59,6 @@ Aggregate stats for the week:
 - Notes captured: {notes_count}
 - Tasks completed: {tasks_completed}
 - Questions answered: {questions_answered}
-- Risks resolved: {risks_resolved}
 - Decisions made: {decisions_made}
 
 Write a concise (4-8 sentence) prose recap of the week, synthesizing the daily recaps into an
@@ -128,8 +124,6 @@ def _compute_daily_stats_and_highlights(
     tasks_completed = repo.query_tasks_completed_in_range(user_id, start_iso, end_iso)
     questions_opened = repo.query_questions_opened_in_range(user_id, start_iso, end_iso)
     questions_answered = repo.query_questions_answered_in_range(user_id, start_iso, end_iso)
-    risks_opened = repo.query_risks_opened_in_range(user_id, start_iso, end_iso)
-    risks_resolved = repo.query_risks_resolved_in_range(user_id, start_iso, end_iso)
     decisions = repo.query_decisions_in_range(user_id, start_iso, end_iso)
     facts = repo.query_facts_in_range(user_id, start_iso, end_iso)
 
@@ -138,15 +132,12 @@ def _compute_daily_stats_and_highlights(
         "tasks_completed": len(tasks_completed),
         "questions_opened": len(questions_opened),
         "questions_answered": len(questions_answered),
-        "risks_opened": len(risks_opened),
-        "risks_resolved": len(risks_resolved),
         "decisions_made": len(decisions),
         "facts_recorded": len(facts),
     }
     highlights = {
         "tasks_completed": [t.get("description", "") for t in tasks_completed],
         "questions_answered": [q.get("question", "") for q in questions_answered],
-        "risks_resolved": [r.get("risk", "") for r in risks_resolved],
         "decisions": [d.get("decision", "") for d in decisions],
     }
     return stats, highlights
@@ -170,8 +161,6 @@ def _build_daily_prompt(
         tasks_opened_count=stats["tasks_opened"],
         questions_answered_text=_format_bullets(highlights["questions_answered"]),
         questions_opened_count=stats["questions_opened"],
-        risks_resolved_text=_format_bullets(highlights["risks_resolved"]),
-        risks_opened_count=stats["risks_opened"],
         decisions_text=_format_bullets(highlights["decisions"]),
         facts_count=stats["facts_recorded"],
         commitments_text=_format_long_term_focus(focus_texts),
@@ -204,7 +193,6 @@ def _build_weekly_prompt(
         notes_count=sum(row.get("source_note_count", 0) for row in daily_rows),
         tasks_completed=merged_stats.get("tasks_completed", 0),
         questions_answered=merged_stats.get("questions_answered", 0),
-        risks_resolved=merged_stats.get("risks_resolved", 0),
         decisions_made=merged_stats.get("decisions_made", 0),
         commitments_text=_format_long_term_focus(focus_texts),
     )

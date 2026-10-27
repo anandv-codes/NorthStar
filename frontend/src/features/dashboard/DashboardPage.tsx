@@ -4,7 +4,6 @@ import { Plus } from "@phosphor-icons/react";
 import {
   MemoryConcept,
   MemoryQuestion,
-  MemoryRisk,
   MemoryTask,
   PeriodSummaryStatus,
   RecentNote,
@@ -12,13 +11,11 @@ import {
   fetchDailySummary,
   fetchQuestions,
   fetchRecentMemory,
-  fetchRisks,
   fetchTasks,
   fetchWeeklySummary,
   generateDailySummary,
   generateWeeklySummary,
   patchQuestionStatus,
-  patchRiskStatus,
   patchTaskStatus,
 } from "../../shared/api/httpClient";
 import { Button } from "../../shared/ui/Button";
@@ -48,7 +45,6 @@ export function DashboardPage() {
   const [weeklySummary, setWeeklySummary] = useState<PeriodSummaryStatus | null>(null);
   const [tasks, setTasks] = useState<MemoryTask[]>([]);
   const [questions, setQuestions] = useState<MemoryQuestion[]>([]);
-  const [risks, setRisks] = useState<MemoryRisk[]>([]);
   const [concepts, setConcepts] = useState<MemoryConcept[]>([]);
   const [recentNotes, setRecentNotes] = useState<RecentNote[]>([]);
   const [generatingDaily, setGeneratingDaily] = useState(false);
@@ -58,12 +54,11 @@ export function DashboardPage() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [daily, weekly, taskList, questionList, riskList, conceptList, recent] = await Promise.all([
+      const [daily, weekly, taskList, questionList, conceptList, recent] = await Promise.all([
         fetchDailySummary(),
         fetchWeeklySummary(),
         fetchTasks(),
         fetchQuestions(),
-        fetchRisks(),
         fetchConcepts(),
         fetchRecentMemory(8),
       ]);
@@ -71,7 +66,6 @@ export function DashboardPage() {
       setWeeklySummary(weekly);
       setTasks(taskList);
       setQuestions(questionList);
-      setRisks(riskList);
       setConcepts(conceptList);
       setRecentNotes(recent.notes);
     } catch (err) {
@@ -131,12 +125,6 @@ export function DashboardPage() {
       setQuestions((current) => current.filter((q) => q.question_id !== updated.question_id));
     }, "Couldn't dismiss that question.");
 
-  const handleResolveRisk = (risk: MemoryRisk) =>
-    runAction(async () => {
-      const updated = await patchRiskStatus(risk.risk_id, "resolved");
-      setRisks((current) => current.filter((r) => r.risk_id !== updated.risk_id));
-    }, "Couldn't resolve that risk.");
-
   return (
     <div className="mx-auto max-w-6xl">
       <header className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -188,11 +176,9 @@ export function DashboardPage() {
         <WhatToDoPanel
           tasks={tasks}
           questions={questions}
-          risks={risks}
           onToggleTask={handleToggleTask}
           onResolveQuestion={handleResolveQuestion}
           onDismissQuestion={handleDismissQuestion}
-          onResolveRisk={handleResolveRisk}
         />
       </div>
 

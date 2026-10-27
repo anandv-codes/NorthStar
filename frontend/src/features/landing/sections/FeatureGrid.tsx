@@ -28,7 +28,7 @@ const FEATURES = [
   },
   {
     icon: ListChecks,
-    title: "Tasks, questions & risks",
+    title: "Tasks, questions & decisions",
     description: "Action items and open loops are extracted automatically so nothing slips through.",
   },
   {

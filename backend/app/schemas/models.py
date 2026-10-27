@@ -50,8 +50,6 @@ class NoteListResponse(BaseModel):
 
 TaskStatus = Literal["open", "in_progress", "completed", "archived"]
 QuestionStatus = Literal["open", "answered", "archived"]
-RiskStatus = Literal["open", "mitigated", "resolved", "archived"]
-RiskSeverity = Literal["low", "medium", "high"]
 ConceptStatus = Literal["open", "learned", "archived"]
 CreatedBy = Literal["llm", "user", "system"]
 
@@ -96,11 +94,6 @@ class ExtractedDecision(BaseModel):
     entities: List[str] = Field(default_factory=list)
 
 
-class ExtractedRisk(BaseModel):
-    risk: str = Field(..., min_length=1)
-    severity: Optional[RiskSeverity] = None
-    confidence: Optional[float] = Field(default=None, ge=0, le=1)
-    entities: List[str] = Field(default_factory=list)
 class ExtractedConcept(BaseModel):
     concept:str = Field(..., min_length=1)
     confidence: Optional[float] = Field(default=None, ge=0, le=1)
@@ -122,7 +115,6 @@ class WorkMemoryExtraction(BaseModel):
     facts: List[ExtractedFact] = Field(default_factory=list)
     questions: List[ExtractedQuestion] = Field(default_factory=list)
     decisions: List[ExtractedDecision] = Field(default_factory=list)
-    risks: List[ExtractedRisk] = Field(default_factory=list)
     entities: List[ExtractedEntity] = Field(default_factory=list)
     concepts: List[ExtractedConcept] = Field(default_factory=list)
     commitment_contributions: List[ExtractedCommitmentContribution] = Field(
@@ -138,9 +130,6 @@ class TaskUpdateRequest(BaseModel):
 class QuestionUpdateRequest(BaseModel):
     status: QuestionStatus
 
-
-class RiskUpdateRequest(BaseModel):
-    status: RiskStatus
 
 class ConceptUpdateRequest(BaseModel):
     status: ConceptStatus
@@ -197,15 +186,6 @@ class RecentNoteResponse(BaseModel):
     context_note_ids: List[str] = Field(default_factory=list, description="Note IDs used to enrich this summary")
 
 
-class RiskResponse(SourceRef):
-    risk_id: str
-    user_id: str
-    risk: str
-    severity: Optional[RiskSeverity] = None
-    status: RiskStatus
-    created_at: datetime
-    resolved_at: Optional[datetime] = None
-
 class ConceptResponse(SourceRef):
     concept_id: str
     user_id: str
@@ -232,7 +212,6 @@ class NoteMemoryResponse(BaseModel):
     facts: List[FactResponse] = Field(default_factory=list)
     questions: List[QuestionResponse] = Field(default_factory=list)
     decisions: List[DecisionResponse] = Field(default_factory=list)
-    risks: List[RiskResponse] = Field(default_factory=list)
     concepts: List[ConceptResponse] = Field(default_factory=list)
     entities: List[ExtractedEntity] = Field(default_factory=list)
 
@@ -242,7 +221,6 @@ class RecentMemoryResponse(BaseModel):
     decisions: List[DecisionResponse] = Field(default_factory=list)
     tasks: List[TaskResponse] = Field(default_factory=list)
     questions: List[QuestionResponse] = Field(default_factory=list)
-    risks: List[RiskResponse] = Field(default_factory=list)
     concepts: List[ConceptResponse] = Field(default_factory=list)
 
 

@@ -55,12 +55,11 @@ def call_gemini_api(
     try:
         parsed_response = parse_gemini_response(output_text)
         logger.info(
-            "Gemini extraction parsed: tasks=%d facts=%d questions=%d decisions=%d risks=%d concepts=%d contributions=%d",
+            "Gemini extraction parsed: tasks=%d facts=%d questions=%d decisions=%d concepts=%d contributions=%d",
             len(parsed_response.get("tasks", [])),
             len(parsed_response.get("facts", [])),
             len(parsed_response.get("questions", [])),
             len(parsed_response.get("decisions", [])),
-            len(parsed_response.get("risks", [])),
             len(parsed_response.get("concepts", [])),
             len(parsed_response.get("commitment_contributions", [])),
         )

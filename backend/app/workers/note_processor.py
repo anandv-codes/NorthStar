@@ -19,7 +19,6 @@ from ..domain.memory.services import (
     insert_facts,
     insert_memory_item_entity_links,
     insert_questions,
-    insert_risks,
     insert_tasks,
     insert_concepts,
     upsert_entities,
@@ -181,12 +180,6 @@ def process_sqs_message(body:dict)-> dict:
             extraction_run_id=extraction_run["extraction_run_id"],
             decisions=enrichment_res.get("decisions", []),
         )
-        risks = insert_risks(
-            user_id=user_id,
-            source_note_id=note_id,
-            extraction_run_id=extraction_run["extraction_run_id"],
-            risks=enrichment_res.get("risks", []),
-        )
         concepts = insert_concepts(
             user_id=user_id,
             source_note_id=note_id,
@@ -249,7 +242,6 @@ def process_sqs_message(body:dict)-> dict:
         add_links(facts, "fact", "fact_id")
         add_links(questions, "question", "question_id")
         add_links(decisions, "decision", "decision_id")
-        add_links(risks, "risk", "risk_id")
         add_links(concepts, "concept", "concept_id")
 
         if links:
@@ -283,7 +275,6 @@ def process_sqs_message(body:dict)-> dict:
                     "fact": facts,
                     "question": questions,
                     "decision": decisions,
-                    "risk": risks,
                     "concept": concepts,
                 },
             )

@@ -22,15 +22,12 @@ from ...infrastructure.llm.llm_config import (
 from ..memory.services import (
     insert_concepts,
     insert_questions,
-    insert_risks,
     insert_tasks,
     query_concepts_for_user,
     query_questions_for_user,
-    query_risks_for_user,
     query_tasks_for_user,
     update_concept_item,
     update_question_item,
-    update_risk_item,
     update_task_item,
 )
 
@@ -42,7 +39,7 @@ def _truncate(text: str, limit: int = MAX_ITEM_TEXT_LENGTH_FOR_TOOL_CONTEXT) -> 
 
 def _create_synthetic_anchor_note(user_id: str, tool_name: str, source_text: str) -> str:
     """Create a minimal 'note' row so chat-created items satisfy the tasks/questions/
-    risks/concepts tables' NOT NULL source_note_id FK, without running it through the
+    concepts tables' NOT NULL source_note_id FK, without running it through the
     note extraction pipeline (status is already 'processed', no SQS job is sent)."""
     note_id = str(uuid.uuid4())
     put_note_item(
@@ -94,21 +91,6 @@ class AnswerQuestionArgs(BaseModel):
     answer: str = Field(..., min_length=1, description="The answer the user gave for this question.")
 
 
-class CreateRiskArgs(BaseModel):
-    """Record a brand-new open risk. Use only when the user is clearly flagging a new
-    risk/concern to track."""
-
-    risk: str = Field(..., min_length=1, description="Description of the new risk.")
-    severity: str | None = Field(default=None, description="One of: low, medium, high (omit if unstated).")
-
-
-class ResolveRiskArgs(BaseModel):
-    """Mark an existing OPEN risk as resolved. Only use when the user clearly refers to
-    one risk from the 'Open risks' list provided in context, by its id."""
-
-    risk_id: str = Field(..., description="The exact risk_id copied from the Open risks list.")
-
-
 class CreateConceptArgs(BaseModel):
     """Record a brand-new concept the user wants to track learning about. Use only when
     the user is clearly introducing a new concept/topic to learn, not an existing one."""
@@ -132,7 +114,7 @@ class ToolDefinition:
     confirmed_message: Callable[[BaseModel, dict[str, str]], str]
 
 
-# Scoped down to tasks for now — question/risk/concept tools stay defined below
+# Scoped down to tasks for now — question/concept tools stay defined below
 # (and in TOOL_REGISTRY) so re-enabling them later is a one-line change here.
 ENABLED_TOOL_NAMES = {"create_task", "complete_task"}
 
@@ -169,21 +151,6 @@ def _exec_answer_question(user_id: str, args: AnswerQuestionArgs) -> dict[str, A
         question_id=args.question_id,
         updates={"status": "answered", "answer": args.answer},
     )
-
-
-def _exec_create_risk(user_id: str, args: CreateRiskArgs) -> dict[str, Any]:
-    note_id = _create_synthetic_anchor_note(user_id, "create_risk", args.risk)
-    rows = insert_risks(
-        user_id=user_id,
-        source_note_id=note_id,
-        extraction_run_id=None,
-        risks=[{"risk": args.risk, "severity": args.severity, "status": "open", "created_by": "user"}],
-    )
-    return rows[0] if rows else {}
-
-
-def _exec_resolve_risk(user_id: str, args: ResolveRiskArgs) -> dict[str, Any]:
-    return update_risk_item(user_id=user_id, risk_id=args.risk_id, updates={"status": "resolved"})
 
 
 def _exec_create_concept(user_id: str, args: CreateConceptArgs) -> dict[str, Any]:
@@ -236,22 +203,6 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
             f'Done — I\'ve marked "{lookup.get(args.question_id, args.question_id)}" as answered.'
         ),
     ),
-    "create_risk": ToolDefinition(
-        name="create_risk",
-        args_schema=CreateRiskArgs,
-        executor=_exec_create_risk,
-        describe=lambda args, _lookup: f'record a new open risk: "{args.risk}"',
-        confirmed_message=lambda args, _lookup: f'Done — I\'ve recorded the risk "{args.risk}".',
-    ),
-    "resolve_risk": ToolDefinition(
-        name="resolve_risk",
-        args_schema=ResolveRiskArgs,
-        executor=_exec_resolve_risk,
-        describe=lambda args, lookup: f'mark the risk "{lookup.get(args.risk_id, args.risk_id)}" as resolved',
-        confirmed_message=lambda args, lookup: (
-            f'Done — I\'ve marked "{lookup.get(args.risk_id, args.risk_id)}" as resolved.'
-        ),
-    ),
     "create_concept": ToolDefinition(
         name="create_concept",
         args_schema=CreateConceptArgs,
@@ -281,8 +232,6 @@ def build_tool_context(user_id: str) -> tuple[str, dict[str, str]]:
     ]
     if "create_question" in ENABLED_TOOL_NAMES or "answer_question" in ENABLED_TOOL_NAMES:
         sections.append(("Open questions", query_questions_for_user(user_id, status="open"), "question_id", "question"))
-    if "create_risk" in ENABLED_TOOL_NAMES or "resolve_risk" in ENABLED_TOOL_NAMES:
-        sections.append(("Open risks", query_risks_for_user(user_id, status="open"), "risk_id", "risk"))
     if "create_concept" in ENABLED_TOOL_NAMES or "mark_concept_learned" in ENABLED_TOOL_NAMES:
         sections.append(("Open concepts", query_concepts_for_user(user_id, status="open"), "concept_id", "concept"))
 

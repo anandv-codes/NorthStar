@@ -15,7 +15,6 @@ TASKS_TABLE = os.getenv("SUPABASE_TASKS_TABLE", "tasks")
 FACTS_TABLE = os.getenv("SUPABASE_FACTS_TABLE", "facts")
 QUESTIONS_TABLE = os.getenv("SUPABASE_QUESTIONS_TABLE", "questions")
 DECISIONS_TABLE = os.getenv("SUPABASE_DECISIONS_TABLE", "decisions")
-RISKS_TABLE = os.getenv("SUPABASE_RISKS_TABLE", "risks")
 CONCEPTS_TABLE = os.getenv("SUPABASE_CONCEPTS_TABLE", "concepts")
 ENTITIES_TABLE = os.getenv("SUPABASE_ENTITIES_TABLE", "entities")
 MEMORY_ITEM_ENTITIES_TABLE = os.getenv(
@@ -182,32 +181,6 @@ class SupabaseMemoryRepository:
         ]
         return _execute_insert(DECISIONS_TABLE, rows) if rows else []
 
-    def insert_risks(
-        self,
-        user_id: str,
-        source_note_id: str,
-        extraction_run_id: str | None,
-        risks: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        now = _utc_now()
-        rows = [
-            {
-                "risk_id": _new_id(),
-                "user_id": user_id,
-                "source_note_id": source_note_id,
-                "extraction_run_id": extraction_run_id,
-                "risk": risk["risk"],
-                "severity": risk.get("severity"),
-                "status": risk.get("status", "open"),
-                "created_by": risk.get("created_by", "llm"),
-                "confidence": risk.get("confidence"),
-                "created_at": now,
-                "resolved_at": risk.get("resolved_at"),
-            }
-            for risk in risks
-        ]
-        return _execute_insert(RISKS_TABLE, rows) if rows else []
-
     def insert_concepts(
         self,
         user_id: str,
@@ -344,16 +317,6 @@ class SupabaseMemoryRepository:
             raise RuntimeError(str(exc)) from exc
         return response.data if isinstance(response.data, list) else []
 
-    def query_risks_for_user(self, user_id: str, status: str | None = None) -> list[dict[str, Any]]:
-        query = supabase.table(RISKS_TABLE).select("*").eq("user_id", user_id)
-        if status:
-            query = query.eq("status", status)
-        try:
-            response = query.order("created_at", desc=True).execute()
-        except APIError as exc:
-            raise RuntimeError(str(exc)) from exc
-        return response.data if isinstance(response.data, list) else []
-
     def query_concepts_for_user(self, user_id: str, status: str | None = None) -> list[dict[str, Any]]:
         query = supabase.table(CONCEPTS_TABLE).select("*").eq("user_id", user_id)
         if status:
@@ -385,14 +348,12 @@ class SupabaseMemoryRepository:
         decisions = _query(DECISIONS_TABLE)
         tasks = _query(TASKS_TABLE, order_by="updated_at")
         questions = _query(QUESTIONS_TABLE)
-        risks = _query(RISKS_TABLE)
         concepts = _query(CONCEPTS_TABLE)
         return {
             "notes": notes,
             "decisions": decisions,
             "tasks": tasks,
             "questions": questions,
-            "risks": risks,
             "concepts": concepts,
         }
 
@@ -452,51 +413,6 @@ class SupabaseMemoryRepository:
                 .update(updates)
                 .eq("user_id", user_id)
                 .eq("question_id", question_id)
-                .execute()
-            )
-        except APIError as exc:
-            raise RuntimeError(str(exc)) from exc
-
-        rows = response.data if isinstance(response.data, list) else []
-        return rows[0] if rows else {}
-
-    def update_risk_item(self, user_id: str, risk_id: str, updates: dict[str, Any]) -> dict[str, Any]:
-        try:
-            current_response = (
-                supabase.table(RISKS_TABLE)
-                .select("*")
-                .eq("user_id", user_id)
-                .eq("risk_id", risk_id)
-                .limit(1)
-                .execute()
-            )
-        except APIError as exc:
-            raise RuntimeError(str(exc)) from exc
-
-        current_rows = current_response.data if isinstance(current_response.data, list) else []
-        if not current_rows:
-            return {}
-
-        current_item = current_rows[0]
-        next_status = updates.get("status")
-        if next_status:
-            _validate_transition(
-                current_status=str(current_item.get("status", "")),
-                next_status=next_status,
-                transitions=RISK_STATUS_TRANSITIONS,
-                item_type="risk",
-            )
-            if next_status in {"mitigated", "resolved"} and not updates.get("resolved_at"):
-                updates["resolved_at"] = _utc_now()
-            if next_status == "open":
-                updates["resolved_at"] = None
-
-        try:
-            response = (
-                supabase.table(RISKS_TABLE)
-                .update(updates)
-                .eq("user_id", user_id)
-                .eq("risk_id", risk_id)
                 .execute()
             )
         except APIError as exc:
@@ -609,20 +525,6 @@ class SupabaseMemoryRepository:
             raise RuntimeError(str(exc)) from exc
         return response.data if isinstance(response.data, list) else []
 
-    def query_risks_by_source_note(self, user_id: str, note_id: str) -> list[dict[str, Any]]:
-        try:
-            response = (
-                supabase.table(RISKS_TABLE)
-                .select("*")
-                .eq("user_id", user_id)
-                .eq("source_note_id", note_id)
-                .order("created_at", desc=False)
-                .execute()
-            )
-        except APIError as exc:
-            raise RuntimeError(str(exc)) from exc
-        return response.data if isinstance(response.data, list) else []
-
     def query_concepts_by_source_note(self, user_id: str, note_id: str) -> list[dict[str, Any]]:
         try:
             response = (
@@ -716,24 +618,6 @@ class SupabaseMemoryRepository:
     ) -> list[dict[str, Any]]:
         return self._query_in_range(QUESTIONS_TABLE, user_id, start_iso, end_iso, "resolved_at", status="answered")
 
-    def query_risks_opened_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
-        return self._query_in_range(RISKS_TABLE, user_id, start_iso, end_iso, "created_at")
-
-    def query_risks_resolved_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
-        query = (
-            supabase.table(RISKS_TABLE)
-            .select("*")
-            .eq("user_id", user_id)
-            .gte("resolved_at", start_iso)
-            .lt("resolved_at", end_iso)
-            .in_("status", ["mitigated", "resolved"])
-        )
-        try:
-            response = query.order("resolved_at", desc=True).execute()
-        except APIError as exc:
-            raise RuntimeError(str(exc)) from exc
-        return response.data if isinstance(response.data, list) else []
-
     def query_decisions_in_range(self, user_id: str, start_iso: str, end_iso: str) -> list[dict[str, Any]]:
         return self._query_in_range(DECISIONS_TABLE, user_id, start_iso, end_iso, "created_at")
 
@@ -750,15 +634,6 @@ QUESTION_STATUS_TRANSITIONS: dict[str, set[str]] = {
     "answered": {"open"},
     "archived": set(),
 }
-
-RISK_STATUS_TRANSITIONS: dict[str, set[str]] = {
-    # Risks can be mitigated first, but only open items can be newly mitigated.
-    "open": {"mitigated", "resolved"},
-    "mitigated": {"open", "resolved"},
-    "resolved": {"open"},
-    "archived": set(),
-}
-
 
 def _validate_transition(
     current_status: str,

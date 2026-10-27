@@ -34,7 +34,7 @@ Active long-term goals (user-authored; never rewrite them or infer progress from
 
 Please provide the following:
 1. A concise summary of the notes.
-2. Extract typed memory items as tasks, facts, questions, decisions, risks, and entities.
+2. Extract typed memory items as tasks, facts, questions, decisions, concepts, and entities.
 3. For each extracted item, include confidence when possible.
 4. Include only items grounded in the note or clearly supported by related notes.
 5. If related past notes are relevant, use them only as context and do not invent unsupported facts.
@@ -84,14 +84,6 @@ Format your response as JSON with the following structure:
             "decision": "A decision that was made",
             "rationale": "Why this decision was made",
             "confidence": 0.8,
-            "entities": []
-        }
-    ],
-    "risks": [
-        {
-            "risk": "A potential risk identified",
-            "severity": "high",
-            "confidence": 0.75,
             "entities": []
         }
     ],

@@ -123,20 +123,6 @@ export interface MemoryDecision {
   created_at: string;
 }
 
-export interface MemoryRisk {
-  risk_id: string;
-  user_id: string;
-  source_note_id: string;
-  extraction_run_id?: string | null;
-  risk: string;
-  severity?: string | null;
-  status: string;
-  created_by: string;
-  confidence?: number | null;
-  created_at: string;
-  resolved_at?: string | null;
-}
-
 export interface NoteMemoryResponse {
   note: NoteStatus;
   extraction_run?: ExtractionRun | null;
@@ -144,7 +130,6 @@ export interface NoteMemoryResponse {
   facts: MemoryFact[];
   questions: MemoryQuestion[];
   decisions: MemoryDecision[];
-  risks: MemoryRisk[];
   concepts: MemoryConcept[];
   entities: MemoryEntity[];
 }
@@ -178,7 +163,6 @@ export interface RecentMemoryResponse {
   decisions: MemoryDecision[];
   tasks: MemoryTask[];
   questions: MemoryQuestion[];
-  risks: MemoryRisk[];
   concepts: MemoryConcept[];
 }
 
@@ -758,14 +742,6 @@ export async function fetchQuestions(status?: string) {
   return requestJson<MemoryQuestion[]>(`${BASE_URL}/questions${query}`);
 }
 
-export async function fetchRisks(status?: string) {
-  if (MOCK_MODE) {
-    return (await loadMockApi()).fetchRisks(status) as Promise<MemoryRisk[]>;
-  }
-  const query = status ? `?status=${encodeURIComponent(status)}` : "";
-  return requestJson<MemoryRisk[]>(`${BASE_URL}/risks${query}`);
-}
-
 export async function fetchConcepts(status?: string) {
   if (MOCK_MODE) {
     return (await loadMockApi()).fetchConcepts(status) as Promise<MemoryConcept[]>;
@@ -952,20 +928,6 @@ export async function patchQuestionStatus(
     return (await loadMockApi()).patchQuestionStatus(questionId, status) as Promise<MemoryQuestion>;
   }
   return requestJson<MemoryQuestion>(`${BASE_URL}/questions/${questionId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
-  });
-}
-
-export async function patchRiskStatus(
-  riskId: string,
-  status: MemoryRisk["status"],
-) {
-  if (MOCK_MODE) {
-    return (await loadMockApi()).patchRiskStatus(riskId, status) as Promise<MemoryRisk>;
-  }
-  return requestJson<MemoryRisk>(`${BASE_URL}/risks/${riskId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),

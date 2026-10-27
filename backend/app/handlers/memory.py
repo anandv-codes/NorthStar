@@ -4,8 +4,6 @@ from ..schemas.models import (
     QuestionUpdateRequest,
     QuestionResponse,
     RecentMemoryResponse,
-    RiskUpdateRequest,
-    RiskResponse,
     TaskResponse,
     TaskUpdateRequest,
     ConceptUpdateRequest,
@@ -14,10 +12,8 @@ from ..schemas.models import (
 from ..domain.memory.services import (
     query_questions_for_user,
     query_recent_memory_for_user,
-    query_risks_for_user,
     query_tasks_for_user,
     update_question_item,
-    update_risk_item,
     update_task_item,
     query_concepts_for_user,
     update_concept_item,
@@ -68,30 +64,6 @@ def patch_question(question_id: str, user_id: str, payload: QuestionUpdateReques
         raise HTTPException(status_code=404, detail="Question not found")
     return updated
 
-
-@router.get("/risks", response_model=list[RiskResponse])
-def get_risks(user_id: str, status: str | None = "open"):
-    return query_risks_for_user(user_id=user_id, status=status)
-
-
-@router.patch("/risks/{risk_id}", response_model=RiskResponse)
-def patch_risk(risk_id: str, user_id: str, payload: RiskUpdateRequest):
-    updates = payload.model_dump(exclude_none=True)
-    if not updates:
-        raise HTTPException(status_code=400, detail="At least one field is required")
-
-    try:
-        updated = update_risk_item(
-            user_id=user_id,
-            risk_id=risk_id,
-            updates=updates,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    if not updated:
-        raise HTTPException(status_code=404, detail="Risk not found")
-    return updated
 
 @router.get("/concepts", response_model=list[ConceptResponse])
 def get_concepts(user_id:str, status:str | None = "open"):

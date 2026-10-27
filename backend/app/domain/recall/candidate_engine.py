@@ -27,7 +27,6 @@ ITEM_SPECS: dict[str, tuple[str, str]] = {
     "concept": ("concept", "concept_id"),
     "question": ("question", "question_id"),
     "decision": ("decision", "decision_id"),
-    "risk": ("risk", "risk_id"),
 }
 
 
@@ -123,7 +122,6 @@ def attach_item_ids(
                 or row.get("concept")
                 or row.get("question")
                 or row.get("decision")
-                or row.get("risk")
                 or ""
             )
             item_id = row.get(id_field)

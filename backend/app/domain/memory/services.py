@@ -79,19 +79,6 @@ def insert_decisions(
     )
 
 
-def insert_risks(
-    user_id: str,
-    source_note_id: str,
-    extraction_run_id: str | None,
-    risks: list[dict[str, Any]],
-    repo: MemoryRepository | None = None,
-) -> list[dict[str, Any]]:
-    repo = repo or get_memory_repository()
-    return repo.insert_risks(
-        user_id=user_id, source_note_id=source_note_id, extraction_run_id=extraction_run_id, risks=risks
-    )
-
-
 def insert_concepts(
     user_id: str,
     source_note_id: str,
@@ -162,13 +149,6 @@ def query_questions_for_user(
     return repo.query_questions_for_user(user_id=user_id, status=status)
 
 
-def query_risks_for_user(
-    user_id: str, status: str | None = None, repo: MemoryRepository | None = None
-) -> list[dict[str, Any]]:
-    repo = repo or get_memory_repository()
-    return repo.query_risks_for_user(user_id=user_id, status=status)
-
-
 def query_concepts_for_user(
     user_id: str, status: str | None = None, repo: MemoryRepository | None = None
 ) -> list[dict[str, Any]]:
@@ -195,13 +175,6 @@ def update_question_item(
 ) -> dict[str, Any]:
     repo = repo or get_memory_repository()
     return repo.update_question_item(user_id=user_id, question_id=question_id, updates=updates)
-
-
-def update_risk_item(
-    user_id: str, risk_id: str, updates: dict[str, Any], repo: MemoryRepository | None = None
-) -> dict[str, Any]:
-    repo = repo or get_memory_repository()
-    return repo.update_risk_item(user_id=user_id, risk_id=risk_id, updates=updates)
 
 
 def update_concept_item(
@@ -244,13 +217,6 @@ def query_decisions_by_source_note(
 ) -> list[dict[str, Any]]:
     repo = repo or get_memory_repository()
     return repo.query_decisions_by_source_note(user_id=user_id, note_id=note_id)
-
-
-def query_risks_by_source_note(
-    user_id: str, note_id: str, repo: MemoryRepository | None = None
-) -> list[dict[str, Any]]:
-    repo = repo or get_memory_repository()
-    return repo.query_risks_by_source_note(user_id=user_id, note_id=note_id)
 
 
 def query_concepts_by_source_note(

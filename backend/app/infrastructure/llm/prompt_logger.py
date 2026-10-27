@@ -141,9 +141,6 @@ def log_gemini_interaction(
                 f.write(f"\nDecisions: {len(parsed_result.get('decisions', []))}\n")
                 for d in parsed_result.get('decisions', []):
                     f.write(f"  - {d.get('decision', '')} (Rationale: {d.get('rationale', '')})\n")
-                f.write(f"\nRisks: {len(parsed_result.get('risks', []))}\n")
-                for r in parsed_result.get('risks', []):
-                    f.write(f"  - {r.get('risk', '')} [Severity: {r.get('severity', 'unknown')}]\n")
                 f.write(f"\nEntities: {len(parsed_result.get('entities', []))}\n")
                 for e in parsed_result.get('entities', []):
                     f.write(f"  - {e.get('name', '')} ({e.get('entity_type', 'unknown')})\n")

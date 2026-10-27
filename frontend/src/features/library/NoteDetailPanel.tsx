@@ -338,19 +338,6 @@ export function NoteDetailPanel({ noteId }: NoteDetailPanelProps) {
           </ul>
         </Section>
 
-        <Section title="Risks" count={memory.risks.length}>
-          <ul className="space-y-1.5">
-            {memory.risks.map((risk) => (
-              <MemoryRow key={risk.risk_id}>
-                <div className="flex items-start justify-between gap-3">
-                  <span>{risk.risk}</span>
-                  <StatusBadge status={risk.status} />
-                </div>
-              </MemoryRow>
-            ))}
-          </ul>
-        </Section>
-
         <Section title="Concepts" count={memory.concepts.length}>
           <ul className="space-y-1.5">
             {memory.concepts.map((concept) => (
@@ -386,7 +373,6 @@ export function NoteDetailPanel({ noteId }: NoteDetailPanelProps) {
         {memory.tasks.length +
           memory.questions.length +
           memory.decisions.length +
-          memory.risks.length +
           memory.concepts.length +
           memory.facts.length +
           memory.entities.length ===

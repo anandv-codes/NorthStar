@@ -12,7 +12,7 @@ Apply in this exact order on a fresh database:
 |---|------|------|
 | 1 | `auth_jwt.sql` | `users`, `refresh_tokens` (JWT auth) |
 | 2 | `chat_conversations.sql` | `chat_threads`, `chat_messages`, `pending_chat_actions` |
-| 3 | `phase3_work_memory.sql` | `notes`, `entities`, tasks/facts/questions/decisions/risks/concepts, extraction runs, summaries |
+| 3 | `phase3_work_memory.sql` | `notes`, `entities`, tasks/facts/questions/decisions/concepts, extraction runs, summaries, and the legacy dormant `risks` table |
 | 4 | `phase4_recall.sql` | per-note recall opt-in, `note_entities`, `commitments`, `recall_candidates`, `recall_cards`, `review_history` |
 | 5 | `phase4_recall_scheduler.sql` | Anki scheduler columns (`state`, `learning_step`) on `recall_cards` |
 | 6 | `phase4_recall_decks.sql` | `recall_decks`, `deck_id` on candidates/cards, General deck backfill |

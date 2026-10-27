@@ -127,7 +127,6 @@ INTENT_RETRIEVAL_HINTS = {
     "memory",
     "task",
     "question",
-    "risk",
     "decision",
 }
 

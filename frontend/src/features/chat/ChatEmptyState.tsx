@@ -4,12 +4,12 @@ import { ArrowUpRight, Sparkle } from "@phosphor-icons/react";
 import { fetchTasks, type MemoryTask } from "../../shared/api/httpClient";
 import { LogoMark } from "../../shared/ui/Logo";
 
-const SUGGESTED_PROMPT = "What are the key risks I should follow up on this week?";
+const SUGGESTED_PROMPT = "What decisions did I make this week?";
 
 const QUICK_ACTIONS = [
   "Summarize what I logged today",
   "What's still open from this week?",
-  "Any risks I should know about?",
+  "Which tasks are still open?",
 ];
 
 interface ChatEmptyStateProps {

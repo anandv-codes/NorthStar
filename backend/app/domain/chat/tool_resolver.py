@@ -26,7 +26,7 @@ from ...infrastructure.llm.llm_config import (
 from .tools import ENABLED_TOOL_NAMES, TOOL_REGISTRY, build_tool_context
 
 SYSTEM_PROMPT_TEMPLATE = """You decide whether the user's latest message is an explicit, unambiguous \
-request to create or update one work-memory item (a task, question, risk, or concept).
+request to create or update one work-memory item (a task, question, or concept).
 
 Rules:
 - Only call a tool if the request is clear. If it's vague, conversational, or just a question, do not call any tool.

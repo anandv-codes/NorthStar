@@ -11,7 +11,6 @@ from ..domain.memory.services import (
     query_facts_by_source_note,
     query_questions_by_source_note,
     query_decisions_by_source_note,
-    query_risks_by_source_note,
     query_entities_by_source_note,
 )
 from ..infrastructure.queue.sqs_client import send_note_job
@@ -87,7 +86,6 @@ def get_note_memory(note_id: str, user_id: str):
     facts = query_facts_by_source_note(user_id=user_id, note_id=note_id)
     questions = query_questions_by_source_note(user_id=user_id, note_id=note_id)
     decisions = query_decisions_by_source_note(user_id=user_id, note_id=note_id)
-    risks = query_risks_by_source_note(user_id=user_id, note_id=note_id)
     entities = query_entities_by_source_note(user_id=user_id, note_id=note_id)
 
     payload = {
@@ -97,10 +95,9 @@ def get_note_memory(note_id: str, user_id: str):
         "facts": facts,
         "questions": questions,
         "decisions": decisions,
-        "risks": risks,
         "entities": entities,
     }
-    logger.info(f"memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, risks={len(risks)}, entities={len(entities)}")
+    logger.info(f"memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, entities={len(entities)}")
     return payload
 
 

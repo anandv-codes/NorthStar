@@ -26,7 +26,7 @@ only meet when chat retrieval reads from the notes that already exist.
 
 | Store | Type | What it holds | Good at |
 |---|---|---|---|
-| Relational (Postgres/Supabase) | structured rows | notes, tasks, facts, questions, decisions, risks, concepts, chat threads, chat messages | exact filters ("all open tasks"), source of truth, cheap reads |
+| Relational (Postgres/Supabase) | structured rows | notes, tasks, facts, questions, decisions, concepts, chat threads, chat messages | exact filters ("all open tasks"), source of truth, cheap reads |
 | Vector (Chroma) | embeddings | one vector per note, tagged with `user_id` | "meaning" search — finds a note even if the wording is totally different |
 | BM25 (in-memory index) | keyword index | tokenized note text, rebuilt from the relational notes | exact keyword/ID matches ("Datafix 42") |
 
@@ -49,7 +49,7 @@ Each `POST /notes` call does this ([notes.py](../../backend/app/api/routes/notes
 1. Save the raw note to the relational `notes` table with `status=processing`.
 2. Queue a background job (SQS) to process it (or run inline in dev).
 3. **Worker runs once**, calling Gemini to extract structured pieces out of
-   the raw text: a summary, tasks, facts, questions, decisions, risks.
+   the raw text: a summary, tasks, facts, questions, decisions, concepts.
 4. Those structured pieces become **new rows** in relational tables:
    `tasks`, `facts`, `decisions`, etc. Example: a `tasks` row like
    *"Get lead confirmation on Datafix 42"*, later flipped to `completed`.

@@ -46,7 +46,6 @@ def test_build_note_metadata_normalizes_scores_and_keeps_all_types():
         "concepts": [{"concept": "concept", "durability": 0.9}],
         "questions": [{"question": "why?"}],
         "decisions": [{"decision": "decided"}],
-        "risks": [{"risk": "risk"}],
         "entities": [{"name": "pgvector"}],
         "commitment_contributions": [
             {"commitment_id": "goal-1", "comment": "Sent the report."}
@@ -60,6 +59,7 @@ def test_build_note_metadata_normalizes_scores_and_keeps_all_types():
     assert metadata["facts"][0]["importance"] == 0.6
     assert metadata["concepts"][0]["durability"] == 0.9
     assert metadata["questions"] == [{"question": "why?"}]
+    assert "risks" not in metadata
     assert metadata["commitment_contributions"] == [
         {"commitment_id": "goal-1", "comment": "Sent the report."}
     ]

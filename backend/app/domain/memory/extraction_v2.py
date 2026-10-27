@@ -87,7 +87,6 @@ def build_note_metadata(extraction: dict[str, Any]) -> dict[str, Any]:
         "concepts": [_scored_item(concept) for concept in extraction.get("concepts", [])],
         "questions": list(extraction.get("questions", [])),
         "decisions": list(extraction.get("decisions", [])),
-        "risks": list(extraction.get("risks", [])),
         "entities": list(extraction.get("entities", [])),
         "commitment_contributions": list(
             extraction.get("commitment_contributions", [])

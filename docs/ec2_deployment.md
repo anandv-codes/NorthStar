@@ -990,7 +990,7 @@ TOKEN=$(curl -s -X POST "$API/auth/register" \
 
 NOTE=$(curl -s -X POST "$API/notes" \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"text":"Met the design team. We decided to simplify onboarding. Risk: the API deadline is tight.","recall_enabled":true}')
+  -d '{"text":"Met the design team. We decided to simplify onboarding. Follow up with billing about the API deadline.","recall_enabled":true}')
 echo "$NOTE"
 NOTE_ID=$(echo "$NOTE" | python3 -c 'import sys,json; print(json.load(sys.stdin)["note_id"])')
 ```
@@ -1022,7 +1022,7 @@ echo "$CANDIDATES"
 CANDIDATE_ID=$(echo "$CANDIDATES" \
   | python3 -c 'import sys,json; s=json.load(sys.stdin)["suggestions"]; print(s[0]["candidate_id"] if s else "")')
 
-[ -n "$CANDIDATE_ID" ] || { echo "No candidates; create another note with a decision and an open risk."; exit 1; }
+[ -n "$CANDIDATE_ID" ] || { echo "No candidates; create another note with a decision and a follow-up task."; exit 1; }
 
 ACCEPT=$(curl -s -X POST "$API/recall/candidates/$CANDIDATE_ID/accept" \
   -H "Authorization: Bearer $TOKEN")
@@ -1033,7 +1033,7 @@ CARD_ID=$(echo "$ACCEPT" \
 
 The note text above is chosen to produce at least one candidate; if the queue is
 empty, the eligibility threshold rejected it. Create another note with two
-related items (a decision plus an open risk) and re-check.
+related items (a decision plus a follow-up task) and re-check.
 
 ```bash
 curl -s "$API/recall/due" -H "Authorization: Bearer $TOKEN"

@@ -32,7 +32,6 @@ from ...domain.memory.services import (
     query_facts_by_source_note,
     query_questions_by_source_note,
     query_decisions_by_source_note,
-    query_risks_by_source_note,
     query_concepts_by_source_note,
     query_entities_by_source_note,
 )
@@ -169,7 +168,6 @@ def get_note_memory(note_id: str, user_id: str = Depends(get_current_user_id)):
     facts = query_facts_by_source_note(user_id=user_id, note_id=note_id)
     questions = query_questions_by_source_note(user_id=user_id, note_id=note_id)
     decisions = query_decisions_by_source_note(user_id=user_id, note_id=note_id)
-    risks = query_risks_by_source_note(user_id=user_id, note_id=note_id)
     concepts = query_concepts_by_source_note(user_id=user_id, note_id=note_id)
     entities = query_entities_by_source_note(user_id=user_id, note_id=note_id)
 
@@ -180,11 +178,10 @@ def get_note_memory(note_id: str, user_id: str = Depends(get_current_user_id)):
         "facts": facts,
         "questions": questions,
         "decisions": decisions,
-        "risks": risks,
         "concepts": concepts,
         "entities": entities,
     }
-    logger.info(f"memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, risks={len(risks)}, concepts={len(concepts)}, entities={len(entities)}")
+    logger.info(f"memory snapshot ready: tasks={len(tasks)}, facts={len(facts)}, questions={len(questions)}, decisions={len(decisions)}, concepts={len(concepts)}, entities={len(entities)}")
     return payload
 
 

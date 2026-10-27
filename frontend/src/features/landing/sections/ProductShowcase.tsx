@@ -6,7 +6,7 @@ import { SectionHeading } from "../../../shared/ui/SectionHeading";
 const SUMMARY_HIGHLIGHTS = [
   "3 notes captured today",
   "2 open questions resolved",
-  "1 risk flagged for review",
+  "1 decision recorded",
 ];
 
 export function ProductShowcase() {

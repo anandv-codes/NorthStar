@@ -25,8 +25,8 @@ The implementation is best described as a pragmatic layered monolith with an eve
 | --- | --- | --- |
 | Account lifecycle | Register, sign in, refresh a session, sign out, and load the current profile. | `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, and `GET /auth/me` in `backend/app/api/routes/auth.py`. |
 | Note capture | Submit free-form work notes and receive an asynchronous processing status. | `POST /notes`, `GET /notes/{note_id}` in `backend/app/api/routes/notes.py`; the React note-capture view polls every 1.5 seconds. |
-| AI enrichment | Convert a note into a summary plus tasks, facts, questions, decisions, risks, entities, and concepts. | `backend/app/workers/note_processor.py` and `backend/app/infrastructure/llm/gemini_client.py`. |
-| Work-memory dashboard | Review recent notes and extracted tasks, questions, risks, and concepts. Update task, question, risk, and concept state. | `frontend/src/app/App.tsx`, dashboard components, and `backend/app/api/routes/memory.py`. |
+| AI enrichment | Convert a note into a summary plus tasks, facts, questions, decisions, entities, and concepts. | `backend/app/workers/note_processor.py` and `backend/app/infrastructure/llm/gemini_client.py`. |
+| Work-memory dashboard | Review recent notes and extracted tasks, questions, and concepts. Update task, question, and concept state. | `frontend/src/app/App.tsx`, dashboard components, and `backend/app/api/routes/memory.py`. |
 | Persistent chat | Start or resume a user-specific chat thread with saved message history and rolling summaries. | `POST /chat/message`, `GET /chat/threads/{thread_id}`, and `backend/app/domain/chat/services.py`. |
 | Grounded AI answers | Route chat intents, retrieve relevant notes when appropriate, assess grounding, and generate an answer with retrieved context. | `backend/app/domain/chat/orchestrator.py` and `backend/app/domain/routing/`. |
 | Hybrid memory search | Combine semantic, keyword, and optional rewritten-query results; apply optional local reranking. | `POST /retrieval/query` and `backend/app/domain/query_retrieval/services.py`. |
@@ -138,7 +138,7 @@ The frontend follows a lightweight feature-oriented structure:
 | --- | --- |
 | Authentication | Register, login, refresh, logout, and current-user lookup. |
 | Notes | Create a processing note, read processing state, read the extracted memory snapshot, and manually poll/process SQS jobs for development. |
-| Memory | List and update tasks, questions, risks, and concepts; read recent work memory. |
+| Memory | List and update tasks, questions, and concepts; read recent work memory. |
 | Retrieval | Retrieve hybrid note context for an explicit query. |
 | Chat | Send a message and retrieve a saved chat thread. |
 
@@ -185,7 +185,7 @@ Environment variables control retrieval depth, RRF, rewriting thresholds, and th
 | Chroma | Derived, rebuildable index | User-scoped note embeddings, original note text, and note summaries used for semantic retrieval. |
 | SQS | Durable work queue | Note-processing job payloads. |
 
-The SQL schema in `backend/sql/phase3_work_memory.sql` models a note as the origin of an extraction run and typed memory records. Each task, fact, question, decision, risk, and concept retains `user_id`, `source_note_id`, optional extraction-run provenance, timestamps, and an LLM confidence value. Entities are user-unique and connect to extracted items through `memory_item_entities`.
+The SQL schema in `backend/sql/phase3_work_memory.sql` models a note as the origin of an extraction run and typed memory records. Each task, fact, question, decision, and concept retains `user_id`, `source_note_id`, optional extraction-run provenance, timestamps, and an LLM confidence value. Entities are user-unique and connect to extracted items through `memory_item_entities`. The legacy `risks` table remains for existing data but is no longer read or written by the application; see `entity-deprecation.md`.
 
 ```mermaid
 erDiagram
@@ -194,7 +194,6 @@ erDiagram
     NOTES ||--o{ FACTS : source
     NOTES ||--o{ QUESTIONS : source
     NOTES ||--o{ DECISIONS : source
-    NOTES ||--o{ RISKS : source
     NOTES ||--o{ CONCEPTS : source
     EXTRACTION_RUNS ||--o{ TASKS : records
     EXTRACTION_RUNS ||--o{ FACTS : records
@@ -258,12 +257,12 @@ No Dockerfile, infrastructure-as-code definition, CI/CD workflow, production fro
 
 Use this description only after validating the project in an environment with Supabase, Gemini, and SQS configured:
 
-> Built NorthStar, an AI-powered work-memory platform that converts unstructured notes into searchable tasks, decisions, risks, and knowledge. Designed a FastAPI and React architecture with asynchronous SQS/Lambda enrichment, Gemini-based structured extraction and grounded chat, Supabase persistence, and hybrid BM25 plus vector retrieval fused with Reciprocal Rank Fusion.
+> Built NorthStar, an AI-powered work-memory platform that converts unstructured notes into searchable tasks, decisions, and knowledge. Designed a FastAPI and React architecture with asynchronous SQS/Lambda enrichment, Gemini-based structured extraction and grounded chat, Supabase persistence, and hybrid BM25 plus vector retrieval fused with Reciprocal Rank Fusion.
 
 ### Defensible Resume Bullets
 
 - Designed a layered FastAPI backend that separates HTTP APIs, work-memory domain logic, external adapters, and asynchronous workers.
-- Implemented an event-driven note-processing pipeline using SQS and a Lambda-compatible Python worker to extract structured tasks, facts, questions, decisions, risks, entities, and concepts from free-form notes.
+- Implemented an event-driven note-processing pipeline using SQS and a Lambda-compatible Python worker to extract structured tasks, facts, questions, decisions, entities, and concepts from free-form notes.
 - Built a hybrid retrieval pipeline combining Chroma semantic search, user-scoped BM25 search, guarded Gemini query rewriting, Reciprocal Rank Fusion, and pluggable reranking.
 - Created persistent, grounded chat workflows with intent routing, conversation summaries, retrieval context, and evidence-aware response generation.
 - Developed a React and TypeScript dashboard for note capture, processing-state polling, and managing extracted work-memory records.
