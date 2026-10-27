@@ -74,6 +74,12 @@ machine and indexing failure is visible."*
 
 **Done (2026-10-28) — commit `5eb5093`.**
 
+**Applied and verified on the live database (2026-10-28):** 16 rows migrated to
+`indexed` with `indexed_at` backfilled, 0 `completed` remaining, 0 rows outside the
+vocabulary, 0 indexed rows missing a timestamp, 0 non-indexed rows carrying one. The
+`CHECK` constraint itself is confirmed by the migration's success plus a `pg_constraint`
+query, since PostgREST does not expose catalogs.
+
 **What changed:** `NoteStatus = processing | enriched | indexed | failed`; new
 `indexed_at` and `index_error` columns; `phase6_note_status.sql` backfills legacy
 `completed` rows and adds a `CHECK`; `domain/memory/note_status.py` holds the transition
