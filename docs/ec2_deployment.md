@@ -939,7 +939,7 @@ Forbidden`.
       `VITE_MOCK_MODE=false`.
 - [ ] Nginx SPA fallback works (deep-link refresh on `/recall`).
 - [ ] Certbot renewed (`sudo certbot renew --dry-run`).
-- [ ] Mic works over HTTPS (Chrome/Edge/Android; Firefox is unsupported).
+- [ ] Mic works over HTTPS (Chrome/Edge/Android/Safari; Firefox, Brave, and some Chromium forks are unsupported).
 - [ ] Smoke test below passes end-to-end.
 - [ ] Baseline API p95 captured with k6; VUs, duration, endpoints, and
       instance type recorded.
@@ -1239,7 +1239,7 @@ sudo -H -u northstar git -C /opt/northstar checkout prd-m1
 | `Killed` during pip/npm | Out of memory | Use `t3.medium` + swap, or the slim requirements |
 | Nginx `403 Forbidden` | `www-data` cannot read `dist/` | `sudo chmod -R o+rX /opt/northstar/frontend/dist` and ensure `/opt/northstar` is `755` |
 | Certbot challenge fails | DNS not propagated, port 80 closed, or Cloudflare proxy | `dig` both names; open 80; grey-cloud during issuance |
-| Mic disabled in UI | Insecure origin or unsupported browser | Use `https://app…`; Chrome/Edge/Android supported, Firefox not |
+| Mic disabled in UI | Insecure origin or unsupported browser | Use `https://app…`; Chrome/Edge/Android/Safari supported. Firefox has no API; Brave and some Chromium forks expose it but have no speech service |
 | 401 after deploy | `JWT_SECRET_KEY` changed | Log in again; tokens signed with the old key are invalid |
 | `413 Request Entity Too Large` | Note body exceeds Nginx limit | Raise `client_max_body_size` in the API server block |
 | `Address already in use` on 8000 | Another uvicorn process | `ss -ltnp \| grep 8000`; kill the stray process, restart the unit |
@@ -1283,8 +1283,10 @@ sudo -H -u northstar git -C /opt/northstar checkout prd-m1
 - `PROCESS_NOTES_INLINE=true` is for local debugging only; with it, note
   processing runs inside the API request and can time out.
 - Browser dictation is client-side: audio is handled by the browser vendor
-  (not NorthStar), requires HTTPS/localhost, and is unavailable in Firefox.
-  Chrome, Edge, Android Chrome, and recent Safari support it.
+  (not NorthStar) and requires HTTPS/localhost. Chrome, Edge, Android Chrome,
+  and recent Safari support it. Firefox has no API; Brave and some Chromium
+  forks expose the API but have no speech-recognition service, so they fail
+  with an unsupported-browser message.
 - The default `SQS_QUEUE_URL` in code is a placeholder. If you forget to set it,
   the services start but the worker logs queue errors on every poll; §5.2
   catches this before go-live.

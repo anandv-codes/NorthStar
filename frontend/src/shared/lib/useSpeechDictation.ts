@@ -5,9 +5,26 @@ const ERROR_MESSAGES: Record<string, string> = {
   "service-not-allowed": "Voice input is blocked by the browser on this device.",
   "audio-capture": "No microphone was found. Check that one is connected and available.",
   "no-speech": "Didn't catch that — try speaking again.",
-  network: "Voice input lost its connection. Check your network and try again.",
+  network: "Your browser's speech recognition service couldn't be reached. Check your connection or try Chrome or Edge.",
   "language-not-supported": "Voice input isn't available for this language.",
 };
+
+const BRAVE_NETWORK_ERROR =
+  "Brave doesn't provide speech recognition, so voice input can't work here. Open NorthStar in Chrome or Edge, or type instead.";
+
+function isBraveBrowser(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    Boolean((navigator as Navigator & { brave?: unknown }).brave)
+  );
+}
+
+function speechErrorMessage(error: string): string {
+  if (error === "network" && isBraveBrowser()) {
+    return BRAVE_NETWORK_ERROR;
+  }
+  return ERROR_MESSAGES[error] ?? "Voice input hit a problem. Please try again.";
+}
 
 function getRecognitionConstructor(): SpeechRecognitionConstructor | null {
   if (typeof window === "undefined") {
@@ -136,7 +153,7 @@ export function useSpeechDictation({ onFinal }: UseSpeechDictationOptions): Spee
         return;
       }
       setStarting(false);
-      setError(ERROR_MESSAGES[event.error] ?? "Voice input hit a problem. Please try again.");
+      setError(speechErrorMessage(event.error));
       setListening(false);
       setInterim("");
     };
