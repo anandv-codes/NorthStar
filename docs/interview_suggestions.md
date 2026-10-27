@@ -39,16 +39,55 @@ because you did it, twice, and can talk about both.
 calls, so a redelivery duplicated every typed memory. Now the fan-out is one RPC over a
 persisted payload — at-least-once delivery is safe because the attempt key is stable."*
 
-**Status: deferred (2026-10-28).** Not attempted. The dev environment has no Postgres,
-no Docker, and no Supabase CLI, so the RPC could not be executed once. Shipping SQL that
-nobody has run would have traded one interview risk for a worse one.
+**Done (2026-10-28) — commit `8216d5f`. Applied to the live database before the API/worker.**
 
-**Decision already made, so the next session starts at the code:** a `phase7` migration
-adding `extraction_runs.payload jsonb` and `fanned_out boolean`, `create_extraction_run`
-keyed on `note_id` (so a redelivery reuses the same attempt key instead of minting a new
-run id), and `ingest_note_memories(...)` doing the fan-out in one transaction. Note this
-only becomes *fully* correct together with item 5 — the function needs a natural key to
-`on conflict` against.
+**What changed:**
+- `backend/sql/phase7_atomic_ingestion.sql`: `extraction_runs.payload jsonb` and
+  `fanned_out boolean`; a unique index on `extraction_runs(note_id)` makes `note_id` the
+  stable attempt key; `begin_extraction_run(...)` reuses-or-creates the run; and
+  `ingest_note_memories(...)` locks the run `for update`, writes every typed row, entity,
+  link, and goal contribution in one transaction, then returns the persisted rows. A retry
+  sees `fanned_out = true` and returns those rows instead of inserting again.
+- `note_processor.py`: the LLM call happens only when `extraction_runs.payload` is null;
+  the payload is saved *before* the fan-out, and the twelve PostgREST calls collapse into
+  one RPC. A duplicate delivery of an `indexed` note is acknowledged without re-running.
+- `memory_repository.py`: `begin_extraction_run`, `save_extraction_payload`,
+  `ingest_note_memories`. `create_extraction_run` was removed — it minted a new run id per
+  call, which the unique index now forbids.
+
+**What I learned:**
+- **The attempt key is the design.** "Idempotent" means nothing until you name the key a
+  redelivery repeats. `note_id` is stable in the SQS message, so one run per note is the
+  invariant; a fresh UUID per attempt is the bug, not the fix.
+- **Persist before the side effect.** Saving the payload before the fan-out is what makes a
+  retry cheap: "payload present" means "the LLM already ran". Saving it after the fan-out
+  leaves a crash window that pays for the extraction again.
+- **`fanned_out` is a commit marker, not a cache flag.** It is set in the same transaction
+  as the writes, so a retry sees either both the rows and the marker, or neither.
+- **The marker is only trustworthy with a lock.** Without `select ... for update`, two
+  concurrent deliveries both read `fanned_out = false` and both insert.
+- **Natural-key `on conflict` needs a natural key.** Links de-duplicate on their primary key
+  and contributions on `(commitment_id, note_id)`; the typed tables still have no natural
+  key (item 5), so they rely on the attempt-level guard. That is the honest boundary.
+- **PostgREST can still be transactional.** The transaction boundary is the RPC, not the
+  HTTP request: one `supabase.rpc(...)` is one transaction, and an exception rolls back
+  every write in it.
+- **Legacy rows are the migration's real test.** Existing runs had already fanned out with
+  `payload = null`; the migration marks them `fanned_out = true`, so a redelivery cannot
+  duplicate them. Reprocessing one costs a redundant LLM call and then no-ops.
+- **Idempotency has to reach the terminal state.** A redelivery of an `indexed` note used to
+  fail the state machine (`indexed -> enriched`); it is now an acknowledged no-op.
+
+**Verified on the live database (2026-10-28):** 16 runs backfilled to `fanned_out = true`,
+still one run per note; `begin_extraction_run` returned the same run id twice; a throwaway
+probe note fanned out to exactly one row in each typed table plus five links, and the second
+`ingest_note_memories` call returned `duplicate: true` with the same rows and no new writes.
+All probe rows were deleted (notes, run, entities, links: 0 left). 327 tests pass, including
+a replay test that asserts zero LLM calls on the second attempt.
+
+**Still open:** concurrent *first* deliveries can both call the LLM before either saves the
+payload (the fan-out is still exactly-once). Item 5's unique constraints remain
+defense-in-depth, not a prerequisite.
 
 ---
 
