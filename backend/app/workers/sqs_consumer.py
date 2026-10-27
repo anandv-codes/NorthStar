@@ -1,7 +1,7 @@
 """Long-running SQS consumer for note-processing jobs.
 
-This is the EC2-native replacement for the manual
-``POST /notes/poll/process-jobs`` debug endpoint. Run it as its own systemd
+This replaces the former manual ``POST /notes/poll/process-jobs`` debug
+endpoint (now removed). Run it as its own systemd
 service so note-processing CPU never competes with API request handling:
 
     python -m app.workers.sqs_consumer

@@ -36,7 +36,6 @@ from ...domain.memory.services import (
     query_entities_by_source_note,
 )
 from ...infrastructure.queue.sqs_client import send_note_job
-from ...infrastructure.queue.sqs_poller import poll_sqs_messages, delete_sqs_message
 from ...workers.note_processor import process_sqs_message
 
 logger = logging.getLogger(__name__)
@@ -260,34 +259,3 @@ def toggle_note_recall(
         questions_generated=questions_generated,
         suggestions_total=suggestions_total,
     )
-
-
-@router.post("/poll/process-jobs")
-def poll_and_process_jobs(_: str = Depends(get_current_user_id)):
-    """Poll SQS queue for pending note jobs and process them synchronously."""
-    logger.info("[HANDLER] Starting SQS polling")
-    messages = poll_sqs_messages(max_messages=10, wait_time_seconds=1)
-
-    if not messages:
-        logger.info("[HANDLER] No messages in queue")
-        return {"processed": 0, "failed": 0}
-
-    processed = 0
-    failed = 0
-
-    for message in messages:
-        try:
-            logger.info(f"[HANDLER] Processing message {message['message_id']}")
-            result = process_sqs_message(message["body"])
-            logger.info(f"[HANDLER] Message processed successfully: {result}")
-
-            if delete_sqs_message(message["receipt_handle"]):
-                processed += 1
-            else:
-                failed += 1
-        except Exception as e:
-            logger.error(f"[HANDLER] Error processing message {message['message_id']}: {e}")
-            failed += 1
-
-    logger.info(f"[HANDLER] Polling complete - processed={processed}, failed={failed}")
-    return {"processed": processed, "failed": failed}

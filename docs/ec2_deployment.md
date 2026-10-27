@@ -1270,9 +1270,8 @@ sudo -H -u northstar git -C /opt/northstar checkout prd-m1
 
 ## 16. Notes and known constraints
 
-- `POST /notes/poll/process-jobs` remains a **debug-only** endpoint. Queue
-  consumption belongs to `northstar-note-worker`; do not rely on the HTTP
-  endpoint in production.
+- `POST /notes/poll/process-jobs` has been **removed**. Queue consumption
+  belongs only to `northstar-note-worker`; no HTTP path drains the queue.
 - Because the vector index lives in Postgres, the API tier is stateless and
   **can** scale horizontally behind an ALB later. You do not need that today.
 - Only one worker is needed to start. Increase concurrency by running more
