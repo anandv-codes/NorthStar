@@ -1,5 +1,9 @@
 # NorthStar Project Architecture Blueprint
 
+> **Deprecated — historical snapshot (generated 2026-07-12).** Describes the pre-pgvector design.
+> See the architecture map in `docs/interview_questions.md` §3 and current code/migrations for
+> live status.
+
 Generated for the NorthStar work-memory project on 2026-07-12.
 
 ## 1) Architecture summary

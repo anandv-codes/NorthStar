@@ -11,6 +11,29 @@ This file is what to *change* so you have less to explain away.
 weaknesses. Close four of them and the interview changes character — you stop defending
 and start choosing.
 
+## Status snapshot (2026-10-30)
+
+Re-verify before quoting in an interview; this is a documentation snapshot, not a CI result.
+
+| # | Item | Status |
+| --- | --- | --- |
+| 1 | Atomic ingestion | Done |
+| 2 | Status vocabulary | Done |
+| 3 | Gate `POST /notes/poll/process-jobs` | Done |
+| 4 | RLS + credential change | Open — no RLS policies in `backend/sql/` |
+| 5 | Unique typed-memory constraints | Done |
+| 6 | Route-level main-path tests | Done |
+| 7 | Fail CI on eval regression | Open — baselines are report-only |
+| 8 | Non-mutating BM25 search | Open — `BM25Index.search()` still assigns `model.k1`/`model.b` |
+| 9 | Cheaper version signal | Partial — fingerprint no longer hashes full text, but still fetches every note |
+| 10 | Hoist per-request thread pool | Open — `ThreadPoolExecutor` is still created per request |
+| 11 | ADRs | Open — no `docs/adr/` |
+| 12 | Fix stale docs | Done — both blueprints now carry historical/deprecated banners |
+| 13 | Delete dead weight | Done |
+| 14 | `Settings` object | Open |
+| 15 | Dockerfile + compose | Open |
+| 16 | Architecture map in README | Open |
+
 ---
 
 ## Tier 1 — Removes the biggest attack surfaces
@@ -336,6 +359,10 @@ a trigger, instead of loading all notes and hashing them on every retrieval.
 **Why:** Q15 is the "find the scaling wall in your hot path" question. Today the answer is
 "we read the whole corpus per query". After, it's "one indexed aggregate".
 
+**Partial (2026-10-30):** `fingerprint_notes()` now hashes only `note_id|updated_at` (or
+`created_at`) instead of full note text, so the check is cheaper. It still fetches every note to
+compute that fingerprint; the `max(updated_at)` + `count(*)` / `notes_version` query is still open.
+
 **Effort:** S. Measures well in `loadtest/k6-read.js` afterwards — take the before/after p95
 and quote it. Numbers make this answer land.
 
@@ -372,16 +399,17 @@ Alternatives rejected.
 
 ### 12. Fix the stale docs
 
-**Change:** `docs/blueprint.md` and `docs/Project_Architecture_Blueprint.md` still describe
+**Change:** `docs/blueprint.md` and `docs/Project_Architecture_Blueprint.md` described
 Chroma, `vectorstore.py`, `token_overlap` reranking, and "direct client adapters rather than
-a repository abstraction". All four are wrong.
+a repository abstraction". Both are now marked as historical/deprecated; use the architecture
+map and current migrations instead.
 
 **Why:** an interviewer reads the README and the blueprint first. Finding a doc that
 contradicts the code costs you credibility before you've said a word. Delete, or add a
 one-line banner: *"Historical — describes the pre-pgvector design. See architecture map in
 docs/interview_questions.md §3."*
 
-**Effort:** XS. Do this one tonight.
+**Effort:** XS. **Done (2026-10-30):** historical/deprecated banners added to both blueprints.
 
 ---
 
@@ -478,14 +506,14 @@ changing them costs days and buys you little in an interview.
 
 ## Suggested order of work
 
+Items 1, 2, 3, 5, 6, 12, and 13 are done. Remaining order:
+
 | When | What | Why then |
 |---|---|---|
-| **Tonight (30 min)** | Items 12, 13, 3 | Delete contradictions and the cross-tenant endpoint. Pure upside, no risk. |
-| **Day 1** | Item 2 (status fix), item 8 (BM25), item 10 (pool) | Small, self-contained, immediately answerable. |
-| **Day 2** | Item 1 (atomic ingestion RPC) | The big one. Do it alone, with a test that redelivers a message twice and asserts no duplicates. |
-| **Day 3** | Item 6 (route tests), item 7 (eval gate), item 11 (ADRs) | Now you have a story and evidence. |
+| **Next** | Items 8 (BM25), 10 (pool) | Small, self-contained, immediately answerable. |
+| **Then** | Item 7 (eval gate), item 11 (ADRs) | Now you have a story and evidence. |
 | **If time remains** | Item 4 (RLS), item 15 (compose) | Highest value, highest risk. |
-| **After the interview** | Items 9, 14 | Genuine improvements, not interview leverage. |
+| **After the interview** | Items 9, 14, 16 | Genuine improvements, not interview leverage. |
 
 ---
 
