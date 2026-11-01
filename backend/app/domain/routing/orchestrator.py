@@ -19,6 +19,7 @@ from ..chat.routing_contracts import (
 PlanBuilder = Callable[[IntentDecision], list[RoutingPlanStep]]
 RetrievalRunner = Callable[[RoutingContext], dict[str, Any] | None]
 GroundingRunner = Callable[[RoutingContext, dict[str, Any] | None], GroundingSnapshot]
+ReadToolRunner = Callable[[RoutingContext, str], str]
 ResponseRunner = Callable[
     [RoutingContext, RoutingDecision, Sequence[RoutingPlanStep], dict[str, Any] | None, GroundingSnapshot],
     str,
@@ -32,6 +33,7 @@ class RoutingDependencies:
     retrieve_context: RetrievalRunner
     build_grounding: GroundingRunner
     build_response: ResponseRunner
+    run_read_tool: ReadToolRunner | None = None
 
 
 @dataclass(slots=True)
@@ -57,6 +59,7 @@ class RoutingOrchestrator:
                 thread_summary=context.thread_summary,
             )
         )
+        context.grounding_mode = intent.grounding_mode
         plan = self.dependencies.plan_builder(intent)
         context.plan = plan
         append_pipeline_log(
@@ -67,6 +70,33 @@ class RoutingOrchestrator:
                 f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
             ],
         )
+
+        if intent.kind == "tool_read" and intent.tool_name:
+            stage_start = time.perf_counter()
+            try:
+                if self.dependencies.run_read_tool is None:
+                    context.tool_context = "Read tools are unavailable."
+                else:
+                    context.tool_context = self.dependencies.run_read_tool(
+                        context, intent.tool_name
+                    )
+            except Exception as exc:
+                append_pipeline_log(
+                    "routing orchestrator",
+                    [
+                        f"read tool failed: {exc}",
+                        f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
+                    ],
+                )
+                context.tool_context = "I couldn't load that view right now."
+            else:
+                append_pipeline_log(
+                    "routing orchestrator",
+                    [
+                        f"read tool completed: {intent.tool_name}",
+                        f"elapsed_ms: {elapsed_ms(stage_start):.1f}",
+                    ],
+                )
 
         knowledge_payload = None
         knowledge_error: str | None = None
@@ -102,7 +132,10 @@ class RoutingOrchestrator:
         context.knowledge_payload = knowledge_payload
 
         stage_start = time.perf_counter()
-        grounding = self.dependencies.build_grounding(context, knowledge_payload)
+        if intent.grounding_required:
+            grounding = self.dependencies.build_grounding(context, knowledge_payload)
+        else:
+            grounding = _not_required_grounding()
         context.grounding = grounding
         append_pipeline_log(
             "routing orchestrator",
@@ -122,9 +155,11 @@ class RoutingOrchestrator:
             needs_tools=intent.needs_tools,
             direct_answer=intent.direct_answer,
             allow_answer=grounding.allow_answer,
+            grounding_mode=intent.grounding_mode,
             reasons=list(intent.reasons),
             source_refs=list(grounding.source_refs),
             fallback_message=grounding.fallback_message,
+            tool_name=intent.tool_name,
         )
         append_pipeline_log(
             "routing orchestrator",
@@ -187,9 +222,12 @@ class RoutingOrchestrator:
                     "needs_retrieval": intent.needs_retrieval,
                     "needs_tools": intent.needs_tools,
                     "direct_answer": intent.direct_answer,
+                    "grounding_mode": intent.grounding_mode,
                     "reasons": list(intent.reasons),
+                    "tool_name": intent.tool_name,
                 },
                 "route": route,
+                "tool_name": intent.tool_name,
                 "plan": [
                     {
                         "name": step.name,
@@ -216,12 +254,16 @@ class RoutingOrchestrator:
     def _resolve_route(self, intent: IntentDecision, grounding: GroundingSnapshot) -> RouteKind:
         if not grounding.allow_answer:
             return "abstain"
-        if intent.needs_retrieval and intent.needs_tools:
-            return "mixed"
-        if intent.needs_retrieval:
-            return "retrieval"
-        if intent.needs_tools:
+        if intent.kind in {"action", "tool_read"}:
             return "tool"
+        if intent.kind in {"note_content", "note_status"}:
+            return "note_search"
+        if intent.kind == "conversation":
+            return "conversation"
+        if intent.kind == "mixed":
+            return "mixed"
+        if intent.kind == "ambiguous":
+            return "direct"
         return "direct"
 
     def _route_confidence(self, intent_confidence: float, grounding_confidence: float) -> float:
@@ -242,6 +284,7 @@ def build_routing_orchestrator(
     retrieve_context: RetrievalRunner,
     build_grounding: GroundingRunner,
     build_response: ResponseRunner,
+    run_read_tool: ReadToolRunner | None = None,
 ) -> RoutingOrchestrator:
     return RoutingOrchestrator(
         dependencies=RoutingDependencies(
@@ -250,5 +293,15 @@ def build_routing_orchestrator(
             retrieve_context=retrieve_context,
             build_grounding=build_grounding,
             build_response=build_response,
+            run_read_tool=run_read_tool,
         )
+    )
+
+
+def _not_required_grounding() -> GroundingSnapshot:
+    return GroundingSnapshot(
+        status="not_required",
+        confidence=1.0,
+        allow_answer=True,
+        summary="Grounding is not required for this route.",
     )

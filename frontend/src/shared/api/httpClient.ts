@@ -449,16 +449,20 @@ export interface ChatIntent {
   needs_retrieval: boolean;
   needs_tools: boolean;
   direct_answer: boolean;
+  grounding_mode: string;
   reasons: string[];
+  tool_name?: string | null;
 }
 
 export interface ChatRouting {
-  route: "direct" | "retrieval" | "tool" | "mixed" | "abstain";
+  route: "conversation" | "note_search" | "tool" | "mixed" | "abstain" | "direct";
   confidence: number;
   allow_answer: boolean;
+  grounding_mode: string;
   reasons: string[];
   source_refs: string[];
   fallback_message?: string | null;
+  tool_name?: string | null;
 }
 
 export interface GroundingEvidence {
@@ -475,7 +479,7 @@ export interface GroundingEvidence {
 }
 
 export interface GroundingResponse {
-  status: "strong" | "weak" | "conflict" | "no_context";
+  status: "strong" | "weak" | "conflict" | "no_context" | "not_required";
   confidence: number;
   allow_answer: boolean;
   top_claim?: string | null;

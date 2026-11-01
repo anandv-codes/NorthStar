@@ -1,0 +1,605 @@
+{
+  "runner": "intent_rules",
+  "code_revision": "e32e27c",
+  "configuration": {
+    "mode": "rules",
+    "threshold": 0.42,
+    "margin": 0.03,
+    "top_examples": 2
+  },
+  "summary": {
+    "case_count": 48,
+    "accuracy": 0.792,
+    "action_precision": 1.0,
+    "per_label": {
+      "conversation": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 10
+      },
+      "note_content": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 14
+      },
+      "note_status": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 14
+      },
+      "action": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 10
+      }
+    },
+    "confusion": {
+      "conversation": {
+        "ambiguous": 10
+      },
+      "note_content": {
+        "note_content": 14
+      },
+      "note_status": {
+        "note_status": 14
+      },
+      "action": {
+        "action": 10
+      }
+    },
+    "cases": [
+      {
+        "text": "morning",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "hey there",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "thanks, that's useful",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "nice one",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "what are you able to help with",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "can you help me",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "appreciate it",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "ok got it",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "hello again",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "are you online",
+        "expected": "conversation",
+        "predicted": "ambiguous",
+        "correct": false,
+        "confidence": 0.35,
+        "grounding_mode": "none",
+        "reasons": [
+          "no_high_confidence_intent"
+        ]
+      },
+      {
+        "text": "what did I capture in the pricing call",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.84,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "show me what I wrote about the incident",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.89,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:show me",
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "can you recap yesterday's notes",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.77,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:recap"
+        ]
+      },
+      {
+        "text": "what's my earlier context on the billing migration",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.77,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:my earlier context"
+        ]
+      },
+      {
+        "text": "find anything I noted about onboarding",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.89,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:find",
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "what was my takeaway from the design review",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.84,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "pull up what I said about the datafix",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.77,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:pull up"
+        ]
+      },
+      {
+        "text": "what did I learn in the SDE interview prep",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.89,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:what did i learn",
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "do I have notes on the vendor decision",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.77,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:decision"
+        ]
+      },
+      {
+        "text": "what did I record during the client sync",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.89,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:what did i record",
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "give me my notes about the API rollout",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.77,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:my notes"
+        ]
+      },
+      {
+        "text": "what have I written about analytics",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.77,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:what have i written"
+        ]
+      },
+      {
+        "text": "summarize my day",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.89,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:summarize",
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "what was discussed about hiring",
+        "expected": "note_content",
+        "predicted": "note_content",
+        "correct": true,
+        "confidence": 0.84,
+        "grounding_mode": "relevance",
+        "reasons": [
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "is the pricing task finished",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:finished",
+          "note_content:task"
+        ]
+      },
+      {
+        "text": "did the client sync get scheduled",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:scheduled"
+        ]
+      },
+      {
+        "text": "what work is left this week",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:work is left"
+        ]
+      },
+      {
+        "text": "anything blocked right now",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:blocked"
+        ]
+      },
+      {
+        "text": "has the billing migration been completed",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:completed"
+        ]
+      },
+      {
+        "text": "which items are still in progress",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:in progress"
+        ]
+      },
+      {
+        "text": "what did I wrap up today",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:wrap up",
+          "note_content:prefix"
+        ]
+      },
+      {
+        "text": "are there unfinished tasks",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:unfinished"
+        ]
+      },
+      {
+        "text": "what's the state of the rollout",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:state of"
+        ]
+      },
+      {
+        "text": "did I close the auth item",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "action:close the",
+          "note_status:close"
+        ]
+      },
+      {
+        "text": "what's waiting on the vendor",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:waiting"
+        ]
+      },
+      {
+        "text": "which questions remain open",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:remain open"
+        ]
+      },
+      {
+        "text": "is the interview prep done",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:done"
+        ]
+      },
+      {
+        "text": "what have I not completed",
+        "expected": "note_status",
+        "predicted": "note_status",
+        "correct": true,
+        "confidence": 0.83,
+        "grounding_mode": "claim",
+        "reasons": [
+          "note_status:completed"
+        ]
+      },
+      {
+        "text": "please add a task to ping priya",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:add a task",
+          "note_content:task"
+        ]
+      },
+      {
+        "text": "remind me to book the room",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:remind me to"
+        ]
+      },
+      {
+        "text": "can you mark the migration task done",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:mark",
+          "note_status:done",
+          "note_content:task"
+        ]
+      },
+      {
+        "text": "complete the pricing follow-up",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:complete the",
+          "note_status:complete"
+        ]
+      },
+      {
+        "text": "reopen the vendor decision task",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:reopen",
+          "note_content:decision",
+          "note_content:task"
+        ]
+      },
+      {
+        "text": "start the hiring task",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:start the",
+          "note_content:task"
+        ]
+      },
+      {
+        "text": "set the rollout task to in progress",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:set the",
+          "note_status:in progress",
+          "note_content:task"
+        ]
+      },
+      {
+        "text": "close out the budget item",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:close out",
+          "note_status:close"
+        ]
+      },
+      {
+        "text": "add a todo for the design review",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:add a todo",
+          "note_status:todo"
+        ]
+      },
+      {
+        "text": "create a task for the client sync",
+        "expected": "action",
+        "predicted": "action",
+        "correct": true,
+        "confidence": 0.87,
+        "grounding_mode": "none",
+        "reasons": [
+          "action:create a task",
+          "note_content:task"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{"text": "morning", "label": "conversation", "tags": ["greeting"]}
+{"text": "hey there", "label": "conversation", "tags": ["greeting"]}
+{"text": "thanks, that's useful", "label": "conversation", "tags": ["thanks"]}
+{"text": "nice one", "label": "conversation", "tags": ["small-talk"]}
+{"text": "what are you able to help with", "label": "conversation", "tags": ["capability"]}
+{"text": "can you help me", "label": "conversation", "tags": ["capability"]}
+{"text": "appreciate it", "label": "conversation", "tags": ["thanks"]}
+{"text": "ok got it", "label": "conversation", "tags": ["acknowledgement"]}
+{"text": "hello again", "label": "conversation", "tags": ["greeting"]}
+{"text": "are you online", "label": "conversation", "tags": ["presence"]}
+{"text": "what did I capture in the pricing call", "label": "note_content", "tags": ["paraphrase"]}
+{"text": "show me what I wrote about the incident", "label": "note_content", "tags": ["paraphrase"]}
+{"text": "can you recap yesterday's notes", "label": "note_content", "tags": ["summary"]}
+{"text": "what's my earlier context on the billing migration", "label": "note_content", "tags": ["paraphrase"]}
+{"text": "find anything I noted about onboarding", "label": "note_content", "tags": ["lookup"]}
+{"text": "what was my takeaway from the design review", "label": "note_content", "tags": ["paraphrase"]}
+{"text": "pull up what I said about the datafix", "label": "note_content", "tags": ["lookup"]}
+{"text": "what did I learn in the SDE interview prep", "label": "note_content", "tags": ["learning"]}
+{"text": "do I have notes on the vendor decision", "label": "note_content", "tags": ["lookup"]}
+{"text": "what did I record during the client sync", "label": "note_content", "tags": ["paraphrase"]}
+{"text": "give me my notes about the API rollout", "label": "note_content", "tags": ["lookup"]}
+{"text": "what have I written about analytics", "label": "note_content", "tags": ["lookup"]}
+{"text": "summarize my day", "label": "note_content", "tags": ["summary"]}
+{"text": "what was discussed about hiring", "label": "note_content", "tags": ["paraphrase"]}
+{"text": "is the pricing task finished", "label": "note_status", "tags": ["completion"]}
+{"text": "did the client sync get scheduled", "label": "note_status", "tags": ["scheduling"]}
+{"text": "what work is left this week", "label": "note_status", "tags": ["remaining"]}
+{"text": "anything blocked right now", "label": "note_status", "tags": ["blocked"]}
+{"text": "has the billing migration been completed", "label": "note_status", "tags": ["completion"]}
+{"text": "which items are still in progress", "label": "note_status", "tags": ["progress"]}
+{"text": "what did I wrap up today", "label": "note_status", "tags": ["completion"]}
+{"text": "are there unfinished tasks", "label": "note_status", "tags": ["remaining"]}
+{"text": "what's the state of the rollout", "label": "note_status", "tags": ["status"]}
+{"text": "did I close the auth item", "label": "note_status", "tags": ["completion"]}
+{"text": "what's waiting on the vendor", "label": "note_status", "tags": ["blocked"]}
+{"text": "which questions remain open", "label": "note_status", "tags": ["remaining"]}
+{"text": "is the interview prep done", "label": "note_status", "tags": ["completion"]}
+{"text": "what have I not completed", "label": "note_status", "tags": ["remaining"]}
+{"text": "please add a task to ping priya", "label": "action", "tags": ["create"]}
+{"text": "remind me to book the room", "label": "action", "tags": ["create"]}
+{"text": "can you mark the migration task done", "label": "action", "tags": ["complete"]}
+{"text": "complete the pricing follow-up", "label": "action", "tags": ["complete"]}
+{"text": "reopen the vendor decision task", "label": "action", "tags": ["reopen"]}
+{"text": "start the hiring task", "label": "action", "tags": ["start"]}
+{"text": "set the rollout task to in progress", "label": "action", "tags": ["progress"]}
+{"text": "close out the budget item", "label": "action", "tags": ["complete"]}
+{"text": "add a todo for the design review", "label": "action", "tags": ["create"]}
+{"text": "create a task for the client sync", "label": "action", "tags": ["create"]}

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 
-RouteKind = Literal["direct", "retrieval", "tool", "mixed", "abstain"]
+RouteKind = Literal["conversation", "note_search", "tool", "mixed", "abstain", "direct"]
 
 
 @dataclass(slots=True)
@@ -35,9 +35,11 @@ class RoutingDecision:
     needs_tools: bool
     direct_answer: bool
     allow_answer: bool
+    grounding_mode: str = "none"
     reasons: list[str] = field(default_factory=list)
     source_refs: list[str] = field(default_factory=list)
     fallback_message: str | None = None
+    tool_name: str | None = None
 
 
 @dataclass(slots=True)
@@ -49,7 +51,9 @@ class RoutingContext:
     thread_summary: str | None = None
     knowledge_payload: dict[str, Any] | None = None
     grounding: GroundingSnapshot | None = None
+    grounding_mode: str = "none"
     plan: list[RoutingPlanStep] = field(default_factory=list)
+    tool_context: str = "No tool results."
 
 
 @dataclass(slots=True)

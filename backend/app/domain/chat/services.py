@@ -135,7 +135,7 @@ def handle_chat_message(
 
     assistant_message = outcome.assistant_message or outcome.decision.fallback_message or _default_fallback(normalized_message)
     pending_action_proposed = None
-    if outcome.decision.needs_tools:
+    if outcome.decision.intent_kind == "action":
         pending_action_proposed = _try_propose_tool_call(
             user_id=user_id,
             thread_id=thread_id,
@@ -144,6 +144,12 @@ def handle_chat_message(
         )
         if pending_action_proposed is not None:
             assistant_message = f"{pending_action_proposed['description']} Should I go ahead? (yes/no)"
+        else:
+            assistant_message = (
+                "I can create, complete, start, reopen, or archive tasks from chat, "
+                "and update long-term goal progress, but I can't make that change yet. "
+                "Please use the task screen for other updates."
+            )
 
     assistant_message_row = store_chat_message(
         user_id=user_id,
@@ -351,9 +357,11 @@ def _routing_payload(outcome: Any) -> dict[str, Any]:
         "route": decision.route,
         "confidence": decision.confidence,
         "allow_answer": decision.allow_answer,
+        "grounding_mode": decision.grounding_mode,
         "reasons": list(decision.reasons),
         "source_refs": list(decision.source_refs),
         "fallback_message": decision.fallback_message,
+        "tool_name": decision.tool_name,
     }
 
 

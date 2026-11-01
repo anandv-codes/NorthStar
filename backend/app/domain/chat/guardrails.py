@@ -47,7 +47,17 @@ def assess_grounding(
     recent_messages: Sequence[dict[str, Any]] | None,
     knowledge_payload: dict[str, Any] | None,
     summary_memory: str | None = None,
+    mode: str = "claim",
 ) -> GroundingDecision:
+    if mode == "none":
+        return GroundingDecision(
+            status="not_required",
+            confidence=1.0,
+            allow_answer=True,
+            top_claim=None,
+            summary="Grounding is not required for this route.",
+        )
+
     query_tokens = _query_tokens(user_message)
     evidence = _collect_evidence(
         user_message=user_message,
@@ -66,6 +76,9 @@ def assess_grounding(
             summary="No grounding evidence found in notes, summary, or recent messages.",
             fallback_message=_build_no_context_message(user_message),
         )
+
+    if mode == "relevance":
+        return _assess_relevance(user_message, evidence)
 
     claim_scores: dict[str, float] = {}
     claim_supporters: dict[str, list[GroundingEvidence]] = {}
@@ -148,6 +161,41 @@ def assess_grounding(
         summary=f"Sources agree on '{top_claim}'.",
         source_refs=source_refs,
         evidence=evidence,
+    )
+
+
+def _assess_relevance(
+    user_message: str, evidence: Sequence[GroundingEvidence]
+) -> GroundingDecision:
+    note_evidence = [item for item in evidence if item.source_type == "note"]
+    if not note_evidence:
+        return GroundingDecision(
+            status="no_context",
+            confidence=0.0,
+            allow_answer=False,
+            top_claim=None,
+            summary="No relevant note evidence found.",
+            fallback_message=_build_no_context_message(user_message),
+        )
+
+    top = max(note_evidence, key=lambda item: item.weight)
+    note_count = len({item.source_id for item in note_evidence})
+    confidence = (
+        0.55
+        + (0.25 * min(top.overlap, 1.0))
+        + (0.1 * min(note_count, 3) / 3)
+        + (0.1 * min(top.retrieval_score, 1.0))
+    )
+    confidence = round(min(max(confidence, 0.0), 1.0), 3)
+
+    return GroundingDecision(
+        status="strong" if confidence >= 0.65 else "weak",
+        confidence=confidence,
+        allow_answer=True,
+        top_claim=None,
+        summary="Retrieved relevant note evidence for the question.",
+        source_refs=_source_refs(note_evidence),
+        evidence=list(evidence),
     )
 
 

@@ -15,6 +15,7 @@ from ..routing.orchestrator import RoutingOrchestrator, build_routing_orchestrat
 from .guardrails import GroundingDecision, assess_grounding, format_grounding_context
 from .memory import build_short_term_context
 from .planner import build_chat_plan
+from .read_tools import execute_read_tool, format_read_tool_result
 
 
 @dataclass(slots=True)
@@ -50,8 +51,13 @@ def build_chat_routing_orchestrator(
             recent_messages=context.recent_messages,
             knowledge_payload=knowledge_payload,
             summary_memory=context.thread_summary or None,
+            mode=context.grounding_mode,
         )
         return _snapshot_from_decision(decision)
+
+    def _run_read_tool(context: RoutingContext, tool_name: str) -> str:
+        result = execute_read_tool(context.user_id, tool_name)
+        return format_read_tool_result(tool_name, result)
 
     def _build_response(
         context: RoutingContext,
@@ -60,6 +66,14 @@ def build_chat_routing_orchestrator(
         knowledge_payload: dict[str, Any] | None,
         grounding: GroundingSnapshot,
     ) -> str:
+        if decision.intent_kind == "ambiguous":
+            return (
+                "I can help search and summarize your notes. "
+                "What would you like me to look for?"
+            )
+        if decision.intent_kind == "action":
+            return "I can help with that."
+
         append_pipeline_log(
             "chat orchestrator",
             [
@@ -76,7 +90,7 @@ def build_chat_routing_orchestrator(
             short_term_context=build_short_term_context(context.recent_messages),
             knowledge_context=_format_knowledge_context(knowledge_payload),
             grounding_context=format_grounding_context(_decision_for_prompt(grounding)),
-            tool_context="No tool results.",
+            tool_context=context.tool_context,
         )
         try:
             answer = chat_model.generate(prompt)
@@ -104,6 +118,7 @@ def build_chat_routing_orchestrator(
         retrieve_context=_retrieve_context,
         build_grounding=_build_grounding,
         build_response=_build_response,
+        run_read_tool=_run_read_tool,
     )
 
 
@@ -115,6 +130,7 @@ def decision_to_payload(decision: RoutingDecision) -> dict[str, Any]:
         "needs_tools": decision.needs_tools,
         "direct_answer": decision.direct_answer,
         "reasons": list(decision.reasons),
+        "tool_name": decision.tool_name,
     }
 
 
@@ -191,7 +207,14 @@ User message:
 
 Answer rules:
 - Be concise and helpful.
-- Use knowledge memory when relevant.
+- Use only the knowledge memory, conversation memory, and tool results above.
+- Do not answer from general knowledge. If the notes do not contain the answer, say so.
+- Cite note ids from knowledge memory when you use them.
+- Small talk is allowed, but do not invent note or task details.
+- When tool results contain tasks, goals, or due cards, summarize only the listed items and ids.
+- Do not reveal recall card answers; show only due questions.
+- Never claim a task or goal changed unless the tool results or confirmation say it did.
+- If tool results are empty, say there is nothing to show instead of inventing items.
 - If the answer depends on unavailable tools, say so clearly.
 - If you are unsure, ask one focused follow-up question.
 """

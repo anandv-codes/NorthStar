@@ -1,11 +1,54 @@
 # Chat & Retrieval Guardrails/Optimization Plan
 
-Status: Phase 0 done. Phase 1 approved, in progress. Later phases are scoped/decided but not yet
-started.
-Scope note: this app is intentionally focused on **decision/status tracking**, not general
-open-ended Q&A. Fact-checking / answer-groundedness / hallucination-scoring is explicitly
-**out of scope** (see Decision Log). Guardrail work here is about routing correctness and
-prompt-injection safety, not answer correctness.
+Status (2026-10-30): Phase 0 done. Phase 1 code done; hybrid threshold eval pending. Phase 2 not
+started. Phase 3 P2 tool slice done. Phase 4 done. Chat MVP gaps are listed below.
+
+**Scope revision (2026-10-30):** chat is scoped to the user's notes plus approved typed views.
+Small talk is allowed, but chat must not answer from general knowledge. Approved typed reads are
+task/goal open loops and the recall due queue; question/concept reads and writes are deferred and
+deprecated for the MVP. Intent labels are `conversation`, `note_content`, `note_status`, `action`,
+and the rule-only `tool_read`. Note labels route to `note_search`; `note_status` uses
+claim/conflict grounding, while `note_content` uses relevance grounding. Low-confidence input
+becomes an `ambiguous` clarification rather than a general answer. Fact-checking / hallucination
+scoring remains out of scope.
+
+## Chat MVP status (2026-10-30)
+
+### Implemented
+
+- Notes-only grounded answers with note source refs and conversation/thread summaries.
+- Hybrid intent routing: deterministic rules plus local MiniLM kNN for conversational and note
+  intents; writes stay rule-gated.
+- Deterministic `tool_read` routing for `get_open_loops` and `get_due_cards`; both execute inline
+  and never create pending actions.
+- Confirmation-gated writes: `create_task`, `complete_task`, `start_task`, `reopen_task`,
+  `archive_task`, and `update_commitment_progress`.
+- Task transition validation, `completed_at` preservation/clearing, and no-op tool failures.
+- Due-card reads return questions only, never answers.
+- Chat is the secondary "Ask" surface; dashboard is the default app route.
+
+### Remaining before chat MVP is done
+
+1. **Dependency-complete verification.** Run the targeted chat/tool/service tests and frontend
+   `tsc --noEmit` with the full backend dependency set installed. Record results in CI or the PR.
+2. **Hybrid intent evaluation.** Run the MiniLM hybrid sweep and record the chosen threshold/margin;
+   the current recorded baseline is rules-only (`0.792` accuracy). Do not add `tool_read` to
+   semantic training labels.
+3. **Pending-action correctness.** Make confirmation resolution conditional/idempotent so two rapid
+   "yes" messages cannot execute twice. Mark expired rows as `expired` and persist an execution
+   result/audit timestamp. See `docs/interview_questions.md` Q21.
+4. **Prompt-injection and safety rails (Phase 2).** Add input/retrieval/output checks and explicit
+   Gemini `safety_settings`, or explicitly accept the risk for a private beta.
+5. **Manual end-to-end pass.** Verify grounded note answers, source links, open-loops and due-card
+   reads, every write transition, deny/expiry behavior, and absence of answer leakage against a
+   seeded Supabase user and live Gemini.
+
+### Deferred / not in the chat MVP
+
+- Question/concept typed reads and writes. Their tool definitions remain dormant and disabled.
+- External tools/MCP (GitHub, calendar) and general web access.
+- Streaming responses, attachments, voice input, and multi-agent orchestration.
+- Calendar integration: it belongs to the separate Act-stage MVP slice, not chat.
 
 ## Phase 0 — Quick infra wins (done)
 
@@ -52,73 +95,70 @@ scale).
 
 ## Phase 1 — Intent classifier: hybrid deterministic + embedding similarity
 
-**Goal**: keep the existing keyword rules for high-stakes `tool` (write) intent, and replace/augment
-the `retrieval` vs `direct` split with embedding-similarity matching against curated example
-utterances, since keyword-only matching misses paraphrased read questions
-(e.g. "any news on the deploy" matches no current hint word).
+**Goal**: keep deterministic keyword rules for high-stakes write actions, and use
+embedding-similarity matching for `conversation`, `note_content`, and `note_status` so
+paraphrased note questions route correctly (e.g. "any news on the deploy" matches no hint word).
 
 **Design decisions**
-- Aggregation method: **kNN over individual example embeddings**, not class centroids — a centroid
-  of diverse phrasings per class would wash out multi-modal phrasing patterns. Use top-`k` match
-  (majority vote, start with `k=3`).
-- Similarity metric: **cosine similarity**, implemented as a plain dot product over
-  **unit-normalized** vectors (`model.encode(..., normalize_embeddings=True)` for the local
-  `sentence-transformers` path in
-  [embeddings.py](../backend/app/infrastructure/vector/embeddings.py)). Raw dot product without
-  normalization is unreliable since embedding magnitude varies by input.
-- Decision rule: **absolute similarity floor + margin over the runner-up class**, not a single
-  threshold alone — avoids flip-flopping at the retrieval/direct boundary (mirrors the
-  `runner_up_score` separation idea from the old grounding logic, reused here for intent instead).
-- Combination with deterministic layer: **run both every time** (local embedding model is
-  effectively free — in-process MiniLM, no network call), not a cascade:
-  1. `KeywordIntentRule` (existing, [rules.py](../backend/app/domain/routing/rules.py)) stays
-     authoritative for `tool` intent — action verbs (create/update/delete/mark/set) must remain
-     deterministic; false positives/negatives on writes are higher stakes than on reads.
-  2. Embedding kNN decides/reinforces `retrieval` vs `direct` when keyword retrieval hints are
-     silent or weak.
-  3. `mixed` stays as today: both signals present.
-- Embedding provider: use `EMBEDDING_PROVIDER=local` for this classifier specifically to avoid
-  adding an API round trip to every chat message before retrieval-need is even known.
+- Aggregation method: **kNN over individual example embeddings**, not class centroids. For each
+  label, average the top two example similarities; choose the highest label score. This keeps
+  diverse phrasings from being washed out while reducing sensitivity to one noisy example.
+- Similarity metric: **cosine similarity**, implemented as a dot product over unit-normalized
+  vectors so embedding magnitude does not affect ranking.
+- Decision rule: **absolute similarity floor + margin over the runner-up label**, not a single
+  threshold alone. Below either bound the result is `ambiguous` unless a deterministic rule wins.
+- Combination with deterministic layer: run both every time (local MiniLM, no API call):
+  1. Action rules stay authoritative for writes. A semantic `action` match never authorizes a
+     write.
+  2. Status rules take precedence over content when the user is asking about completion/open/
+     blocked state, except for explicit summary requests ("summarize...", "recap...") which use
+     relevance grounding.
+  3. Exact high-precision conversation phrases (greetings/thanks/capability questions) route to
+     `conversation` without retrieval.
+- Embedding provider: local `sentence-transformers` MiniLM only, to avoid an API round trip before
+  retrieval need is known. The model and index load lazily.
 
-**Implementation steps**
-1. Add a curated seed example set per intent class (15–30 diverse phrasings to start), stored as
-   plain data (not keyword logic) — e.g. `backend/app/domain/routing/intent_examples.py` or a
-   JSON/YAML file, so it's easy to extend without touching classifier code.
-2. Add an embedding-kNN scorer (new module, e.g.
-   `backend/app/domain/routing/embedding_intent.py`): embeds the seed set once (cache in memory),
-   embeds the incoming message, computes cosine similarity via normalized dot product, returns
-   top-k label + score + margin.
-3. Merge into `RuleBasedIntentClassifier._merge_signals` (or a new hybrid classifier class) so
-   `tool` keyword signal always wins when present; otherwise embedding score decides
-   `retrieval`/`direct`.
-4. Add `evals/datasets/northstar_intent_v1.jsonl` — a **separate** labeled validation set (not the
-   seed examples, to avoid overfitting) covering paraphrased retrieval questions, direct/small-talk
-   messages, and tool-action phrasing.
-5. Add `evals/scripts/run_intent_eval.py` — sweeps `k`, similarity floor, and margin against the
-   validation set; reports accuracy/precision/recall per class, weighting `tool`-intent precision
-   highest (highest-stakes class). Pick the config that maximizes accuracy without hurting `tool`
-   precision.
-6. Re-run the eval script whenever seed examples are added/changed.
+**Implementation status**
+1. Done: curated seed examples in `intent_examples.py` (87 utterances across four labels).
+2. Done: `embedding_intent.py` implements cached in-process MiniLM kNN over normalized vectors,
+   with a similarity floor and runner-up margin. The model loads lazily; tests inject an embedder.
+3. Done: `HybridIntentClassifier` runs deterministic rules and semantic matching every time.
+   Action rules remain authoritative. Type, status, and summary-request precedence are covered by
+   `backend/tests/test_intent_routing.py`.
+4. Done: conversation and ambiguous routes skip retrieval and grounding; note routes select
+   `relevance` or `claim` grounding. Grounding snapshots support `not_required`.
+5. Done: `evals/datasets/northstar_intent_v1.jsonl` (48 cases, separate from seed data) and
+   `evals/scripts/run_intent_eval.py` (per-label metrics, confusion, rules-only baseline).
+   Rules-only baseline is `0.792` accuracy. Pending: run the hybrid threshold sweep with the local
+   MiniLM model available. The current environment lacks `sentence-transformers`.
+6. Done: typed read routing is limited to `get_open_loops` and `get_due_cards`; question/concept
+   tools remain disabled. Pending: prompt-injection rails remain Phase 2.
 
 **Files touched**
-- `backend/app/domain/routing/intent_examples.py` (new) — seed utterances per class
+- `backend/app/domain/routing/intent_examples.py` (new) — seed utterances per label
 - `backend/app/domain/routing/embedding_intent.py` (new) — kNN cosine-similarity scorer
-- `backend/app/domain/routing/classifier.py` — wire embedding scorer into merge logic
-- `backend/app/infrastructure/vector/embeddings.py` — ensure `normalize_embeddings=True` used for
-  this path (local sentence-transformers `encode()` call)
-- `evals/datasets/northstar_intent_v1.jsonl`, `evals/scripts/run_intent_eval.py` (new)
+- `backend/app/domain/routing/classifier.py` — hybrid merge logic
+- `backend/app/domain/routing/rules.py`, `constants.py` — action/status/content/conversation rules
+- `backend/app/domain/routing/contracts.py` — intent kinds and grounding modes
+- `backend/app/domain/chat/orchestrator.py`, `guardrails.py`, `routing_contracts.py` — route and
+  grounding wiring
+- `backend/tests/test_intent_routing.py` (new) — classifier, routing, and grounding tests
+- Done: `evals/datasets/northstar_intent_v1.jsonl`, `evals/scripts/run_intent_eval.py`
+- `backend/app/domain/chat/read_tools.py` (new) — deterministic typed reads
+- `backend/tests/test_chat_tools.py`, `test_chat_read_tools.py`,
+  `test_chat_service_tool_routes.py`, `test_task_status_transitions.py`
 
 **Verification**
-1. Run `run_intent_eval.py`; confirm accuracy improves over current keyword-only baseline on the
-   validation set, especially for paraphrased retrieval questions.
-2. `get_errors` on all modified files.
+1. Rules-only eval is recorded at `0.792` accuracy. Pending: run the hybrid sweep and confirm it
+   improves paraphrased retrieval questions without regressing action precision.
+2. Run `python -m compileall -q backend/app backend/tests` and the targeted pytest files.
 3. Manual `/message` tests: paraphrased retrieval question (e.g. "any news on the deploy"), an
-   unambiguous write command ("mark task X as done"), and a general/direct message ("what's a
-   good name for a project") — confirm each routes as expected.
+   unambiguous write command ("mark task X as done"), an open-loops read, a due-cards read, and a
+   general/direct message ("what's a good name for a project") — confirm each routes as expected.
 
 ---
 
-## Phase 2 — Prompt injection guardrails (input / retrieval / output)
+## Phase 2 — Prompt injection guardrails (input / retrieval / output) — not started
 
 Decided approach: lightweight, heuristic/pattern-based only — **no fact-checking, no AlignScore,
 no groundedness scoring** (explicitly out of scope, see Decision Log). Rely on Gemini's own
@@ -141,28 +181,31 @@ no groundedness scoring** (explicitly out of scope, see Decision Log). Rely on G
 
 *(Not yet broken into detailed steps — do this once Phase 1 lands.)*
 
-## Phase 3 — Tool-execution gap for status/task mutation via chat
+## Phase 3 — Tool execution via chat — P2 slice done
 
-Confirmed gap: `needs_tools=True` messages (e.g. "mark task X as done") currently produce
-`tool_context="No tool results."` with **no actual executor** wired to
-`update_task_item`/`update_risk_item`/etc. This risks the LLM hallucinating a false success
-confirmation — the highest-stakes failure mode for a status-tracking app.
+Implemented in the current P2 slice:
 
-Two options, not yet decided:
-- **(a)** Implement a real tool executor that calls the existing
-  [domain/memory/services.py](../backend/app/domain/memory/services.py) update functions, and only
-  let the LLM report an outcome that actually happened.
-- **(b)** Smaller stopgap: when `needs_tools=True` and nothing executed, force a fixed response
-  ("I can't update tasks from chat yet") instead of letting the LLM free-generate over an empty
-  tool result.
+- Confirmation-gated task writes: `create_task`, `complete_task`, `start_task`, `reopen_task`,
+  `archive_task`, and `update_commitment_progress`.
+- Task status transitions are validated in the repository; reopening clears `completed_at`.
+- Read-only `get_open_loops` (open/in-progress tasks + active goals) and `get_due_cards`
+  (question-only view, no answers) execute inline without pending actions.
+- `tool_read` is deterministic/rule-only so read requests do not incur an extra tool-selection
+  LLM call or authorize writes.
+- Question/concept chat tools remain defined but disabled.
 
-## Phase 4 — Grounding / allow_answer (decided: minimal change)
+Remaining:
+- Question/concept typed reads and writes are deprecated for the MVP and remain disabled.
+- External tools/MCP remain deferred; GitHub read-only is the first candidate, calendar last.
 
-- Keep the existing hard-coded fallback message when no relevant context is found for
-  retrieval-intent queries (no soft prompt-based abstention layer, no relevance-threshold rewrite).
-- Keep the existing status-claim detection in
-  [chat/guardrails.py](../backend/app/domain/chat/guardrails.py) largely as-is — it already fits
-  this app's narrowed decision/status-tracking scope; no need to generalize to open-ended Q&A.
+## Phase 4 — Grounding / allow_answer — done
+
+- `note_content` uses relevance grounding: at least one retrieved note is required; thread summary
+  or recent chat alone cannot satisfy a note lookup. Relevant note evidence is returned with note
+  source refs.
+- `note_status` keeps the existing status-claim detection and conflict/weak-evidence guards.
+- Conversation/action/tool_read/ambiguous routes use `not_required` grounding and skip retrieval.
+- Assistant messages render linked note source refs from routing metadata.
 - No fact-checking, no AlignScore, no embedding-similarity groundedness/hallucination scoring.
 
 ---
@@ -173,8 +216,14 @@ Two options, not yet decided:
   ruled out embedding-similarity groundedness, ruled out LLM self-check-facts).
 - No dialog rails (NeMo or otherwise).
 - Toxicity/safety: rely on Gemini's built-in `safety_settings`, not a separate local classifier.
-- Intent classifier: hybrid keyword (authoritative for `tool`) + embedding kNN (for
-  `retrieval`/`direct`), using the local `sentence-transformers` embedding provider, cosine
-  similarity via normalized dot product, kNN not centroid, margin-based decision rule.
+- Intent classifier: hybrid keyword (authoritative for `action`) + in-repo embedding kNN (for
+  `conversation`/`note_content`/`note_status`), using the local `sentence-transformers` embedding
+  provider, cosine similarity via normalized dot product, kNN not centroid, margin-based decision
+  rule. No `semantic-router` dependency in P0.
+- Chat scope: notes plus approved typed views. General knowledge is excluded; small talk is
+  allowed. Typed reads are limited to task/goal open loops and due cards; question/concept tools are
+  deprecated for the MVP.
+- Chat MVP treats external tools/MCP, streaming, attachments, voice, and question/concept writes as
+  out of scope. Calendar is a separate Act-stage slice.
 - Eval harness convention: reuse `evals/datasets/*.jsonl` + `evals/scripts/run_*_eval.py` pattern
   for calibrating every new threshold (intent margin/k, injection detection, etc.).

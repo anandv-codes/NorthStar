@@ -1,5 +1,9 @@
 # NorthStar Recall Pivot — Architecture Review and Implementation Plan
 
+> **Historical review snapshot (2026-10-19).** Chat and test rows were updated on 2026-10-30, but
+> other implementation evidence may be stale. This is not a live status board; use `README.md`,
+> `docs/chat_retrieval_optimization_plan.md`, and current migrations/tests for current status.
+
 Source of truth for the pivot: [`final.md`](../final.md).
 Review date: 2026-10-19.
 Scope reviewed: `backend/app/`, `backend/sql/`, `frontend/src/`, `evals/`, and the current deployment path.
@@ -82,10 +86,10 @@ Key implemented paths:
 | Note enrichment | Retrieves related context, embeds note, calls Gemini extraction, persists typed items, entity links, deterministic task resolution, Chroma upsert | `backend/app/workers/note_processor.py:28-224` |
 | Typed memory | `notes`, `extraction_runs`, `tasks`, `facts`, `questions`, `decisions`, `risks`, `concepts`, `entities`, `memory_item_entities`, `period_summaries` | `backend/sql/phase3_work_memory.sql` |
 | Hybrid retrieval | Chroma dense + user-scoped BM25 + RRF + optional cross-encoder, guarded query rewrite | `backend/app/domain/query_retrieval/hybrid_retriever.py`, `services.py` |
-| Chat | Persistent threads, rule-based intent, planner, retrieval, grounding guardrail, Gemini answer, pending tool confirmation | `backend/app/domain/chat/services.py`, `orchestrator.py`, `guardrails.py`, `tools.py` |
+| Chat | Persistent threads, hybrid intent, notes-only grounding, inline typed reads, confirmation-gated task/goal writes | `backend/app/domain/chat/services.py`, `orchestrator.py`, `read_tools.py`, `tools.py`, `backend/app/domain/routing/` |
 | Summaries | Daily/weekly prose recaps from notes + typed items; weekly composes daily | `backend/app/domain/summary/services.py` |
-| Frontend | Single `App.tsx` with hash routes for login/register/dashboard/add-note/chat; dashboard sections for tasks/questions/risks/concepts/recent/summaries | `frontend/src/app/App.tsx` |
-| Evaluation | Retrieval-only offline harness: BM25, dense, RRF, rerank, rewrite | `evals/` |
+| Frontend | Hash routes for login/register/dashboard/add-note/ask/review; dashboard is the default, chat is the secondary “Ask” surface | `frontend/src/app/App.tsx` |
+| Evaluation | Retrieval harness plus intent eval (rules baseline `0.792`; hybrid sweep pending) | `evals/` |
 
 ### 2.2 Alignment against the pivot
 
@@ -105,13 +109,13 @@ Key implemented paths:
 | Candidate review workflow | **Missing** | Build candidate/card states and accept/reject endpoints |
 | Daily/weekly summaries | Yes | Extend with recall load and “what to remember” |
 | Calendar commitments | **Missing** | Extract due dates + confirmation flow + calendar provider |
-| Chat deemphasized | No; chat is the default route | Change default route to Today/Review; chat becomes “Ask” |
+| Chat deemphasized | Yes; dashboard is default and chat is “Ask” | Keep chat secondary; do not add general-knowledge or external-tool scope |
 | pgvector / unified Postgres | No; Chroma local on-disk | Replace runtime retrieval with pgvector; pgvector-only for the app |
 | Chunking | No; one embedding per note | Add `note_chunks` + chunk embeddings |
 | Entity importance / consolidation | No; entities only name/type | Add `importance`, `mention_count`, `user_interest`, `embedding` |
 | Note ↔ entity join | No direct join; entity links are per typed item | Add `note_entities`; backfill from `memory_item_entities` |
 | Metrics/observability | Logs only, mostly file-based | Add structured metrics + queue/LLM/recall metrics |
-| Automated tests | **None found** | Add pytest suite before/alongside recall work |
+| Automated tests | Yes; pytest suite under `backend/tests` (intent/routing, chat tools, transitions, summaries, etc.) | Keep expanding coverage; run with full dependencies |
 
 ### 2.3 Reusable assets (do not rebuild)
 

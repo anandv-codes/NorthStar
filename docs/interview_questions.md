@@ -932,7 +932,8 @@ cost of *some* true answers, and you should name both sides.
 
 Mutating tools aren't executed inline. `_try_propose_tool_call` writes a
 `pending_chat_actions` row, the user sees a proposal, and a later message resolves it via
-`_try_resolve_pending_action`. `PENDING_ACTION_EXPIRY_MINUTES = 15`.
+`_try_resolve_pending_action`. `PENDING_ACTION_EXPIRY_MINUTES = 15`. Read-only tools are a separate
+path: `get_open_loops` and `get_due_cards` execute inline and never create a pending action.
 
 **Good properties:**
 
@@ -943,6 +944,8 @@ Mutating tools aren't executed inline. `_try_propose_tool_call` writes a
   half-confirmed mutations.
 - **Explicit resolution status** — `resolve_pending_action(status=...)` records the
   outcome, so it's auditable.
+- **Read/write split** — only `intent_kind == "action"` can propose a write; typed reads run
+  inline and cannot mutate. Question/concept tools remain disabled.
 
 **Gaps worth naming:**
 
@@ -951,8 +954,10 @@ Mutating tools aren't executed inline. `_try_propose_tool_call` writes a
   same guard pattern as Q4, and it should live in an RPC.
 - 15 minutes is a UX guess; some flows (a long analysis, then "yes create the task")
   take longer, and some should be shorter.
-- Only `create_task` / `complete_task` are wired. The safety machinery exists but the
-  blast radius is deliberately tiny — which is the right place to be while it's immature.
+- The write surface is now `create_task`, `complete_task`, `start_task`, `reopen_task`,
+  `archive_task`, and `update_commitment_progress`; question/concept tools remain disabled. The
+  blast radius is still deliberately small, and task transitions are validated in the repository.
+- The audit trail is incomplete: no `executed_at` / result column or per-action idempotency key.
 
 **Go deeper**
 - The general design is "propose → confirm → execute → record", which is the correct
@@ -1251,9 +1256,9 @@ at 2am flips it in prod — which is precisely when it happens.
 
 **Answer**
 
-Deliberately minimal `requirements-dev.txt` — pytest, dotenv, pydantic, and nothing else.
-If a module needs Supabase, the suite would fail to import it, so the suite *forces* the
-pure-logic boundary to stay clean.
+Deliberately minimal `requirements-dev.txt` for the pure-logic suite — pytest, dotenv,
+pydantic, and little else. If a module needs Supabase, the suite would fail to import it, so the
+suite *forces* most domain boundaries to stay clean.
 
 Three mechanisms:
 
@@ -1262,18 +1267,21 @@ Three mechanisms:
    database.
 2. **`monkeypatch` on module factories** — `monkeypatch.setattr(module, "get_repository", …)`
    for code that takes the singleton path.
-3. **Direct function calls instead of HTTP.** `test_recall_batch_api.py` calls route
-   functions with plain arguments. No `TestClient`, no httpx, no ASGI lifetime.
+3. **Direct function calls for logic; `TestClient` for route wiring.**
+   `test_recall_batch_api.py` calls route functions with plain arguments, while
+   `test_main_path_api.py` uses `TestClient` for create-note, auth, and chat happy paths where
+   dependency wiring and status codes matter.
 
 Strong coverage: scheduler, review service, candidate scoring, hybrid fusion, prompt
 rendering, SQL idempotency (`test_sql_migrations`), lazy-import boundaries
-(`test_package_imports`), and p95 latency parsed from logs (`test_p95_latency`). 242 tests
-across 32 files.
+(`test_package_imports`), and p95 latency parsed from logs (`test_p95_latency`). The suite is now
+over 300 tests across 45 files, including intent routing, chat read/write tools, task transitions,
+and route-level main-path tests.
 
-**Gaps, and you should lead with these:** `POST /notes` create/list/toggle, all of
-`auth.py`, summary generation, and the full chat service have no tests. So the untested
-surface is exactly the traversal path a user actually walks — which is the worst possible
-gap distribution.
+**Gaps, and you should lead with these:** the remaining risk is integration, not unit logic. There
+is no live end-to-end pass against Supabase + pgvector + Gemini + browser, the newest chat tool
+tests need the full backend dependency set to run, and pending-action expiry/double-confirm behavior
+is not covered end-to-end.
 
 **Go deeper**
 - `test_package_imports` is the unsung hero: it asserts that pure modules don't import

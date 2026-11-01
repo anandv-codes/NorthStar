@@ -1,6 +1,6 @@
 """Resolves whether the user's latest chat message is an explicit request to
-run one of the registered tools (create/complete a task, etc.), using the
-LLM's native tool/function-calling rather than freeform text parsing.
+run one of the registered write tools (task lifecycle or goal progress), using
+the LLM's native tool/function-calling rather than freeform text parsing.
 
 This is only invoked when the cheap keyword-based intent classifier already
 flagged ``needs_tools`` — keeps the extra LLM round-trip off the hot path for
@@ -26,12 +26,15 @@ from ...infrastructure.llm.llm_config import (
 from .tools import ENABLED_TOOL_NAMES, TOOL_REGISTRY, build_tool_context
 
 SYSTEM_PROMPT_TEMPLATE = """You decide whether the user's latest message is an explicit, unambiguous \
-request to create or update one work-memory item (a task, question, or concept).
+request to create or update one task or long-term goal.
 
 Rules:
 - Only call a tool if the request is clear. If it's vague, conversational, or just a question, do not call any tool.
-- For "complete/answer/resolve/mark learned" actions you MUST copy the id from the matching list below \
-exactly as shown — never invent or guess an id. If no listed item clearly matches what the user means, do not call a tool.
+- For status changes you MUST copy the id from the matching list below exactly as shown — never invent \
+or guess an id. If no listed item clearly matches what the user means, do not call a tool.
+- Use start_task only for an open task, complete_task for open/in-progress work, reopen_task only for \
+completed/archived work, and archive_task only for work the user explicitly wants to retire.
+- Use update_commitment_progress only for an active goal and only when the user gives a clear percentage.
 - Call at most one tool.
 
 {tool_context}
@@ -108,4 +111,7 @@ def execute_tool_call(user_id: str, tool_name: str, args: dict[str, Any]) -> dic
     if not definition:
         raise ValueError(f"Unknown tool: {tool_name}")
     validated_args = definition.args_schema(**args)
-    return definition.executor(user_id, validated_args)
+    result = definition.executor(user_id, validated_args)
+    if not result:
+        raise ValueError(f"Tool made no change: {tool_name}")
+    return result

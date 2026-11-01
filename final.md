@@ -24,6 +24,7 @@ Northstar will pivot from a generic AI-notes app into a **personal memory system
     - **Spaced Repetition:** Schedule next review (e.g. SM-2 style or FSRS) based on difficulty rating and last interval.  
     - **Provenance:** Each card links to its source note IDs (so user can review original context).  
   - **“Ask Northstar” Chat:** Simple Q&A interface powered by RAG (uses the same retrieval index to provide context). (This feature is implemented but deemphasized in UI; shown under an “Ask” tab rather than front-and-center.)  
+    - **Implementation note (2026-10-30):** chat is notes-only for factual answers, with approved inline reads for open loops and due cards, plus confirmation-gated task/goal writes. Question/concept tools and external MCP/calendar tools are not part of the chat MVP. See `docs/chat_retrieval_optimization_plan.md`.
   - **Daily/Weekly Summaries:** Auto-generated recaps (via LLM) of recent notes/knowledge units, highlighting learning, open items, and commitments.  
   - **Calendar Integration (MCP):** Extract **commitments** from notes (detected via intent). Provide a prompt (“Add [Task] to calendar on [date]?”) that creates Google Calendar events via the API or a GPT tool (with user confirmation).  
 

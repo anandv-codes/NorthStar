@@ -127,7 +127,7 @@ npm run build
 
 1. Open the frontend URL, register a new account, then log in.
 2. Go to "Add Note" and submit a note — with `PROCESS_NOTES_INLINE=true` it is enriched synchronously, so refreshing the dashboard shortly after shows the extracted summary, tasks, questions, decisions, and concepts.
-3. Try the chat page to ask about your notes.
+3. Open the secondary "Ask" chat to ask about your notes, request open loops or due cards, and try a confirmation-gated task update (for example, "mark task X as done").
 
 ## Deploying beyond local testing
 

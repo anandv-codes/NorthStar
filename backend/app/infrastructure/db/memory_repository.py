@@ -415,10 +415,42 @@ class SupabaseMemoryRepository:
         }
 
     def update_task_item(self, user_id: str, task_id: str, updates: dict[str, Any]) -> dict[str, Any]:
-        updates = {**updates, "updated_at": _utc_now()}
-        if updates.get("status") == "completed" and not updates.get("completed_at"):
-            updates["completed_at"] = _utc_now()
+        try:
+            current_response = (
+                supabase.table(TASKS_TABLE)
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("task_id", task_id)
+                .limit(1)
+                .execute()
+            )
+        except APIError as exc:
+            raise RuntimeError(str(exc)) from exc
 
+        current_rows = current_response.data if isinstance(current_response.data, list) else []
+        if not current_rows:
+            return {}
+
+        current_item = current_rows[0]
+        next_status = updates.get("status")
+        if next_status:
+            current_status = str(current_item.get("status", ""))
+            _validate_transition(
+                current_status=current_status,
+                next_status=next_status,
+                transitions=TASK_STATUS_TRANSITIONS,
+                item_type="task",
+            )
+            if (
+                next_status == "completed"
+                and current_status != "completed"
+                and not updates.get("completed_at")
+            ):
+                updates["completed_at"] = _utc_now()
+            elif next_status in {"open", "in_progress"}:
+                updates["completed_at"] = None
+
+        updates = {**updates, "updated_at": _utc_now()}
         try:
             response = (
                 supabase.table(TASKS_TABLE)
@@ -682,9 +714,16 @@ class SupabaseMemoryRepository:
         return self._query_in_range(FACTS_TABLE, user_id, start_iso, end_iso, "created_at")
 
 
-# Status transitions are enforced here (co-located with the persistence calls
-# that read/write status) to keep the read-modify-write check atomic with the
-# repository operation it guards.
+# Status transitions are enforced here, alongside the persistence calls that
+# read/write status. The read-then-write is not a transaction, so this guards
+# normal user flows rather than concurrent writers.
+TASK_STATUS_TRANSITIONS: dict[str, set[str]] = {
+    "open": {"in_progress", "completed", "archived"},
+    "in_progress": {"open", "completed", "archived"},
+    "completed": {"open", "archived"},
+    "archived": {"open"},
+}
+
 QUESTION_STATUS_TRANSITIONS: dict[str, set[str]] = {
     # Keep question states reversible for quick reopen from UI.
     "open": {"answered"},

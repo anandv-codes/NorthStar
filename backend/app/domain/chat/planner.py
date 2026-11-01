@@ -11,11 +11,18 @@ def build_chat_plan(intent: ChatIntent) -> list[RoutingPlanStep]:
         plan.append(
             RoutingPlanStep(
                 name="knowledge_retrieval",
-                description="Reuse the existing hybrid retrieval pipeline for note and memory context.",
+                description="Reuse the existing hybrid retrieval pipeline for notes-only context.",
             )
         )
 
-    if intent.needs_tools:
+    if intent.kind == "tool_read":
+        plan.append(
+            RoutingPlanStep(
+                name="read_tool_calls",
+                description="Load the requested typed view through a read-only chat tool.",
+            )
+        )
+    elif intent.needs_tools:
         plan.append(
             RoutingPlanStep(
                 name="tool_calls",

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { PaperPlaneTilt, Paperclip, Plus, Microphone, Spinner } from "@phosphor-icons/react";
 import clsx from "clsx";
 import {
@@ -13,6 +14,23 @@ import { ChatEmptyState } from "./ChatEmptyState";
 
 function threadStorageKey(userId: string) {
   return `northstar_chat_thread_${userId}`;
+}
+
+function noteSourceIds(message: ChatMessageRecord): string[] {
+  if (message.role !== "assistant") {
+    return [];
+  }
+  const routing = message.metadata?.routing as
+    | { grounding?: { source_refs?: unknown } }
+    | undefined;
+  const refs = routing?.grounding?.source_refs;
+  if (!Array.isArray(refs)) {
+    return [];
+  }
+  return refs
+    .filter((ref): ref is string => typeof ref === "string" && ref.startsWith("note:"))
+    .map((ref) => ref.slice("note:".length))
+    .filter(Boolean);
 }
 
 export function ChatPage() {
@@ -144,7 +162,22 @@ export function ChatPage() {
                     : "bg-neutral-100 text-neutral-800",
                 )}
               >
-                {message.content}
+                <p>{message.content}</p>
+                {noteSourceIds(message).length > 0 ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-neutral-200 pt-2 text-[11px] text-neutral-500">
+                    <span className="font-medium text-neutral-600">Sources</span>
+                    {noteSourceIds(message).slice(0, 4).map((noteId) => (
+                      <Link
+                        key={noteId}
+                        to={`/app/library/notes/${noteId}`}
+                        className="rounded-full border border-neutral-300 bg-white px-2 py-0.5 font-medium text-neutral-700 transition-colors hover:border-neutral-950 hover:text-neutral-950"
+                        title={noteId}
+                      >
+                        {noteId.length > 10 ? `${noteId.slice(0, 8)}…` : noteId}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           ))

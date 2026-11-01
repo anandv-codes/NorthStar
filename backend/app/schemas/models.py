@@ -324,22 +324,26 @@ class ChatIntentResponse(BaseModel):
     needs_retrieval: bool = False
     needs_tools: bool = False
     direct_answer: bool = True
+    grounding_mode: str = "none"
     reasons: List[str] = Field(default_factory=list)
+    tool_name: Optional[str] = None
 
 
-ChatRouteKind = Literal["direct", "retrieval", "tool", "mixed", "abstain"]
+ChatRouteKind = Literal["conversation", "note_search", "tool", "mixed", "abstain", "direct"]
 
 
 class ChatRoutingResponse(BaseModel):
     route: ChatRouteKind
     confidence: float
     allow_answer: bool
+    grounding_mode: str = "none"
     reasons: List[str] = Field(default_factory=list)
     source_refs: List[str] = Field(default_factory=list)
     fallback_message: Optional[str] = None
+    tool_name: Optional[str] = None
 
 
-GroundingStatus = Literal["strong", "weak", "conflict", "no_context"]
+GroundingStatus = Literal["strong", "weak", "conflict", "no_context", "not_required"]
 
 
 class GroundingEvidenceResponse(BaseModel):

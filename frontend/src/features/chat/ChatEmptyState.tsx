@@ -44,7 +44,7 @@ export function ChatEmptyState({ onUseSuggestion }: ChatEmptyStateProps) {
             </span>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-neutral-300">
-            Grounded in your notes, summaries and tasks — ask anything you've captured.
+            Grounded in your notes and summaries — ask anything you've captured.
           </p>
         </div>
 

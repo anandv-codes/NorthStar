@@ -19,6 +19,7 @@ from ...infrastructure.llm.llm_config import (
     MAX_ITEM_TEXT_LENGTH_FOR_TOOL_CONTEXT,
     MAX_OPEN_ITEMS_FOR_TOOL_CONTEXT,
 )
+from ..commitments.services import list_commitments, update_commitment
 from ..memory.services import (
     insert_concepts,
     insert_questions,
@@ -69,11 +70,11 @@ class CreateTaskArgs(BaseModel):
 
 
 class CompleteTaskArgs(BaseModel):
-    """Mark an existing OPEN task as completed. Only use when the user clearly refers
-    to one task from the 'Open tasks' list provided in context, by its id. Never invent
-    an id that isn't listed."""
+    """Mark an existing OPEN or IN-PROGRESS task as completed. Only use when the user
+    clearly refers to one task from the task lists provided in context, by its id.
+    Never invent an id that isn't listed."""
 
-    task_id: str = Field(..., description="The exact task_id copied from the Open tasks list.")
+    task_id: str = Field(..., description="The exact task_id copied from the task lists.")
 
 
 class CreateQuestionArgs(BaseModel):
@@ -105,6 +106,39 @@ class MarkConceptLearnedArgs(BaseModel):
     concept_id: str = Field(..., description="The exact concept_id copied from the Open concepts list.")
 
 
+class StartTaskArgs(BaseModel):
+    """Mark an existing OPEN task as in progress. Only use when the user clearly refers
+    to one task from the task lists provided in context, by its id."""
+
+    task_id: str = Field(..., description="The exact task_id copied from the task lists.")
+
+
+class ReopenTaskArgs(BaseModel):
+    """Reopen an existing COMPLETED or ARCHIVED task. Only use when the user clearly
+    refers to one task from the completed/archived lists provided in context."""
+
+    task_id: str = Field(..., description="The exact task_id copied from the task lists.")
+
+
+class ArchiveTaskArgs(BaseModel):
+    """Archive an existing task. Only use when the user clearly refers to one task from
+    the task lists provided in context, by its id."""
+
+    task_id: str = Field(..., description="The exact task_id copied from the task lists.")
+
+
+class UpdateCommitmentProgressArgs(BaseModel):
+    """Set the progress percentage on an existing ACTIVE long-term goal. Only use when
+    the user clearly refers to one goal from the active goals list, by its id."""
+
+    commitment_id: str = Field(
+        ..., description="The exact commitment_id copied from the Active goals list."
+    )
+    progress: int = Field(
+        ..., ge=0, le=100, description="Progress percentage from 0 to 100."
+    )
+
+
 @dataclass(slots=True)
 class ToolDefinition:
     name: str
@@ -114,9 +148,16 @@ class ToolDefinition:
     confirmed_message: Callable[[BaseModel, dict[str, str]], str]
 
 
-# Scoped down to tasks for now — question/concept tools stay defined below
-# (and in TOOL_REGISTRY) so re-enabling them later is a one-line change here.
-ENABLED_TOOL_NAMES = {"create_task", "complete_task"}
+# Question/concept tools stay defined below (and in TOOL_REGISTRY) but remain
+# disabled until typed question/concept reads and writes are explicitly scoped.
+ENABLED_TOOL_NAMES = {
+    "create_task",
+    "complete_task",
+    "start_task",
+    "reopen_task",
+    "archive_task",
+    "update_commitment_progress",
+}
 
 
 def _exec_create_task(user_id: str, args: CreateTaskArgs) -> dict[str, Any]:
@@ -132,6 +173,40 @@ def _exec_create_task(user_id: str, args: CreateTaskArgs) -> dict[str, Any]:
 
 def _exec_complete_task(user_id: str, args: CompleteTaskArgs) -> dict[str, Any]:
     return update_task_item(user_id=user_id, task_id=args.task_id, updates={"status": "completed"})
+
+
+def _exec_start_task(user_id: str, args: StartTaskArgs) -> dict[str, Any]:
+    return update_task_item(
+        user_id=user_id,
+        task_id=args.task_id,
+        updates={"status": "in_progress", "completed_at": None},
+    )
+
+
+def _exec_reopen_task(user_id: str, args: ReopenTaskArgs) -> dict[str, Any]:
+    return update_task_item(
+        user_id=user_id,
+        task_id=args.task_id,
+        updates={"status": "open", "completed_at": None},
+    )
+
+
+def _exec_archive_task(user_id: str, args: ArchiveTaskArgs) -> dict[str, Any]:
+    return update_task_item(
+        user_id=user_id,
+        task_id=args.task_id,
+        updates={"status": "archived"},
+    )
+
+
+def _exec_update_commitment_progress(
+    user_id: str, args: UpdateCommitmentProgressArgs
+) -> dict[str, Any]:
+    return update_commitment(
+        user_id=user_id,
+        commitment_id=args.commitment_id,
+        updates={"progress": args.progress},
+    )
 
 
 def _exec_create_question(user_id: str, args: CreateQuestionArgs) -> dict[str, Any]:
@@ -185,6 +260,48 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
             f'Done — I\'ve marked "{lookup.get(args.task_id, args.task_id)}" as completed.'
         ),
     ),
+    "start_task": ToolDefinition(
+        name="start_task",
+        args_schema=StartTaskArgs,
+        executor=_exec_start_task,
+        describe=lambda args, lookup: (
+            f'mark the task "{lookup.get(args.task_id, args.task_id)}" as in progress'
+        ),
+        confirmed_message=lambda args, lookup: (
+            f'Done — I\'ve marked "{lookup.get(args.task_id, args.task_id)}" as in progress.'
+        ),
+    ),
+    "reopen_task": ToolDefinition(
+        name="reopen_task",
+        args_schema=ReopenTaskArgs,
+        executor=_exec_reopen_task,
+        describe=lambda args, lookup: f'reopen the task "{lookup.get(args.task_id, args.task_id)}"',
+        confirmed_message=lambda args, lookup: (
+            f'Done — I\'ve reopened "{lookup.get(args.task_id, args.task_id)}".'
+        ),
+    ),
+    "archive_task": ToolDefinition(
+        name="archive_task",
+        args_schema=ArchiveTaskArgs,
+        executor=_exec_archive_task,
+        describe=lambda args, lookup: f'archive the task "{lookup.get(args.task_id, args.task_id)}"',
+        confirmed_message=lambda args, lookup: (
+            f'Done — I\'ve archived "{lookup.get(args.task_id, args.task_id)}".'
+        ),
+    ),
+    "update_commitment_progress": ToolDefinition(
+        name="update_commitment_progress",
+        args_schema=UpdateCommitmentProgressArgs,
+        executor=_exec_update_commitment_progress,
+        describe=lambda args, lookup: (
+            f'set the goal "{lookup.get(args.commitment_id, args.commitment_id)}" '
+            f'to {args.progress}%'
+        ),
+        confirmed_message=lambda args, lookup: (
+            f'Done — I\'ve set "{lookup.get(args.commitment_id, args.commitment_id)}" '
+            f'to {args.progress}%.'
+        ),
+    ),
     "create_question": ToolDefinition(
         name="create_question",
         args_schema=CreateQuestionArgs,
@@ -227,9 +344,43 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
 def build_tool_context(user_id: str) -> tuple[str, dict[str, str]]:
     """Return (context_text_for_llm_prompt, item_id -> truncated_text lookup)."""
     item_lookup: dict[str, str] = {}
-    sections = [
-        ("Open tasks", query_tasks_for_user(user_id, status="open"), "task_id", "description"),
-    ]
+    task_tools = {"create_task", "complete_task", "start_task", "archive_task"}
+    sections = []
+    if task_tools & ENABLED_TOOL_NAMES:
+        sections.append(
+            ("Open tasks", query_tasks_for_user(user_id, status="open"), "task_id", "description")
+        )
+        sections.append(
+            (
+                "In-progress tasks",
+                query_tasks_for_user(user_id, status="in_progress"),
+                "task_id",
+                "description",
+            )
+        )
+    if "reopen_task" in ENABLED_TOOL_NAMES:
+        sections.append(
+            (
+                "Completed tasks",
+                query_tasks_for_user(user_id, status="completed"),
+                "task_id",
+                "description",
+            )
+        )
+        sections.append(
+            (
+                "Archived tasks",
+                query_tasks_for_user(user_id, status="archived"),
+                "task_id",
+                "description",
+            )
+        )
+    if "update_commitment_progress" in ENABLED_TOOL_NAMES:
+        goals = [
+            {**goal, "goal_label": f"{goal.get('text') or ''} ({goal.get('progress') or 0}%)"}
+            for goal in list_commitments(user_id, status="active")
+        ]
+        sections.append(("Active goals", goals, "commitment_id", "goal_label"))
     if "create_question" in ENABLED_TOOL_NAMES or "answer_question" in ENABLED_TOOL_NAMES:
         sections.append(("Open questions", query_questions_for_user(user_id, status="open"), "question_id", "question"))
     if "create_concept" in ENABLED_TOOL_NAMES or "mark_concept_learned" in ENABLED_TOOL_NAMES:

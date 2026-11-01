@@ -2,6 +2,32 @@
 
 This directory contains deterministic, synthetic evaluation fixtures and report-only runners for NorthStar retrieval and chat quality.
 
+## Intent Routing Evaluation
+
+`northstar_intent_v1` is a 48-case labeled validation set for the hybrid chat intent router. It
+is kept separate from the seed utterances in `backend/app/domain/routing/intent_examples.py`.
+Semantic labels are `conversation`, `note_content`, `note_status`, and `action`. The
+`tool_read` intent is deliberately rule-only and is excluded from the semantic examples and this
+eval's labels.
+
+Run the deterministic rules-only baseline from the workspace root:
+
+```bash
+python -m evals.scripts.run_intent_eval --rules-only
+```
+
+Run the default hybrid classifier (requires `sentence-transformers` and the local MiniLM model):
+
+```bash
+python -m evals.scripts.run_intent_eval
+python -m evals.scripts.run_intent_eval --threshold 0.42 --margin 0.03 --top-examples 2
+```
+
+Reports are written to `evals/results/northstar_intent_v1_<mode>.json` and `.md`, including
+per-label precision/recall/F1, action precision, the confusion matrix, and per-case predictions.
+The rules-only baseline intentionally cannot classify most conversational paraphrases; that gap is
+what the semantic kNN layer is for. Do not tune thresholds on the seed examples.
+
 ## Recall Question/Answer Generation Contract
 
 `northstar_recall_generation_v1` replays recorded model responses through the production recall prompt builder and validators. It is a deterministic regression check for question-form matching, answer grounding, expected answer-point coverage, and multi-note context plumbing. It does not measure live model quality, latency, or cost.

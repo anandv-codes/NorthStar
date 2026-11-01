@@ -273,9 +273,9 @@ facts persisted exactly one row each (5 links, 1 entity), and the replay still r
 (bad password, inactive user), `/auth/refresh` (410), and one `/chat/message` happy path.
 You don't need full coverage — you need the *walked path* covered.
 
-**Why:** Q30 currently ends with you admitting the main user journey has no tests. Four
-tests change the ending. Also catches dependency-wiring bugs that pure-function tests
-structurally cannot.
+**Why:** Before this change, Q30 ended with you admitting the main user journey had no
+route-level tests. Four tests change the ending. Also catches dependency-wiring bugs that
+pure-function tests structurally cannot.
 
 **Effort:** S (≈100 lines). Highest testing ROI.
 

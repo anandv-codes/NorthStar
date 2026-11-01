@@ -1,5 +1,10 @@
 # NorthStar Project Architecture Blueprint
 
+> **Deprecated — historical snapshot (generated 2026-08-10).** This is not a current
+> implementation-status report. Chat/tool and test sections were updated on 2026-10-30, but other auth, CORS, retrieval,
+> and deployment details may be stale. Use `README.md`, `docs/chat_retrieval_optimization_plan.md`,
+> and current migrations/tests for live status.
+
 Generated from the repository source on 2026-08-10. This document describes implemented code paths and configuration present in the workspace. It does not claim runtime, integration, security, or load-test validation where no automated evidence exists.
 
 ## Executive Summary
@@ -15,7 +20,7 @@ The architecture combines:
 - Gemini for structured extraction, query rewriting, and chat answer generation.
 - Chroma as a user-scoped, derived semantic index used with BM25 and Reciprocal Rank Fusion (RRF) for hybrid retrieval.
 
-The implementation is best described as a pragmatic layered monolith with an event-driven processing path. It is a strong MVP architecture: boundaries are visible, components are independently replaceable, and the note-processing path is decoupled from the interactive API. It is not yet production-ready because most business endpoints trust caller-supplied `user_id` values, the backend accepts every CORS origin, and no automated tests were found.
+The implementation is best described as a pragmatic layered monolith with an event-driven processing path. It is a strong MVP architecture: boundaries are visible, components are independently replaceable, and the note-processing path is decoupled from the interactive API. At generation time it was not production-ready because most business endpoints trusted caller-supplied `user_id` values, the backend accepted every CORS origin, and no automated tests were found. The test claim is no longer true: the repository now has a pytest suite under `backend/tests`.
 
 ## Product Capabilities
 
@@ -27,8 +32,8 @@ The implementation is best described as a pragmatic layered monolith with an eve
 | Note capture | Submit free-form work notes and receive an asynchronous processing status. | `POST /notes`, `GET /notes/{note_id}` in `backend/app/api/routes/notes.py`; the React note-capture view polls every 1.5 seconds. |
 | AI enrichment | Convert a note into a summary plus tasks, facts, questions, decisions, entities, and concepts. | `backend/app/workers/note_processor.py` and `backend/app/infrastructure/llm/gemini_client.py`. |
 | Work-memory dashboard | Review recent notes and extracted tasks, questions, and concepts. Update task, question, and concept state. | `frontend/src/app/App.tsx`, dashboard components, and `backend/app/api/routes/memory.py`. |
-| Persistent chat | Start or resume a user-specific chat thread with saved message history and rolling summaries. | `POST /chat/message`, `GET /chat/threads/{thread_id}`, and `backend/app/domain/chat/services.py`. |
-| Grounded AI answers | Route chat intents, retrieve relevant notes when appropriate, assess grounding, and generate an answer with retrieved context. | `backend/app/domain/chat/orchestrator.py` and `backend/app/domain/routing/`. |
+| Persistent chat | Start or resume a user-specific thread with saved history, rolling summaries, hybrid intent routing, inline typed reads, and confirmation-gated writes. | `POST /chat/message`, `GET /chat/threads/{thread_id}`, `backend/app/domain/chat/`, and `backend/app/domain/routing/`. |
+| Grounded AI answers | Answer from the user's notes with source refs, or use approved typed views (open loops, due cards); never answer from general knowledge. | `backend/app/domain/chat/orchestrator.py`, `read_tools.py`, and `backend/app/domain/routing/`. |
 | Hybrid memory search | Combine semantic, keyword, and optional rewritten-query results; apply optional local reranking. | `POST /retrieval/query` and `backend/app/domain/query_retrieval/services.py`. |
 | Async processing | Decouple note submission from LLM latency and support Lambda processing from SQS events. | `backend/app/infrastructure/queue/`, `backend/app/workers/note_processor.py`, and `backend/lambda_function.py`. |
 
@@ -158,9 +163,9 @@ The worker re-raises unexpected failures; the Lambda handler converts failures i
 
 ### Chat and Grounding
 
-Chat threads preserve a bounded short-term message window and maintain a generated thread summary. Each message is routed through a rule-based intent classifier and planner. Retrieval-enabled plans call hybrid retrieval, then `assess_grounding` produces a grounding snapshot that is included in the Gemini chat prompt.
+Chat threads preserve a bounded short-term message window and maintain a generated thread summary. Each message is routed through a hybrid rule-plus-semantic intent classifier and planner. Retrieval-enabled plans call hybrid retrieval, then `assess_grounding` produces a grounding snapshot that is included in the Gemini chat prompt.
 
-This is a meaningful safeguard design: retrieved evidence and grounding status are available to the response generator. It is not a guarantee of factual correctness because the final answer remains model-generated and no runtime evaluation suite is present.
+This is a meaningful safeguard design: retrieved evidence and grounding status are available to the response generator. It is not a guarantee of factual correctness because the final answer remains model-generated. An offline eval harness exists, but there is no runtime groundedness monitoring.
 
 ### Hybrid Retrieval
 
